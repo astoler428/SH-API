@@ -48,17 +48,22 @@ export enum Policy {
   FASC = 'Fascist'
 }
 
+export enum GameType {
+  BLIND = 'Blind',
+  NORMAL = 'normal'
+}
+
 export enum Status {
-  CREATED = 'created',
-  END_LIB = 'created',
-  END_FASC = 'created',
-  CHOOSE_CHAN = 'created',
-  VOTE = 'created',
-  PRES_DISCARD = 'created',
-  CHAN_PLAY = 'created',
-  SE = 'created',
-  INSPECT_TOP3 = 'created',
-  GUN = 'created',
-  VETO_REQUEST = 'created',
+  CREATED = 'CREATED',
+  END_LIB = 'END_LIB',
+  END_FASC = 'END_FASC',
+  CHOOSE_CHAN = 'CHOOSE_CHAN',
+  VOTE = 'VOTE',
+  PRES_DISCARD = 'PRES_DISCARD',
+  CHAN_PLAY = 'CHAN_PLAY',
+  SE = 'SE',
+  INSPECT_TOP3 = 'INSPECT_TOP3',
+  GUN = 'GUN',
+  VETO_REQUEST = 'VETO_REQUEST',
 }
 

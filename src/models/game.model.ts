@@ -1,13 +1,14 @@
 import {Player} from './player.model'
 import Deck from '../classes/deckClass'
-import {Status, PRES3, CHAN2, Role, Conf} from '../consts'
+import {Status, PRES3, CHAN2, Role, Conf, GameType} from '../consts'
 import {Card} from './card.model'
 import {Gov} from './gov.model'
 import {Socket} from 'socket.io'
 
 export type Game = {
   id: string,
-  socketMap: Map<Player, Socket>,
+  createdBy: string,
+  gameType: GameType,
   status: Status,
   players: Player[],
   alivePlayers: Player[],
@@ -31,7 +32,5 @@ export type Game = {
   govs: Gov[],
   invClaims: {investigator: Player, investigatee: Player, claim: Role | undefined}[],
   confs: {confer: Player, confee: Player, type: Conf }[]
-
-  //Figure out how they work with game logic: veto, topdecked
-
 }
+//Figure out how they work with game logic: veto, topdecked

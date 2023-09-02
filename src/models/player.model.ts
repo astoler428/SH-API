@@ -2,6 +2,7 @@ import {Role, Vote} from '../consts'
 
  export type Player = {
   name: string,
+  socketId: string,
   role: Role,
   hitler: boolean,
   vote: Vote | undefined,
