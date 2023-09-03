@@ -6,8 +6,6 @@ import { PlayerMockFactory } from "../test/PlayerMockFactor";
 import { GameType, Status } from "../consts";
 import { Game } from "../models/game.model";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME } from "../consts/socketEventNames";
-import { GameRepository } from "./game.repository";
-import { DataSource } from "typeorm";
 
 
 describe("GameService", () => {
@@ -18,7 +16,7 @@ describe("GameService", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [GameService, EventEmitter2, GameRepository, DataSource],
+      providers: [GameService, EventEmitter2],
     }).compile();
 
     gameService = module.get<GameService>(GameService)
@@ -37,12 +35,12 @@ describe("GameService", () => {
     gameService.joinGame(id, "player-8", "8")
     gameService.joinGame(id, "player-9", "9")
     gameService.joinGame(id, "player-10", "10")
-    game = await gameService.findById(id)
+    game = gameService.findById(id)
   });
 
   describe("createGame", ()=> {
     it('creates a new game', async () => {
-      jest.spyOn(gameService, "joinGame").mockImplementation(async () => new GameMockFactory().create());
+      jest.spyOn(gameService, "joinGame").mockImplementation(() => new GameMockFactory().create());
       gameService.createGame('player', '1')
 
       expect(gameService.gameDatabase).toHaveLength(2)
@@ -66,7 +64,6 @@ describe("GameService", () => {
     it('throws when repeated name tries to join', ()=> {
       expect(() => gameService.joinGame(id, 'player-2', '20')).toThrow(`A player with that name is already in the game. Choose a different name.`)
     })
-
 
     it('throws when new player joins a game in progress', ()=> {
       const game = new GameMockFactory().create({status: Status.CHOOSE_CHAN});

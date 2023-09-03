@@ -9,15 +9,10 @@ import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME, UPDATE_PLAYERS } from "
 import { Controller, Get } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { GameRepository } from "./game.repository";
-import { GameEntity } from "./game.entity";
-// import { SampleEntity } from '../sample/entities';
 
 @Injectable()
 export class GameService{
-
   constructor(private eventEmitter: EventEmitter2,
-  private readonly gameRepository: GameRepository,
 ){}
   //temp fake database
   public gameDatabase: Game[] = []
@@ -56,21 +51,17 @@ export class GameService{
 
     this.gameDatabase.push(game)
     this.joinGame(id, name, socketId)
-    const gameEntity = new GameEntity()
-    gameEntity.game = game
-    console.log(this.gameRepository)
-    await this.gameRepository.save(gameEntity)
     return id
   }
 
-  async joinGame(id: string, name: string, socketId: string){
+  joinGame(id: string, name: string, socketId: string){
     //in case they bypass the home page and go straight to url - frontend should catch this first anyway
     if(!name){
       throw new BadRequestException(`Player must have a name`)
     }
 
     //throws in findById if no game
-    const game = await this.findById(id)
+    const game = this.findById(id)
 
     const playerAlreadyInGame = game.players.find(player => player.name === name)
     if(!playerAlreadyInGame && game.players.length === 10){
@@ -110,8 +101,8 @@ export class GameService{
     return game
   }
 
-  async leaveGame(id: string, socketId: string){
-    const game = await this.findById(id)
+  leaveGame(id: string, socketId: string){
+    const game = this.findById(id)
     const playerLeaving = game.players.find(player => player.socketId === socketId)
 
     if(!playerLeaving){
@@ -137,9 +128,9 @@ export class GameService{
     return
   }
 
-  async startGame(id: string){
+  startGame(id: string){
     //do game setup logic
-    const game = await this.findById(id)
+    const game = this.findById(id)
     if(!game){
       throw new BadRequestException(`No game found with id ${id}`)
     }
@@ -151,21 +142,25 @@ export class GameService{
 
   deleteGame(id: string){
     this.gameDatabase = this.gameDatabase.filter(game => game.id !== id)
-    // this.gameRepository.customDelete(id)
   }
 
-  async findById(id: string){
+  findById(id: string){
     const game = this.gameDatabase.find(game => game.id === id)
-    // const game = await this.gameRepository.customFind(id)
     if(!game){
       throw new BadRequestException(`No game found with id ${id}`)
     }
     return game
   }
 
-  async setGameType(id: string, gameType: GameType){
-    const game = await this.findById(id)
+  setGameType(id: string, gameType: GameType){
+    const game = this.findById(id)
     game.gameType = gameType
     this.eventEmitter.emit(UPDATE_GAME, game)
   }
+
+  // async setGameDataInCache(game: Game){
+  //   const client = this.redisService.getClient()
+  //   console.log('this is called')
+  //   await client.set(game.id, JSON.stringify(game))
+  // }
 }

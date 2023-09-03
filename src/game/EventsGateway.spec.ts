@@ -10,7 +10,6 @@ import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME } from "../consts/socket
 import { GameService } from "./game.service";
 import { io } from "socket.io-client";
 import MockedSocket from 'socket.io-mock';
-import { GameRepository } from "./game.repository";
 import { Player } from "src/models/player.model";
 
 
@@ -25,7 +24,7 @@ describe("EventsGateway", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [EventsGateway, EventEmitter2, GameService, GameRepository],
+      providers: [EventsGateway, EventEmitter2, GameService],
     }).compile();
 
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);

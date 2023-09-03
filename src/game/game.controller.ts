@@ -20,9 +20,10 @@ export class GameController {
   constructor(private gameService: GameService) {}
 
   @Post('/')
-  async create(@Body() body: CreateGameDTO){
-    const id = await this.gameService.createGame(body.name, body.socketId)
-    console.log(`id is ${id}`)
+  create(@Body() body: CreateGameDTO){
+    const id = this.gameService.createGame(body.name, body.socketId)
+    // const game = this.gameService.findById(id)
+    // this.gameService.setGameDataInCache(game)
     return id
   }
 

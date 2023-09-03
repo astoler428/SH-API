@@ -4,16 +4,10 @@ import { RepositoryModule } from './repository/repository.module';
 import { EventsModule } from './events/events.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SampleModule } from './sample/sample.module';
-import { typeOrmConfig } from './typeorm.config';
+import { RedisModule } from 'nestjs-redis';
 
 @Module({
-  imports: [GameModule,
-    RepositoryModule,
-    EventsModule,
-    EventEmitterModule.forRoot(),
-    TypeOrmModule.forRoot(typeOrmConfig),
-    SampleModule],
+  imports: [GameModule, EventsModule],
   controllers: [],
   providers: [],
 })
