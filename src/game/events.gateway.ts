@@ -1,17 +1,23 @@
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway,OnGatewayConnection } from "@nestjs/websockets";
-import { JOIN_GAME, UPDATE_GAME, UPDATE, UPDATE_PLAYERS, START_GAME, LEAVE_GAME } from "src/consts/socketEventNames";
+import { JOIN_GAME, UPDATE_GAME, UPDATE, UPDATE_PLAYERS, START_GAME, LEAVE_GAME } from "../consts/socketEventNames";
 import { Socket } from "socket.io";
 import { Game } from "src/models/game.model";
 import { OnEvent } from "@nestjs/event-emitter";
 import { GameService } from "./game.service";
+
+
+class JoinGameDTO {
+  constructor(public socketId: string, public id: string){}
+}
+
 
 @WebSocketGateway({
   cors: true,
   transports: ["websocket", "polling"],
 })
 export class EventsGateway{
-  private socketMap: Map<string, Socket> = new Map()
-  private socketGameIdMap: Map<string, string> = new Map() //socketid to id of game they are in
+  public socketMap: Map<string, Socket> = new Map()
+  public socketGameIdMap: Map<string, string> = new Map() //socketid to id of game they are in
 
   constructor(private gameService: GameService){}
 
@@ -27,27 +33,12 @@ export class EventsGateway{
     if(id){
       this.gameService.leaveGame(id, socket.id)
     }
+    return id
   }
 
-  // @SubscribeMessage(LEAVE_GAME)
-  // handleLeaveGame(@MessageBody('socketId') socketId: string, @MessageBody('id') id: string, @MessageBody('enteringGame') enteringGame: boolean){
-  //   if(enteringGame){
-  //     return
-  //   }
-  //   this.leaveGame(socketId)
-  // }
-
-
-
-  // @SubscribeMessage(JOIN_GAME)
-  // handleJoinGame(@MessageBody('socketId') socketId: string, @MessageBody('name') name: string, @MessageBody('id') id: string){
-
-
-  // }
-
   @OnEvent(JOIN_GAME)
-  handleJoinGame({socketId, id}: {socketId: string, id: string}){
-    this.socketGameIdMap.set(socketId, id)
+  joinGame(body: JoinGameDTO){
+    this.socketGameIdMap.set(body.socketId, body.id)
     for (const [key, value] of this.socketGameIdMap) {
       console.log(`Key: ${key} Value: ${value}`);
     }
@@ -69,21 +60,5 @@ export class EventsGateway{
       socket?.emit(UPDATE, game);
     }
   }
-
-  // @OnEvent(UPDATE_PLAYERS)
-  // updatePlayers(game: Game){
-  //   for (const player of game.players) {
-  //     const socket = this.socketMap.get(player.socketId)
-  //     socket?.emit(UPDATE_PLAYERS, game);
-  //   }
-  // }
-
-  // @OnEvent(START_GAME)
-  // startGame(game: Game){
-  //   for (const player of game.players) {
-  //     const socket = this.socketMap.get(player.socketId)
-  //     socket?.emit(START_GAME, game);
-  //   }
-  // }
 }
 

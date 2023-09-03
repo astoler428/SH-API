@@ -6,6 +6,8 @@ import { PlayerMockFactory } from "../test/PlayerMockFactor";
 import { GameType, Status } from "../consts";
 import { Game } from "../models/game.model";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME } from "../consts/socketEventNames";
+import { GameRepository } from "./game.repository";
+import { DataSource } from "typeorm";
 
 
 describe("GameService", () => {
@@ -16,7 +18,7 @@ describe("GameService", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [GameService, EventEmitter2],
+      providers: [GameService, EventEmitter2, GameRepository, DataSource],
     }).compile();
 
     gameService = module.get<GameService>(GameService)
@@ -25,7 +27,7 @@ describe("GameService", () => {
   })
 
   beforeEach(async () => {
-    id = gameService.createGame("player-1", '1')
+    id = await gameService.createGame("player-1", '1')
     gameService.joinGame(id, "player-2", "2")
     gameService.joinGame(id, "player-3", "3")
     gameService.joinGame(id, "player-4", "4")
@@ -35,12 +37,12 @@ describe("GameService", () => {
     gameService.joinGame(id, "player-8", "8")
     gameService.joinGame(id, "player-9", "9")
     gameService.joinGame(id, "player-10", "10")
-    game = gameService.findById(id)
+    game = await gameService.findById(id)
   });
 
   describe("createGame", ()=> {
     it('creates a new game', async () => {
-      jest.spyOn(gameService, "joinGame").mockImplementation(() => new GameMockFactory().create());
+      jest.spyOn(gameService, "joinGame").mockImplementation(async () => new GameMockFactory().create());
       gameService.createGame('player', '1')
 
       expect(gameService.gameDatabase).toHaveLength(2)
@@ -65,6 +67,7 @@ describe("GameService", () => {
       expect(() => gameService.joinGame(id, 'player-2', '20')).toThrow(`A player with that name is already in the game. Choose a different name.`)
     })
 
+
     it('throws when new player joins a game in progress', ()=> {
       const game = new GameMockFactory().create({status: Status.CHOOSE_CHAN});
       gameService.gameDatabase.push(game)
@@ -81,9 +84,9 @@ describe("GameService", () => {
     })
 
     it('adds new player to the game', async () => {
-      const id = gameService.createGame('player', '1')
+      const id = await gameService.createGame('player', '1')
       gameService.joinGame(id, 'player-2', '2')
-      const game = gameService.findById(id)
+      const game = await gameService.findById(id)
 
       expect(game.players).toHaveLength(2)
       expect(game.players[1].name).toEqual('player-2')
@@ -91,7 +94,7 @@ describe("GameService", () => {
 
     it('emits the proper messages', async () => {
       jest.spyOn(eventEmitter, 'emit')
-      const id = gameService.createGame('player', '1')
+      const id = await gameService.createGame('player', '1')
       gameService.joinGame(id, 'player-2', '2')
       const game = gameService.findById(id)
       expect(eventEmitter.emit).toHaveBeenCalledWith(UPDATE_GAME, game)
@@ -172,7 +175,7 @@ describe("GameService", () => {
   describe("findById", ()=> {
     it('throws if game not found', async () => {
       expect(() => gameService.findById('ABCD')).toThrow(`No game found with id ABCD`)
-      const game = gameService.findById(id)
+      const game = await gameService.findById(id)
       expect(game.id).not.toBeNull()
     })
   })

@@ -20,8 +20,10 @@ export class GameController {
   constructor(private gameService: GameService) {}
 
   @Post('/')
-  create(@Body() body: CreateGameDTO){
-    return this.gameService.createGame(body.name, body.socketId)
+  async create(@Body() body: CreateGameDTO){
+    const id = await this.gameService.createGame(body.name, body.socketId)
+    console.log(`id is ${id}`)
+    return id
   }
 
   @Post('/join/:id')
