@@ -7,7 +7,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisModule } from 'nestjs-redis';
 
 @Module({
-  imports: [GameModule, EventsModule],
+  imports: [GameModule,
+    RepositoryModule,
+    EventsModule,
+    EventEmitterModule.forRoot(),
+   ],
   controllers: [],
   providers: [],
 })
