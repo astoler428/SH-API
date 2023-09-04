@@ -7,8 +7,8 @@ import { Player } from '../models/player.model'
     return {
       name: "player",
       socketId: '1',
+      team: undefined,
       role: undefined,
-      hitler: false,
       alive: true,
       vote: undefined,
       investigated: false,

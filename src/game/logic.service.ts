@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { CHAN2, Conf, PRES3, Policy, Role, Status, Vote, draws2, draws3 } from "../consts";
+import { CHAN2, Conf, PRES3, Policy, Role, Status, Team, Vote, draws2, draws3 } from "../consts";
 import { Game } from "../models/game.model";
 import { Player } from "../models/player.model";
 import { Card } from "src/models/card.model";
@@ -18,9 +18,10 @@ export class LogicService{
     game.players.sort(() => Math.random() - .5)
     let i = 0
     for(; i < game.players.length / 2 - 1; i++){
+      game.players[i].team = Team.FASC
       game.players[i].role = Role.FASC
     }
-    game.players[0].hitler = true
+    game.players[0].role = Role.HITLER
     game.players[1].omniFasc = true
     for(; i < game.players.length; i++){
       game.players[i].role = Role.LIB
@@ -90,7 +91,7 @@ export class LogicService{
     if(jas > game.alivePlayers.length / 2){
       if(this.checkHitler(game)){
         game.log.push(`${game.currentChan.name} is Hitler. Fascists win!`)
-        game.status === Status.END_FASC
+        game.status = Status.END_FASC
       }
       else{
         this.presDraw3(game)
@@ -269,8 +270,9 @@ export class LogicService{
     game.log.push(`${game.currentPres.name} shoots ${shotName}.`)
 
     const shotPlayer = this.findPlayerIngame(game, shotName)
+    shotPlayer.alive = false
     game.alivePlayers = game.alivePlayers.filter(player => player !== shotPlayer)
-    if(shotPlayer.hitler){
+    if(shotPlayer.role === Role.HITLER){
       game.status = Status.END_LIB
       game.log.push(`${shotName} as Hitler. Liberals win!`)
     }
@@ -313,7 +315,7 @@ export class LogicService{
   }
 
   checkHitler(game: Game){
-    return game.FascPoliciesEnacted >= 3 && game.currentChan.hitler
+    return game.FascPoliciesEnacted >= 3 && game.currentChan.role === Role.HITLER
   }
 
   findPlayerIngame(game: Game, name: string){

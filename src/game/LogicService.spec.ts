@@ -34,7 +34,7 @@ describe("Logic Service", () => {
       for(const player of game.players){
         expect(player.role).toBeDefined()
       }
-      const hitler: Player[] = game.players.filter(player => player.hitler)
+      const hitler: Player[] = game.players.filter(player => player.role === Role.HITLER)
       const omniFasc: Player[] = game.players.filter(player => player.omniFasc)
       const libs: Player[] = game.players.filter(player => player.role === Role.LIB)
       expect(hitler).toHaveLength(1)

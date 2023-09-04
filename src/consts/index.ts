@@ -36,9 +36,15 @@ export enum Vote {
   NEIN = 'Nein',
 }
 
-export enum Role {
+export enum Team {
   LIB = 'Liberal',
   FASC = 'Fascist'
+}
+
+export enum Role {
+  LIB = 'Liberal',
+  FASC = 'Fascist',
+  HITLER = 'Hitler'
 }
 
 export enum Conf {

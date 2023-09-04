@@ -1,10 +1,10 @@
-import {Role, Vote} from '../consts'
+import {Role, Vote, Team} from '../consts'
 
  export type Player = {
   name: string,
   socketId: string,
+  team: Team,
   role: Role,
-  hitler: boolean,
   alive: boolean
   vote: Vote | undefined,
   investigated: boolean,
