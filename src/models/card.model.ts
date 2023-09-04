@@ -1,6 +1,6 @@
 import {Policy, Color} from '../consts'
 
 export type Card = {
-  policyType: Policy,
+  policy: Policy,
   color: Color
 }

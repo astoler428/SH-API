@@ -23,6 +23,9 @@ export enum PRES3 {
   BBB = 'BBB'
 }
 
+export const draws3 = [PRES3.RRR, PRES3.RRB, PRES3.RBB, PRES3.BBB]
+export const draws2 = [CHAN2.RR, CHAN2.RB, CHAN2.BB]
+
 export enum Color {
   RED = 'R',
   BLUE = 'B'
@@ -55,15 +58,21 @@ export enum GameType {
 
 export enum Status {
   CREATED = 'CREATED',
-  END_LIB = 'END_LIB',
-  END_FASC = 'END_FASC',
   CHOOSE_CHAN = 'CHOOSE_CHAN',
   VOTE = 'VOTE',
+  VOTE_RESULT = 'VOTE_RESULT',
   PRES_DISCARD = 'PRES_DISCARD',
   CHAN_PLAY = 'CHAN_PLAY',
+  PRES_CLAIM = 'PRES_CLAIM',
+  CHAN_CLAIM = 'CHAN_CLAIM',
+  INV = 'INV',
+  INV_CLAIM = 'INV_CLAIM',
   SE = 'SE',
   INSPECT_TOP3 = 'INSPECT_TOP3',
   GUN = 'GUN',
   VETO_REQUEST = 'VETO_REQUEST',
+  VETO_DECLINED = 'VETO_DECLINED',
+  END_LIB = 'END_LIB',
+  END_FASC = 'END_FASC',
 }
 

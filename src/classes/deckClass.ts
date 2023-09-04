@@ -16,10 +16,10 @@ export default class Deck {
 
   buildDeck(){
     for(let i = 0; i < 6; i++){
-      this.drawPile.push({policyType: Policy.LIB, color: Color.BLUE })
+      this.drawPile.push({policy: Policy.LIB, color: Color.BLUE })
     }
     for(let i = 0; i < 11; i++){
-      this.drawPile.push({policyType: Policy.FASC, color: Color.RED })
+      this.drawPile.push({policy: Policy.FASC, color: Color.RED })
     }
   }
 
@@ -34,33 +34,27 @@ export default class Deck {
     this.shuffleDeck()
   }
 
-  topDeck(){
-    let reshuffled = false
+  public topDeck(){
     if(this.drawPile.length < 3){
       this.reshuffle()
-      reshuffled = true
     }
-    return [this.drawPile.pop(), reshuffled]
+    return this.drawPile.pop()
   }
 
   draw3(){
-    let reshuffled = false
     if(this.drawPile.length < 3){
       this.reshuffle()
-      reshuffled = true
     }
     const card1 = this.drawPile.pop()
     const card2 = this.drawPile.pop()
     const card3 = this.drawPile.pop()
     const top3 = [card1, card2, card3]
-    return [top3, reshuffled]
+    return top3
   }
 
   inspect3(){
-    let reshuffled = false
     if(this.drawPile.length < 3){
       this.reshuffle()
-      reshuffled = true
     }
 
     const n = this.drawPile.length
@@ -68,7 +62,7 @@ export default class Deck {
     const card2 = this.drawPile[n-2]
     const card3 = this.drawPile[n-3]
     // const top3 = [card1, card2, card3].sort(()=> Math.random() - .5)
-    return [card1, card2, card3, reshuffled]
+    return [card1, card2, card3]
   }
 
   discard(card: Card){

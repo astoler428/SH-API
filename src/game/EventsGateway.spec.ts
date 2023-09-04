@@ -3,7 +3,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { EventsGateway } from "./events.gateway";
 import { Socket } from "socket.io";
 import { GameMockFactory } from "../test/GameMockFactory";
-import { PlayerMockFactory } from "../test/PlayerMockFactor";
+import { PlayerMockFactory } from "../test/PlayerMockFactory";
 import { GameType, Status } from "../consts";
 import { Game } from "../models/game.model";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME } from "../consts/socketEventNames";
@@ -11,6 +11,7 @@ import { GameService } from "./game.service";
 import { io } from "socket.io-client";
 import MockedSocket from 'socket.io-mock';
 import { Player } from "src/models/player.model";
+import { LogicService } from "./logic.service";
 
 
 describe("EventsGateway", () => {
@@ -24,7 +25,7 @@ describe("EventsGateway", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [EventsGateway, EventEmitter2, GameService],
+      providers: [EventsGateway, EventEmitter2, GameService, LogicService],
     }).compile();
 
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);

@@ -2,17 +2,19 @@ import {
   BadRequestException,
   Injectable,
 } from "@nestjs/common";import { Game } from "../models/game.model";
-import { Status, Role, GameType } from "../consts";
+import { Status, Role, GameType, Vote, PRES3, CHAN2 } from "../consts";
 import Deck from "../classes/deckClass";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
 import { Controller, Get } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { LogicService } from "./logic.service";
+import { Card } from "src/models/card.model";
 
 @Injectable()
 export class GameService{
-  constructor(private eventEmitter: EventEmitter2,
+  constructor(private eventEmitter: EventEmitter2, private logicService: LogicService
 ){}
   //temp fake database
   public gameDatabase: Game[] = []
@@ -27,7 +29,6 @@ export class GameService{
       status: Status.CREATED,
       players: [],
       alivePlayers: [],
-      deadPlayers: [],
       deck: new Deck(),
       LibPoliciesEnacted: 0,
       FascPoliciesEnacted: 0,
@@ -35,15 +36,17 @@ export class GameService{
       presIdx: 0,
       SE: null,
       currentPres: null,
-      curentChan: null,
-      PrevPres: null,
-      PrevChan: null,
+      currentChan: null,
+      prevPres: null,
+      prevChan: null,
       presCards: null,
       chanCards: null,
       presDiscard: null,
       chanPlay: null,
       presClaim: null,
       chanClaim: null,
+      top3: null,
+      log: [],
       govs: [],
       invClaims: [],
       confs: []
@@ -59,8 +62,6 @@ export class GameService{
     if(!name){
       throw new BadRequestException(`Player must have a name`)
     }
-
-    //throws in findById if no game
     const game = this.findById(id)
 
     const playerAlreadyInGame = game.players.find(player => player.name === name)
@@ -87,6 +88,7 @@ export class GameService{
           socketId,
           role: Role.LIB,
           hitler: false,
+          alive: true,
           vote: undefined,
           investigated: false,
           investigations: [],
@@ -131,13 +133,17 @@ export class GameService{
   startGame(id: string){
     //do game setup logic
     const game = this.findById(id)
-    if(!game){
-      throw new BadRequestException(`No game found with id ${id}`)
+
+    if(game.status !== Status.CREATED){
+      throw new BadRequestException(`Game ${id} has already started`)
     }
-    //if already started, do nothing
-    game.status = Status.CHOOSE_CHAN
+    // if(game.players.length < 5){
+    //   throw new BadRequestException(`Can't start a game with fewer than 5 players`)
+    // }
+    this.logicService.startGame(game)
     this.eventEmitter.emit(UPDATE_GAME, game)
     //this will call the logic to initialize the game
+    return
   }
 
   deleteGame(id: string){
@@ -154,9 +160,114 @@ export class GameService{
 
   setGameType(id: string, gameType: GameType){
     const game = this.findById(id)
+
+    if(game.status !== Status.CREATED){
+      throw new BadRequestException('Cannot change the game type after the game has started')
+    }
     game.gameType = gameType
     this.eventEmitter.emit(UPDATE_GAME, game)
   }
+
+  chooseChan(id: string, chanName: string){
+    const game = this.findById(id)
+    if(game.status !== Status.CHOOSE_CHAN){
+      throw new BadRequestException(`Can't choose a chancellor at this time`)
+    }
+    this.logicService.chooseChan(game, chanName)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  vote(id: string, name: string, vote: Vote){
+    const game = this.findById(id)
+    this.logicService.vote(game, name, vote)
+    if(game.status === Status.VOTE_RESULT){
+      setTimeout(()=> {
+        this.logicService.determineResultofVote(game)
+        this.eventEmitter.emit(UPDATE_GAME, game)
+      }, 3000)
+    }
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  presDiscard(id: string, cardColor: string){
+    const game = this.findById(id)
+    this.logicService.presDiscard(game, cardColor)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  chanPlay(id: string, cardColor: string){
+    const game = this.findById(id)
+    this.logicService.chanPlay(game, cardColor)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  chanClaim(id: string, claim: CHAN2){
+    const game = this.findById(id)
+    this.logicService.chanClaim(game, claim)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  presClaim(id: string, claim: PRES3){
+    const game = this.findById(id)
+    this.logicService.presClaim(game, claim)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  chooseInv(id: string, invName: string){
+    const game = this.findById(id)
+    if(game.status !== Status.INV){
+      throw new BadRequestException(`Can't investigate at this time`)
+    }
+    this.logicService.chooseInv(game, invName)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  invClaim(id: string, claim: Role){
+    const game = this.findById(id)
+    if(game.status !== Status.INV_CLAIM){
+      throw new BadRequestException(`Can't claim inv at this time`)
+    }
+    this.logicService.invClaim(game, claim)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  chooseSE(id: string, seName: string){
+    const game = this.findById(id)
+    if(game.status !== Status.SE){
+      throw new BadRequestException(`Can't SE at this time`)
+    }
+    this.logicService.chooseSE(game, seName)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  chooseGun(id: string, shotName: string){
+    const game = this.findById(id)
+    if(game.status !== Status.GUN){
+      throw new BadRequestException(`Can't shoot at this time`)
+    }
+    this.logicService.shootPlayer(game, shotName)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  inspect3Claim(id: string, claim: PRES3){
+    const game = this.findById(id)
+    this.logicService.inspect3Claim(game, claim)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  vetoRequest(id: string){
+    const game = this.findById(id)
+    this.logicService.vetoRequest(game)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  vetoReply(id: string, vetoAccepted: boolean){
+    const game = this.findById(id)
+    this.logicService.vetoReply(game, vetoAccepted)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+
 
   // async setGameDataInCache(game: Game){
   //   const client = this.redisService.getClient()

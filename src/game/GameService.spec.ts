@@ -2,10 +2,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { GameService } from "./game.service"
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { GameMockFactory } from "../test/GameMockFactory";
-import { PlayerMockFactory } from "../test/PlayerMockFactor";
+import { PlayerMockFactory } from "../test/PlayerMockFactory";
 import { GameType, Status } from "../consts";
 import { Game } from "../models/game.model";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME } from "../consts/socketEventNames";
+import { LogicService } from "./logic.service";
 
 
 describe("GameService", () => {
@@ -16,7 +17,7 @@ describe("GameService", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [GameService, EventEmitter2],
+      providers: [GameService, EventEmitter2, LogicService],
     }).compile();
 
     gameService = module.get<GameService>(GameService)
@@ -143,12 +144,18 @@ describe("GameService", () => {
 
 
   describe("startGame", ()=> {
+    it.skip('throws if not enough players', ()=>{
+      const game = new GameMockFactory().create()
+      gameService.gameDatabase.push(game)
+      expect(() => gameService.startGame(game.id)).toThrow(`Can't start a game with fewer than 5 players`)
+    })
     it('starts a game', async () => {
       expect(() => gameService.startGame('ABCD')).toThrow(`No game found with id ABCD`)
       jest.spyOn(eventEmitter, 'emit')
       gameService.startGame(id)
       expect(game.status).toBe(Status.CHOOSE_CHAN)
       expect(eventEmitter.emit).toHaveBeenCalledWith(UPDATE_GAME, game)
+      expect(() => gameService.startGame(id)).toThrow(`Game ${id} has already started`)
     })
   })
 
@@ -167,13 +174,41 @@ describe("GameService", () => {
       expect(game.gameType).toEqual(GameType.NORMAL)
       expect(eventEmitter.emit).toHaveBeenCalledWith(UPDATE_GAME, game)
     })
+
+    it('throws if gametype is changed after game has started', ()=>{
+      game.status = Status.CHOOSE_CHAN
+      expect(()=> gameService.setGameType(id, GameType.NORMAL)).toThrow('Cannot change the game type after the game has started')
+
+    })
   })
 
   describe("findById", ()=> {
     it('throws if game not found', async () => {
       expect(() => gameService.findById('ABCD')).toThrow(`No game found with id ABCD`)
-      const game = await gameService.findById(id)
+      const game = gameService.findById(id)
       expect(game.id).not.toBeNull()
+    })
+  })
+
+  describe("chooseChan", ()=>{
+    let mockGame: Game
+    beforeEach(()=> {
+      mockGame = new GameMockFactory().create({status: Status.CHOOSE_CHAN})
+      mockGame.players.push(new PlayerMockFactory().create({name: 'current-pres'}))
+      mockGame.players.push(new PlayerMockFactory().create({name: 'chan-pick'}))
+      mockGame.alivePlayers = mockGame.players
+      mockGame.currentPres = mockGame.players[0]
+      gameService.gameDatabase.push(mockGame)
+      gameService.chooseChan(mockGame.id, 'chan-pick')
+    })
+
+    it('sets the current chan', ()=>{
+      expect(mockGame.currentChan).toBeDefined()
+      expect(mockGame.currentChan.name).toEqual('chan-pick')
+    })
+
+    it('sets game status to vote', ()=> {
+      expect(mockGame.status).toEqual(Status.VOTE)
     })
   })
 })

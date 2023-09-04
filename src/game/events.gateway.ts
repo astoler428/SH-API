@@ -39,18 +39,11 @@ export class EventsGateway{
   @OnEvent(JOIN_GAME)
   joinGame(body: JoinGameDTO){
     this.socketGameIdMap.set(body.socketId, body.id)
-    for (const [key, value] of this.socketGameIdMap) {
-      console.log(`Key: ${key} Value: ${value}`);
-    }
   }
 
   @OnEvent(LEAVE_GAME)
   leaveGame(socketId: string){
     this.socketGameIdMap.delete(socketId)
-
-    for (const [key, value] of this.socketGameIdMap) {
-      console.log(`Key: ${key} Value: ${value}`);
-    }
   }
 
   @OnEvent(UPDATE_GAME)

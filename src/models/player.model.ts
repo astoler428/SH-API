@@ -5,6 +5,7 @@ import {Role, Vote} from '../consts'
   socketId: string,
   role: Role,
   hitler: boolean,
+  alive: boolean
   vote: Vote | undefined,
   investigated: boolean,
   investigations: Player[],

@@ -9,6 +9,7 @@ import { Player } from '../models/player.model'
       socketId: '1',
       role: undefined,
       hitler: false,
+      alive: true,
       vote: undefined,
       investigated: false,
       investigations: [],
