@@ -144,7 +144,7 @@ describe("GameService", () => {
 
 
   describe("startGame", ()=> {
-    it.skip('throws if not enough players', ()=>{
+    it('throws if not enough players', ()=>{
       const game = new GameMockFactory().create()
       gameService.gameDatabase.push(game)
       expect(() => gameService.startGame(game.id)).toThrow(`Can't start a game with fewer than 5 players`)

@@ -142,12 +142,11 @@ export class GameService{
     if(game.status !== Status.CREATED){
       throw new BadRequestException(`Game ${id} has already started`)
     }
-    // if(game.players.length < 5){
-    //   throw new BadRequestException(`Can't start a game with fewer than 5 players`)
-    // }
+    if(game.players.length < 5){
+      throw new BadRequestException(`Can't start a game with fewer than 5 players`)
+    }
     this.logicService.startGame(game)
     this.eventEmitter.emit(UPDATE_GAME, game)
-    //this will call the logic to initialize the game
     return
   }
 

@@ -4,7 +4,7 @@ import { Player } from "../models/player.model";
 import { PlayerMockFactory } from "../test/PlayerMockFactory";
 import { Game } from "../models/game.model";
 import { GameMockFactory } from "../test/GameMockFactory";
-import { Role, Status } from "../consts";
+import { Role, Status, Team } from "../consts";
 
 describe("Logic Service", () => {
   let logicService: LogicService
@@ -37,10 +37,120 @@ describe("Logic Service", () => {
       const hitler: Player[] = game.players.filter(player => player.role === Role.HITLER)
       const omniFasc: Player[] = game.players.filter(player => player.omniFasc)
       const libs: Player[] = game.players.filter(player => player.role === Role.LIB)
+      const fascs: Player[] = game.players.filter(player => player.team === Team.FASC)
       expect(hitler).toHaveLength(1)
       expect(omniFasc).toHaveLength(1)
       expect(libs).toHaveLength(3)
+      expect(fascs).toHaveLength(2)
     })
 
+    it('assigns roles properly in 6 player', ()=>{
+      players = []
+      for(let i = 1; i <= 6; i++){
+        players.push(new PlayerMockFactory().create(({name: `player-${i}`})))
+      }
+      game = new GameMockFactory().create({players})
+      logicService.startGame(game)
+      for(const player of game.players){
+        expect(player.role).toBeDefined()
+      }
+      const hitler: Player[] = game.players.filter(player => player.role === Role.HITLER)
+      const omniFasc: Player[] = game.players.filter(player => player.omniFasc)
+      const libs: Player[] = game.players.filter(player => player.role === Role.LIB)
+      const fascs: Player[] = game.players.filter(player => player.team === Team.FASC)
+      expect(hitler).toHaveLength(1)
+      expect(omniFasc).toHaveLength(1)
+      expect(libs).toHaveLength(4)
+      expect(fascs).toHaveLength(2)
+    })
+
+    it('assigns roles properly in 7 player', ()=>{
+      players = []
+      for(let i = 1; i <= 7; i++){
+        players.push(new PlayerMockFactory().create(({name: `player-${i}`})))
+      }
+      game = new GameMockFactory().create({players})
+      logicService.startGame(game)
+      for(const player of game.players){
+        expect(player.role).toBeDefined()
+      }
+      const hitler: Player[] = game.players.filter(player => player.role === Role.HITLER)
+      const omniFasc: Player[] = game.players.filter(player => player.omniFasc)
+      const libs: Player[] = game.players.filter(player => player.role === Role.LIB)
+      const fascs: Player[] = game.players.filter(player => player.team === Team.FASC)
+      expect(hitler).toHaveLength(1)
+      expect(omniFasc).toHaveLength(1)
+      expect(libs).toHaveLength(4)
+      expect(fascs).toHaveLength(3)
+
+    })
+
+    it('assigns roles properly in 8 player', ()=>{
+      players = []
+      for(let i = 1; i <= 8; i++){
+        players.push(new PlayerMockFactory().create(({name: `player-${i}`})))
+      }
+      game = new GameMockFactory().create({players})
+      logicService.startGame(game)
+      for(const player of game.players){
+        expect(player.role).toBeDefined()
+      }
+      const hitler: Player[] = game.players.filter(player => player.role === Role.HITLER)
+      const omniFasc: Player[] = game.players.filter(player => player.omniFasc)
+      const libs: Player[] = game.players.filter(player => player.role === Role.LIB)
+      const fascs: Player[] = game.players.filter(player => player.team === Team.FASC)
+      expect(hitler).toHaveLength(1)
+      expect(omniFasc).toHaveLength(1)
+      expect(libs).toHaveLength(5)
+      expect(fascs).toHaveLength(3)
+    })
+
+    it('assigns roles properly in 9 player', ()=>{
+      players = []
+      for(let i = 1; i <= 9; i++){
+        players.push(new PlayerMockFactory().create(({name: `player-${i}`})))
+      }
+      game = new GameMockFactory().create({players})
+      logicService.startGame(game)
+      for(const player of game.players){
+        expect(player.role).toBeDefined()
+      }
+      const hitler: Player[] = game.players.filter(player => player.role === Role.HITLER)
+      const omniFasc: Player[] = game.players.filter(player => player.omniFasc)
+      const libs: Player[] = game.players.filter(player => player.role === Role.LIB)
+      const fascs: Player[] = game.players.filter(player => player.team === Team.FASC)
+      expect(hitler).toHaveLength(1)
+      expect(omniFasc).toHaveLength(1)
+      expect(libs).toHaveLength(5)
+      expect(fascs).toHaveLength(4)
+    })
+
+    it('assigns roles properly in 10 player', ()=>{
+      players = []
+      for(let i = 1; i <= 10; i++){
+        players.push(new PlayerMockFactory().create(({name: `player-${i}`})))
+      }
+      game = new GameMockFactory().create({players})
+      logicService.startGame(game)
+      for(const player of game.players){
+        expect(player.role).toBeDefined()
+      }
+      const hitler: Player[] = game.players.filter(player => player.role === Role.HITLER)
+      const omniFasc: Player[] = game.players.filter(player => player.omniFasc)
+      const libs: Player[] = game.players.filter(player => player.role === Role.LIB)
+      const fascs: Player[] = game.players.filter(player => player.team === Team.FASC)
+      expect(hitler).toHaveLength(1)
+      expect(omniFasc).toHaveLength(1)
+      expect(libs).toHaveLength(6)
+      expect(fascs).toHaveLength(4)
+    })
+
+    it('sets alive players', ()=>{
+      expect(game.alivePlayers).toHaveLength(5)
+    })
+
+    it('sets current president', ()=>{
+      expect(game.currentPres).toBeDefined()
+    })
   })
 })

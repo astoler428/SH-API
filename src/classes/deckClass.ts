@@ -25,6 +25,7 @@ export default class Deck {
 
   shuffleDeck(){
     this.drawPile.sort(()=> Math.random() - .5)
+    this.drawPile.sort(()=> Math.random() - .5)
   }
 
   reshuffle(){
@@ -61,8 +62,8 @@ export default class Deck {
     const card1 = this.drawPile[n-1]
     const card2 = this.drawPile[n-2]
     const card3 = this.drawPile[n-3]
-    // const top3 = [card1, card2, card3].sort(()=> Math.random() - .5)
-    return [card1, card2, card3]
+    const top3 = [card1, card2, card3].sort(()=> Math.random() - .5)
+    return top3
   }
 
   discard(card: Card){

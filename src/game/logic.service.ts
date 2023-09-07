@@ -79,7 +79,10 @@ export class LogicService{
   countVotes(game: Game){
     let votes = 0
     game.players.forEach(player => player.vote ? votes++ : '')
-    if(game.alivePlayers.length === votes){
+    // if(game.alivePlayers.length === votes){
+    //   game.status = Status.VOTE_RESULT
+    // }
+    if(game.alivePlayers.length > 0){
       game.status = Status.VOTE_RESULT
     }
   }
@@ -88,7 +91,8 @@ export class LogicService{
     let jas = 0
     game.players.forEach(player => player.vote === Vote.JA ? jas++ : '')
 
-    if(jas > game.alivePlayers.length / 2){
+    // if(jas > game.alivePlayers.length / 2){
+    if(jas > 0){
       if(this.checkHitler(game)){
         game.log.push(`${game.currentChan.name} is Hitler. Fascists win!`)
         game.status = Status.END_FASC
@@ -161,7 +165,12 @@ export class LogicService{
         game.log.push(`Fascists win!`)
       }
     }
-    if(!topDeck){
+    //can maybe combine !gameOver  with !topdeck conditional. It's okay to reset the tracker even on game over as long as status doesn't get set to chanClaim
+    // if(this.gameOver(game)){
+    //   return
+    // }
+    if(!this.gameOver(game) && !topDeck){
+      this.setPrevLocks(game) //was settting in after pres claim
       game.status = Status.CHAN_CLAIM
     }
     this.resetTracker(game)
@@ -172,10 +181,10 @@ export class LogicService{
     game.log.push(`${game.currentPres.name} claims ${game.presClaim}`)
     this.addGov(game)
     this.determinePolicyConf(game)
-    if(!this.gameOver(game)){
-      this.setPrevLocks(game) //only time locks won't be set here is if a veto occurs
+    // if(!this.gameOver(game)){
+    //   this.setPrevLocks(game) //only time locks won't be set here is if a veto occurs
      this.determineNextStatus(game)
-    }
+    // }
   }
 
   addGov(game: Game){
@@ -272,6 +281,9 @@ export class LogicService{
     const shotPlayer = this.findPlayerIngame(game, shotName)
     shotPlayer.alive = false
     game.alivePlayers = game.alivePlayers.filter(player => player !== shotPlayer)
+    if(game.alivePlayers.length <=5 ){
+      game.prevPres = undefined
+    }
     if(shotPlayer.role === Role.HITLER){
       game.status = Status.END_LIB
       game.log.push(`${shotName} as Hitler. Liberals win!`)
@@ -282,8 +294,8 @@ export class LogicService{
   }
 
   vetoRequest(game: Game){
-    game.status = Status.VETO_REQUEST
     game.log.push(`${game.currentChan.name} requests a veto.`)
+    game.status = Status.VETO_REQUEST
   }
 
   vetoReply(game: Game, vetoAccepted: boolean){
@@ -300,7 +312,7 @@ export class LogicService{
   }
 
   inspect3Claim(game: Game, claim: PRES3){
-    //do something with the claim
+    game.log.push(`${game.currentPres.name} claims the top 3 are ${claim}. Policies are shuffled.`)
     this.nextPres(game)
   }
 
