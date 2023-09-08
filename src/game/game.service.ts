@@ -1,21 +1,20 @@
 import {
   BadRequestException,
-  Injectable,
-} from "@nestjs/common";import { Game } from "../models/game.model";
+  Inject,
+  Injectable,} from "@nestjs/common";
+import { Game } from "../models/game.model";
 import { Status, Role, GameType, Vote, PRES3, CHAN2, Team } from "../consts";
 import Deck from "../classes/deckClass";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
-import { Controller, Get } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { LogicService } from "./logic.service";
-import { Card } from "src/models/card.model";
-import { PlayerMockFactory } from "src/test/PlayerMockFactory";
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import {Cache} from 'cache-manager'
+
 
 @Injectable()
 export class GameService{
-  constructor(private eventEmitter: EventEmitter2, private logicService: LogicService
+  constructor(private eventEmitter: EventEmitter2, private logicService: LogicService, @Inject(CACHE_MANAGER) private cacheManager: Cache
 ){}
   //temp fake database
   public gameDatabase: Game[] = []
@@ -53,11 +52,10 @@ export class GameService{
       confs: []
     }
 
-    // for(let i = 0; i < 6; i++){
-    //   game.players.push(new PlayerMockFactory().create({name: `player-${i}`}))
-    // }
-
     this.gameDatabase.push(game)
+    // this.cacheManager.set(id, JSON.stringify(game))
+    await this.cacheManager.set(id, JSON.stringify(game))
+    console.log(await this.cacheManager.get(id))
     this.joinGame(id, name, socketId)
     return id
   }
