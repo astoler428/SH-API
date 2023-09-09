@@ -6,7 +6,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
 
   const gameRespository = app.get(GameRepository)
-  gameRespository.connect()
+  await gameRespository.connect()
   await app.listen(4000);
 }
 bootstrap();
