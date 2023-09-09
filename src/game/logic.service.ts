@@ -12,6 +12,10 @@ export class LogicService{
     this.initPlayers(game)
     game.alivePlayers = [...game.players]
     game.currentPres = game.players[game.presIdx]
+    if(game.settings.redDown){
+      game.deck.removeRed()
+      game.FascPoliciesEnacted = 1
+    }
   }
 
   initPlayers(game: Game){
@@ -24,7 +28,11 @@ export class LogicService{
     game.players[0].role = Role.HITLER
     game.players[1].omniFasc = true
     for(; i < game.players.length; i++){
+      game.players[i].team = Team.LIB
       game.players[i].role = Role.LIB
+    }
+    if(game.settings.libSpy){
+      game.players[game.players.length - 1].role = Role.LIB_SPY
     }
     game.players.sort(() => Math.random() - .5)
   }
@@ -35,6 +43,7 @@ export class LogicService{
     this.resetVotes(game)
     game.log.push(`${game.currentPres.name} chooses ${chanName} as chancellor.`)
     game.status = Status.VOTE
+    console.log(this.libSpyCondition(game))
   }
 
   vote(game: Game, name: string, vote: Vote){
@@ -154,14 +163,18 @@ export class LogicService{
     if(card.policy === Policy.LIB){
       game.LibPoliciesEnacted++
       if(game.LibPoliciesEnacted === 5){
-        game.status === Status.END_LIB
+        if(game.settings.libSpy && !this.libSpyCondition(game)){
+          game.status = Status.END_FASC
+          game.log.push(`The liberal spy did not play a red. Fascists win!`)
+        }
+        game.status = Status.END_LIB
         game.log.push(`Liberals win!`)
       }
     }
     else{
       game.FascPoliciesEnacted++
       if(game.FascPoliciesEnacted === 6){
-        game.status === Status.END_FASC
+        game.status = Status.END_FASC
         game.log.push(`Fascists win!`)
       }
     }
@@ -192,6 +205,7 @@ export class LogicService{
       deckNum: game.deck.deckNum,
       pres: game.currentPres,
       chan: game.currentChan,
+      policyPlayed: game.chanPlay,
       presCards: game.presCards,
       chanCards: game.chanCards,
       presClaim: game.presClaim,
@@ -328,6 +342,12 @@ export class LogicService{
 
   checkHitler(game: Game){
     return game.FascPoliciesEnacted >= 3 && game.currentChan.role === Role.HITLER
+  }
+
+  libSpyCondition(game: Game){
+    //return boolean
+    const libSpy = game.players.find(player => player.role === Role.LIB_SPY)
+    return game.govs.find(gov => gov.policyPlayed.policy === Policy.FASC && (libSpy === gov.pres || libSpy === gov.chan)) !== undefined
   }
 
   findPlayerIngame(game: Game, name: string){

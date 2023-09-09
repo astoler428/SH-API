@@ -1,6 +1,6 @@
 import {Player} from './player.model'
 import Deck from '../classes/deckClass'
-import {Status, PRES3, CHAN2, Role, Conf, GameType} from '../consts'
+import {Status, PRES3, CHAN2, Role, Conf, GameType, GameSettings} from '../consts'
 import {Card} from './card.model'
 import {Gov} from './gov.model'
 import {Socket} from 'socket.io'
@@ -8,7 +8,7 @@ import {Socket} from 'socket.io'
 export type Game = {
   id: string,
   createdBy: string,
-  gameType: GameType,
+  settings: GameSettings,
   status: Status,
   players: Player[],
   alivePlayers: Player[],

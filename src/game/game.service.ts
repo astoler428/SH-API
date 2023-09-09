@@ -3,7 +3,7 @@ import {
   Inject,
   Injectable,} from "@nestjs/common";
 import { Game } from "../models/game.model";
-import { Status, Role, GameType, Vote, PRES3, CHAN2, Team } from "../consts";
+import { Status, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings } from "../consts";
 import Deck from "../classes/deckClass";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
@@ -25,7 +25,12 @@ export class GameService{
     const game: Game = {
       id,
       createdBy: name,
-      gameType: GameType.BLIND,
+      settings: {
+        type: GameType.BLIND,
+        redDown: false,
+        libSpy: false,
+        hitlerKnowsFasc: false
+      },
       status: Status.CREATED,
       players: [],
       alivePlayers: [],
@@ -126,6 +131,12 @@ export class GameService{
       //game in progress - disconnect
       console.log('player disconnected - removing socketId')
       playerLeaving.socketId = null
+
+      //if everybody disconnects - thenn delete game
+      if(game.players.every(player => player.socketId === null)){
+        console.log('deleting game')
+        this.deleteGame(id)
+      }
     }
     // this.eventsGateway.updatePlayers(game)
     this.eventEmitter.emit(LEAVE_GAME, socketId)
@@ -160,13 +171,22 @@ export class GameService{
     return game
   }
 
-  setGameType(id: string, gameType: GameType){
+  setGameSettings(id: string, gameSettings: GameSettings){
     const game = this.findById(id)
 
     if(game.status !== Status.CREATED){
-      throw new BadRequestException('Cannot change the game type after the game has started')
+      throw new BadRequestException('Cannot change the game settings after the game has started')
     }
-    game.gameType = gameType
+    if(gameSettings.type === GameType.BLIND){
+      game.settings = {
+        ...gameSettings,
+        libSpy: false,
+        hitlerKnowsFasc: false
+      }
+    }
+    else{
+      game.settings = gameSettings
+    }
     this.eventEmitter.emit(UPDATE_GAME, game)
   }
 

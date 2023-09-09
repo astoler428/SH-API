@@ -7,7 +7,12 @@ export class GameMockFactory{
     return {
       id: "test",
       createdBy: "player",
-      gameType: GameType.BLIND,
+      settings: {
+        type: GameType.BLIND,
+        redDown: false,
+        libSpy: false,
+        hitlerKnowsFasc: false
+      },
       status: Status.CREATED,
       players: [],
       alivePlayers: [],

@@ -44,7 +44,8 @@ export enum Team {
 export enum Role {
   LIB = 'Liberal',
   FASC = 'Fascist',
-  HITLER = 'Hitler'
+  HITLER = 'Hitler',
+  LIB_SPY = 'Liberal Spy'
 }
 
 export enum Conf {
@@ -60,6 +61,13 @@ export enum Policy {
 export enum GameType {
   BLIND = 'Blind',
   NORMAL = 'normal'
+}
+
+export type GameSettings = {
+  type: GameType,
+  redDown: boolean,
+  libSpy: boolean,
+  hitlerKnowsFasc: boolean
 }
 
 export enum Status {
