@@ -3,7 +3,7 @@ import { GameService } from "./game.service"
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { GameMockFactory } from "../test/GameMockFactory";
 import { PlayerMockFactory } from "../test/PlayerMockFactory";
-import { GameType, Status } from "../consts";
+import { GameSettings, GameType, Status } from "../consts";
 import { Game } from "../models/game.model";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME } from "../consts/socketEventNames";
 import { LogicService } from "./logic.service";
@@ -116,9 +116,18 @@ describe("GameService", () => {
       expect(player1).toBeUndefined()
     })
 
-    it('deletes a game when no players are in it', async () => {
+    it('deletes a created game when no players are in it', async () => {
       jest.spyOn(gameService, "deleteGame")
       expect(gameService.deleteGame).not.toBeCalled()
+      for(const player of game.players){
+        gameService.leaveGame(id, player.socketId)
+      }
+      expect(gameService.deleteGame).toBeCalled()
+    })
+
+    it('deletes a started game when no players are in it', async () => {
+      jest.spyOn(gameService, "deleteGame")
+      game.status = Status.CHOOSE_CHAN
       for(const player of game.players){
         gameService.leaveGame(id, player.socketId)
       }
@@ -167,17 +176,24 @@ describe("GameService", () => {
     })
   })
 
-  describe("setGameType", ()=> {
-    it('changes the game type', async () => {
+  describe("setGameSettings", ()=> {
+    let gameSettings: GameSettings
+    beforeEach(() => {
+      gameSettings = {type: GameType.NORMAL, redDown: true, libSpy: true, hitlerKnowsFasc: true}
+    })
+    it('changes the game settings', async () => {
       jest.spyOn(eventEmitter, 'emit')
-      gameService.setGameType(id, GameType.NORMAL)
-      expect(game.gameType).toEqual(GameType.NORMAL)
+      gameService.setGameSettings(id, gameSettings)
+      expect(game.settings.type).toEqual(GameType.NORMAL)
+      expect(game.settings.redDown).toEqual(true)
+      expect(game.settings.libSpy).toEqual(true)
+      expect(game.settings.hitlerKnowsFasc).toEqual(true)
       expect(eventEmitter.emit).toHaveBeenCalledWith(UPDATE_GAME, game)
     })
 
-    it('throws if gametype is changed after game has started', ()=>{
+    it('throws if game settings are changed after game has started', ()=>{
       game.status = Status.CHOOSE_CHAN
-      expect(()=> gameService.setGameType(id, GameType.NORMAL)).toThrow('Cannot change the game type after the game has started')
+      expect(()=> gameService.setGameSettings(id, gameSettings)).toThrow('Cannot change the game settings after the game has started')
 
     })
   })

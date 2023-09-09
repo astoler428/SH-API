@@ -66,6 +66,13 @@ export default class Deck {
     return top3
   }
 
+  removeRed(){
+    const redCard = this.drawPile.find(card => card.policy === Policy.FASC)
+    this.drawPile = this.drawPile.filter(card => card !== redCard)
+    this.discardPile.push(redCard)
+    this.shuffleDeck()
+  }
+
   discard(card: Card){
     this.discardPile.push(card)
   }

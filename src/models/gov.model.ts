@@ -6,6 +6,7 @@ export type Gov = {
   deckNum: number,
   pres: Player,
   chan: Player,
+  policyPlayed: Card,
   presCards: Card[] | undefined,
   chanCards: Card[] | undefined,
   presClaim: PRES3 | undefined,
