@@ -6,21 +6,26 @@ import { Game } from "../models/game.model";
 import { Status, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings } from "../consts";
 import Deck from "../classes/deckClass";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
+import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
 import { LogicService } from "./logic.service";
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import {Cache} from 'cache-manager'
+import { GameRepository } from "./game.repository";
 
 
 @Injectable()
 export class GameService{
-  constructor(private eventEmitter: EventEmitter2, private logicService: LogicService, @Inject(CACHE_MANAGER) private cacheManager: Cache
+  constructor(private eventEmitter: EventEmitter2, private logicService: LogicService, private gameRespository: GameRepository
 ){}
   //temp fake database
-  public gameDatabase: Game[] = []
+  // public gameDatabase: Game[] = []
 
   async createGame(name: string, socketId: string) {
-    const id: string = Math.random().toString(36).slice(2).substring(0, 4).toUpperCase();
+    let id: string
+    let existingGame: Game
+    do{
+      id = Math.random().toString(36).slice(2).substring(0, 4).toUpperCase();
+      existingGame = await this.gameRespository.get(id)
+    }
+    while(existingGame)
 
     const game: Game = {
       id,
@@ -57,20 +62,18 @@ export class GameService{
       confs: []
     }
 
-    this.gameDatabase.push(game)
-    // this.cacheManager.set(id, JSON.stringify(game))
-    await this.cacheManager.set(id, JSON.stringify(game))
-    console.log(await this.cacheManager.get(id))
+    // this.gameDatabase.push(game)
+    await this.gameRespository.set(id, game)
     this.joinGame(id, name, socketId)
     return id
   }
 
-  joinGame(id: string, name: string, socketId: string){
+  async joinGame(id: string, name: string, socketId: string){
     //in case they bypass the home page and go straight to url - frontend should catch this first anyway
     if(!name){
       throw new BadRequestException(`Player must have a name`)
     }
-    const game = this.findById(id)
+    const game = await this.findById(id)
 
     const playerAlreadyInGame = game.players.find(player => player.name === name)
     if(!playerAlreadyInGame && game.players.length === 10){
@@ -106,24 +109,26 @@ export class GameService{
         })
       }
     }
+    this.handleUpdate(id, game)
     this.eventEmitter.emit(JOIN_GAME, {socketId, id} )
-    this.eventEmitter.emit(UPDATE_GAME, game)
     return game
   }
 
-  leaveGame(id: string, socketId: string){
-    const game = this.findById(id)
+  async leaveGame(id: string, socketId: string){
+    const game = await this.findById(id)
     const playerLeaving = game.players.find(player => player.socketId === socketId)
 
     if(!playerLeaving){
       throw new BadRequestException(`This player not found in game ${id}`)
     }
 
+    let gameDeleted = false
     //completely leave the game if in lobby
     if(game.status === Status.CREATED){
       game.players = game.players.filter(player => player !== playerLeaving)
       if(game.players.length === 0){
         console.log('deleting game')
+        gameDeleted = true
         this.deleteGame(id)
       }
     }
@@ -135,18 +140,21 @@ export class GameService{
       //if everybody disconnects - thenn delete game
       if(game.players.every(player => player.socketId === null)){
         console.log('deleting game')
+        gameDeleted = true
         this.deleteGame(id)
       }
     }
-    // this.eventsGateway.updatePlayers(game)
+    if(!this.deleteGame){
+      this.gameRespository.update(id, game)
+    }
     this.eventEmitter.emit(LEAVE_GAME, socketId)
     this.eventEmitter.emit(UPDATE_GAME, game)
     return
   }
 
-  startGame(id: string){
+  async startGame(id: string){
     //do game setup logic
-    const game = this.findById(id)
+    const game = await this.findById(id)
 
     if(game.status !== Status.CREATED){
       throw new BadRequestException(`Game ${id} has already started`)
@@ -155,24 +163,27 @@ export class GameService{
       throw new BadRequestException(`Can't start a game with fewer than 5 players`)
     }
     this.logicService.startGame(game)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
     return
   }
 
-  deleteGame(id: string){
-    this.gameDatabase = this.gameDatabase.filter(game => game.id !== id)
+  async deleteGame(id: string){
+    await this.gameRespository.delete(id)
+    // this.gameDatabase = this.gameDatabase.filter(game => game.id !== id)
   }
 
-  findById(id: string){
-    const game = this.gameDatabase.find(game => game.id === id)
+  async findById(id: string): Promise<Game>{
+    const game = await this.gameRespository.get(id)
+
+    // const game = this.gameDatabase.find(game => game.id === id)
     if(!game){
       throw new BadRequestException(`No game found with id ${id}`)
     }
     return game
   }
 
-  setGameSettings(id: string, gameSettings: GameSettings){
-    const game = this.findById(id)
+  async setGameSettings(id: string, gameSettings: GameSettings){
+    const game = await this.findById(id)
 
     if(game.status !== Status.CREATED){
       throw new BadRequestException('Cannot change the game settings after the game has started')
@@ -187,20 +198,20 @@ export class GameService{
     else{
       game.settings = gameSettings
     }
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  chooseChan(id: string, chanName: string){
-    const game = this.findById(id)
+  async chooseChan(id: string, chanName: string){
+    const game = await this.findById(id)
     if(game.status !== Status.CHOOSE_CHAN){
       throw new BadRequestException(`Can't choose a chancellor at this time`)
     }
     this.logicService.chooseChan(game, chanName)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  vote(id: string, name: string, vote: Vote){
-    const game = this.findById(id)
+  async vote(id: string, name: string, vote: Vote){
+    const game = await this.findById(id)
     this.logicService.vote(game, name, vote)
     if(game.status === Status.VOTE_RESULT){
       setTimeout(()=> {
@@ -208,84 +219,96 @@ export class GameService{
         this.eventEmitter.emit(UPDATE_GAME, game)
       }, 2000)
     }
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  presDiscard(id: string, cardColor: string){
-    const game = this.findById(id)
+  async presDiscard(id: string, cardColor: string){
+    const game = await this.findById(id)
     this.logicService.presDiscard(game, cardColor)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  chanPlay(id: string, cardColor: string){
-    const game = this.findById(id)
+  async chanPlay(id: string, cardColor: string){
+        const game = await this.findById(id)
+
     this.logicService.chanPlay(game, cardColor)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  chanClaim(id: string, claim: CHAN2){
-    const game = this.findById(id)
+  async chanClaim(id: string, claim: CHAN2){
+        const game = await this.findById(id)
+
     this.logicService.chanClaim(game, claim)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  presClaim(id: string, claim: PRES3){
-    const game = this.findById(id)
+  async presClaim(id: string, claim: PRES3){
+        const game = await this.findById(id)
+
     this.logicService.presClaim(game, claim)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  chooseInv(id: string, invName: string){
-    const game = this.findById(id)
+  async chooseInv(id: string, invName: string){
+        const game = await this.findById(id)
+
     if(game.status !== Status.INV){
       throw new BadRequestException(`Can't investigate at this time`)
     }
     this.logicService.chooseInv(game, invName)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  invClaim(id: string, claim: Role){
-    const game = this.findById(id)
+  async invClaim(id: string, claim: Role){
+        const game = await this.findById(id)
+
     if(game.status !== Status.INV_CLAIM){
       throw new BadRequestException(`Can't claim inv at this time`)
     }
     this.logicService.invClaim(game, claim)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  chooseSE(id: string, seName: string){
-    const game = this.findById(id)
+  async chooseSE(id: string, seName: string){
+        const game = await this.findById(id)
+
     if(game.status !== Status.SE){
       throw new BadRequestException(`Can't SE at this time`)
     }
     this.logicService.chooseSE(game, seName)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  chooseGun(id: string, shotName: string){
-    const game = this.findById(id)
+  async chooseGun(id: string, shotName: string){
+        const game = await this.findById(id)
+
     if(game.status !== Status.GUN){
       throw new BadRequestException(`Can't shoot at this time`)
     }
     this.logicService.shootPlayer(game, shotName)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  inspect3Claim(id: string, claim: PRES3){
-    const game = this.findById(id)
+  async inspect3Claim(id: string, claim: PRES3){
+    const game = await this.findById(id)
     this.logicService.inspect3Claim(game, claim)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  vetoRequest(id: string){
-    const game = this.findById(id)
+  async vetoRequest(id: string){
+    const game = await this.findById(id)
     this.logicService.vetoRequest(game)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+    this.handleUpdate(id, game)
   }
 
-  vetoReply(id: string, vetoAccepted: boolean){
-    const game = this.findById(id)
+  async vetoReply(id: string, vetoAccepted: boolean){
+    const game = await this.findById(id)
     this.logicService.vetoReply(game, vetoAccepted)
+    this.handleUpdate(id, game)
+  }
+
+  async handleUpdate(id: string, game: Game){
+    this.gameRespository.update(id, game)
     this.eventEmitter.emit(UPDATE_GAME, game)
   }
 
