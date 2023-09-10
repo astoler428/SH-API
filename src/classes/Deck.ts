@@ -32,6 +32,7 @@ export default class Deck {
     console.log('reshuffling the deck')
     this.deckNum++
     this.drawPile = [...this.drawPile, ...this.discardPile]
+    this.discardPile = []
     this.shuffleDeck()
   }
 
@@ -57,7 +58,6 @@ export default class Deck {
     if(this.drawPile.length < 3){
       this.reshuffle()
     }
-
     const n = this.drawPile.length
     const card1 = this.drawPile[n-1]
     const card2 = this.drawPile[n-2]

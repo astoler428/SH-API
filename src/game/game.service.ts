@@ -4,7 +4,7 @@ import {
   Injectable,} from "@nestjs/common";
 import { Game } from "../models/game.model";
 import { Status, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings } from "../consts";
-import Deck from "../classes/deckClass";
+import Deck from "../classes/Deck";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
 import { LogicService } from "./logic.service";

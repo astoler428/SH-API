@@ -1,6 +1,6 @@
 import { Game } from "../models/game.model";
 import { Status, GameType } from "../consts";
-import Deck from "../classes/deckClass";
+import Deck from "../classes/Deck";
 
 export class GameMockFactory{
   create(params?: object): Game {

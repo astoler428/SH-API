@@ -1,5 +1,5 @@
 import {Player} from './player.model'
-import Deck from '../classes/deckClass'
+import Deck from '../classes/Deck'
 import {Status, PRES3, CHAN2, Role, Conf, GameType, GameSettings} from '../consts'
 import {Card} from './card.model'
 import {Gov} from './gov.model'

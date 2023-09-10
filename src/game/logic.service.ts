@@ -43,7 +43,6 @@ export class LogicService{
     this.resetVotes(game)
     game.log.push(`${game.currentPres.name} chooses ${chanName} as chancellor.`)
     game.status = Status.VOTE
-    console.log(this.libSpyCondition(game))
   }
 
   vote(game: Game, name: string, vote: Vote){
@@ -55,7 +54,17 @@ export class LogicService{
       player.vote = undefined
     }
     this.countVotes(game)
+  }
 
+  countVotes(game: Game){
+    let votes = 0
+    game.players.forEach(player => player.vote ? votes++ : '')
+    if(game.alivePlayers.length === votes){
+      game.status = Status.VOTE_RESULT
+    }
+    // if(game.alivePlayers.length > 0){
+    //   game.status = Status.VOTE_RESULT
+    // }
   }
 
   presDiscard(game: Game, cardColor: string){
@@ -65,7 +74,6 @@ export class LogicService{
     game.status = Status.CHAN_PLAY
   }
 
-  //need to handle VETO IN HERE
   chanPlay(game: Game, cardColor: string){
     game.chanPlay = game.chanCards.find(card => card.color === cardColor)
     const chanDiscard = game.chanCards.find(card => card !== game.chanPlay)
@@ -82,18 +90,6 @@ export class LogicService{
     })
     const draw = draws3[blues]
     return draw
-  }
-
-
-  countVotes(game: Game){
-    let votes = 0
-    game.players.forEach(player => player.vote ? votes++ : '')
-    // if(game.alivePlayers.length === votes){
-    //   game.status = Status.VOTE_RESULT
-    // }
-    if(game.alivePlayers.length > 0){
-      game.status = Status.VOTE_RESULT
-    }
   }
 
   determineResultofVote(game: Game){
