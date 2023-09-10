@@ -125,6 +125,7 @@ export class GameService{
     let gameDeleted = false
     //completely leave the game if in lobby
     if(game.status === Status.CREATED){
+      console.log('deleting player')
       game.players = game.players.filter(player => player !== playerLeaving)
       if(game.players.length === 0){
         console.log('deleting game')
@@ -144,7 +145,7 @@ export class GameService{
         this.deleteGame(id)
       }
     }
-    if(!this.deleteGame){
+    if(!gameDeleted){
       this.gameRespository.update(id, game)
     }
     this.eventEmitter.emit(LEAVE_GAME, socketId)
@@ -308,7 +309,7 @@ export class GameService{
   }
 
   async handleUpdate(id: string, game: Game){
-    this.gameRespository.update(id, game)
+    await this.gameRespository.update(id, game)
     this.eventEmitter.emit(UPDATE_GAME, game)
   }
 

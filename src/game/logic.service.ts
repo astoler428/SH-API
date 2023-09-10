@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { CHAN2, Conf, PRES3, Policy, Role, Status, Team, Vote, draws2, draws3 } from "../consts";
+import { CHAN2, Color, Conf, PRES3, Policy, Role, Status, Team, Vote, draws2, draws3 } from "../consts";
 import { Game } from "../models/game.model";
-import { Player } from "../models/player.model";
 import { Card } from "src/models/card.model";
 
 @Injectable()
@@ -81,23 +80,13 @@ export class LogicService{
     this.enactPolicy(game, game.chanPlay, false)
   }
 
-  determinePresCards(cards3: Card[]){
-    let blues = 0
-    cards3.forEach(card => {
-      if(card.policy === Policy.LIB){
-        blues++
-      }
-    })
-    const draw = draws3[blues]
-    return draw
-  }
-
+  //here in testing...
   determineResultofVote(game: Game){
     let jas = 0
     game.players.forEach(player => player.vote === Vote.JA ? jas++ : '')
 
-    // if(jas > game.alivePlayers.length / 2){
-    if(jas > 0){
+    if(jas > game.alivePlayers.length / 2){
+    // if(jas > 0){
       if(this.checkHitler(game)){
         game.log.push(`${game.currentChan.name} is Hitler. Fascists win!`)
         game.status = Status.END_FASC
@@ -352,5 +341,17 @@ export class LogicService{
       throw new BadRequestException(`${name} is not a player in this game`)
     }
     return player
+  }
+
+  //likely used later when I want to know what the pres cards were for determining claim, etc
+  determinePresCards(cards3: Card[]){
+    let blues = 0
+    cards3.forEach(card => {
+      if(card.policy === Policy.LIB){
+        blues++
+      }
+    })
+    const draw = draws3[blues]
+    return draw
   }
 }
