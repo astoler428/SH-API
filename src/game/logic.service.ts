@@ -2,17 +2,20 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { CHAN2, Color, Conf, PRES3, Policy, Role, Status, Team, Vote, draws2, draws3 } from "../consts";
 import { Game } from "../models/game.model";
 import { Card } from "src/models/card.model";
+import { Deck } from "src/models/deck.model";
 
 @Injectable()
 export class LogicService{
 
+  //initialize the deck here
   startGame(game: Game){
     game.status = Status.CHOOSE_CHAN
     this.initPlayers(game)
     game.alivePlayers = [...game.players]
     game.currentPres = game.players[game.presIdx]
+    this.initDeck(game)
     if(game.settings.redDown){
-      game.deck.removeRed()
+      this.removeRed(game.deck)
       game.FascPoliciesEnacted = 1
     }
   }
@@ -34,6 +37,11 @@ export class LogicService{
       game.players[game.players.length - 1].role = Role.LIB_SPY
     }
     game.players.sort(() => Math.random() - .5)
+  }
+
+  initDeck(game: Game){
+    this.buildDeck(game.deck)
+    this.shuffleDeck(game.deck)
   }
 
   chooseChan(game: Game, chanName: string){
@@ -69,14 +77,14 @@ export class LogicService{
   presDiscard(game: Game, cardColor: string){
     game.presDiscard = game.presCards.find(card => card.color === cardColor)
     game.chanCards = game.presCards.filter(card => card !== game.presDiscard)
-    game.deck.discard(game.presDiscard)
+    this.discard(game.presDiscard, game.deck)
     game.status = Status.CHAN_PLAY
   }
 
   chanPlay(game: Game, cardColor: string){
     game.chanPlay = game.chanCards.find(card => card.color === cardColor)
     const chanDiscard = game.chanCards.find(card => card !== game.chanPlay)
-    game.deck.discard(chanDiscard)
+    this.discard(chanDiscard, game.deck)
     this.enactPolicy(game, game.chanPlay, false)
   }
 
@@ -104,7 +112,7 @@ export class LogicService{
   }
 
   presDraw3(game: Game){
-    game.presCards = game.deck.draw3()
+    game.presCards = this.draw3(game.deck)
   }
 
   advanceTracker(game: Game){
@@ -136,7 +144,7 @@ export class LogicService{
   }
 
   topDeck(game: Game){
-    const card = game.deck.topDeck()
+    const card = this.topDeckCard(game.deck)
 
     //enacting policy always resets tracker
     this.enactPolicy(game, card, true)
@@ -224,7 +232,7 @@ export class LogicService{
         return game.status = Status.SE
       }
       else if(game.FascPoliciesEnacted === 3 && game.players.length < 7){
-        game.top3 = game.deck.inspect3()
+        game.top3 = this.inspect3(game.deck)
         return game.status = Status.INSPECT_TOP3
       }
       else if(game.FascPoliciesEnacted === 4 || game.FascPoliciesEnacted === 5){
@@ -300,7 +308,7 @@ export class LogicService{
   vetoReply(game: Game, vetoAccepted: boolean){
     if(vetoAccepted){
       game.log.push(`${game.currentPres.name} agrees to a veto.`)
-      game.chanCards.forEach(card => game.deck.discard(card))
+      game.chanCards.forEach(card => this.discard(card, game.deck))
       this.setPrevLocks(game)
       this.advanceTracker(game)
     }
@@ -353,5 +361,72 @@ export class LogicService{
     })
     const draw = draws3[blues]
     return draw
+  }
+
+
+  //deck logic - redo tests
+
+
+  buildDeck(deck: Deck){
+    for(let i = 0; i < 6; i++){
+      deck.drawPile.push({policy: Policy.LIB, color: Color.BLUE })
+    }
+    for(let i = 0; i < 11; i++){
+      deck.drawPile.push({policy: Policy.FASC, color: Color.RED })
+    }
+  }
+
+  shuffleDeck(deck: Deck){
+    deck.drawPile.sort(()=> Math.random() - .5)
+    deck.drawPile.sort(()=> Math.random() - .5)
+  }
+
+  reshuffle(deck: Deck){
+    console.log('reshuffling the deck')
+    deck.deckNum++
+    deck.drawPile = [...deck.drawPile, ...deck.discardPile]
+    deck.discardPile = []
+    this.shuffleDeck(deck)
+  }
+
+  topDeckCard(deck: Deck){
+    if(deck.drawPile.length < 3){
+      this.reshuffle(deck)
+    }
+    return deck.drawPile.pop()
+  }
+
+  draw3(deck: Deck){
+    if(deck.drawPile.length < 3){
+      this.reshuffle(deck)
+    }
+    const card1 = deck.drawPile.pop()
+    const card2 = deck.drawPile.pop()
+    const card3 = deck.drawPile.pop()
+    const top3 = [card1, card2, card3]
+    return top3
+  }
+
+  inspect3(deck: Deck){
+    if(deck.drawPile.length < 3){
+      this.reshuffle(deck)
+    }
+    const n = deck.drawPile.length
+    const card1 = deck.drawPile[n-1]
+    const card2 = deck.drawPile[n-2]
+    const card3 = deck.drawPile[n-3]
+    const top3 = [card1, card2, card3].sort(()=> Math.random() - .5)
+    return top3
+  }
+
+  removeRed(deck: Deck){
+    const redCard = deck.drawPile.find(card => card.policy === Policy.FASC)
+    deck.drawPile = deck.drawPile.filter(card => card !== redCard)
+    deck.discardPile.push(redCard)
+    this.shuffleDeck(deck)
+  }
+
+  discard(card: Card, deck: Deck){
+    deck.discardPile.push(card)
   }
 }

@@ -1,6 +1,6 @@
 import { Game } from "../models/game.model";
 import { Status, GameType } from "../consts";
-import Deck from "../classes/Deck";
+import { DeckMockFactory } from "./DeckMockFactory";
 
 export class GameMockFactory{
   create(params?: object): Game {
@@ -16,7 +16,7 @@ export class GameMockFactory{
       status: Status.CREATED,
       players: [],
       alivePlayers: [],
-      deck: new Deck(),
+      deck: new DeckMockFactory().createEmptyDeck(),
       LibPoliciesEnacted: 0,
       FascPoliciesEnacted: 0,
       tracker: 0,

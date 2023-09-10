@@ -3,8 +3,8 @@ import {
   Inject,
   Injectable,} from "@nestjs/common";
 import { Game } from "../models/game.model";
+import { Deck } from "../models/deck.model";
 import { Status, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings } from "../consts";
-import Deck from "../classes/Deck";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
 import { LogicService } from "./logic.service";
@@ -39,7 +39,7 @@ export class GameService{
       status: Status.CREATED,
       players: [],
       alivePlayers: [],
-      deck: new Deck(),
+      deck: {drawPile: [], discardPile: [], deckNum: 1},
       LibPoliciesEnacted: 0,
       FascPoliciesEnacted: 0,
       tracker: 0,
