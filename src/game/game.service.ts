@@ -38,7 +38,6 @@ export class GameService{
       },
       status: Status.CREATED,
       players: [],
-      alivePlayers: [],
       deck: {drawPile: [], discardPile: [], deckNum: 1},
       LibPoliciesEnacted: 0,
       FascPoliciesEnacted: 0,
@@ -100,7 +99,7 @@ export class GameService{
           team: Team.LIB,
           role: Role.LIB,
           alive: true,
-          vote: undefined,
+          vote: null,
           investigated: false,
           investigations: [],
           bluesPlay: 0,
@@ -109,7 +108,7 @@ export class GameService{
         })
       }
     }
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
     this.eventEmitter.emit(JOIN_GAME, {socketId, id} )
     return game
   }
@@ -164,7 +163,7 @@ export class GameService{
       throw new BadRequestException(`Can't start a game with fewer than 5 players`)
     }
     this.logicService.startGame(game)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
     return
   }
 
@@ -199,7 +198,7 @@ export class GameService{
     else{
       game.settings = gameSettings
     }
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async chooseChan(id: string, chanName: string){
@@ -208,46 +207,46 @@ export class GameService{
       throw new BadRequestException(`Can't choose a chancellor at this time`)
     }
     this.logicService.chooseChan(game, chanName)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async vote(id: string, name: string, vote: Vote){
     const game = await this.findById(id)
     this.logicService.vote(game, name, vote)
     if(game.status === Status.VOTE_RESULT){
-      setTimeout(()=> {
+      setTimeout(async ()=> {
         this.logicService.determineResultofVote(game)
-        this.eventEmitter.emit(UPDATE_GAME, game)
+        await this.handleUpdate(id, game)
       }, 2000)
     }
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async presDiscard(id: string, cardColor: string){
     const game = await this.findById(id)
     this.logicService.presDiscard(game, cardColor)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async chanPlay(id: string, cardColor: string){
         const game = await this.findById(id)
 
     this.logicService.chanPlay(game, cardColor)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async chanClaim(id: string, claim: CHAN2){
         const game = await this.findById(id)
 
     this.logicService.chanClaim(game, claim)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async presClaim(id: string, claim: PRES3){
         const game = await this.findById(id)
 
     this.logicService.presClaim(game, claim)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async chooseInv(id: string, invName: string){
@@ -257,7 +256,7 @@ export class GameService{
       throw new BadRequestException(`Can't investigate at this time`)
     }
     this.logicService.chooseInv(game, invName)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async invClaim(id: string, claim: Role){
@@ -267,7 +266,7 @@ export class GameService{
       throw new BadRequestException(`Can't claim inv at this time`)
     }
     this.logicService.invClaim(game, claim)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async chooseSE(id: string, seName: string){
@@ -277,7 +276,7 @@ export class GameService{
       throw new BadRequestException(`Can't SE at this time`)
     }
     this.logicService.chooseSE(game, seName)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async chooseGun(id: string, shotName: string){
@@ -287,25 +286,25 @@ export class GameService{
       throw new BadRequestException(`Can't shoot at this time`)
     }
     this.logicService.shootPlayer(game, shotName)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async inspect3Claim(id: string, claim: PRES3){
     const game = await this.findById(id)
     this.logicService.inspect3Claim(game, claim)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async vetoRequest(id: string){
     const game = await this.findById(id)
     this.logicService.vetoRequest(game)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async vetoReply(id: string, vetoAccepted: boolean){
     const game = await this.findById(id)
     this.logicService.vetoReply(game, vetoAccepted)
-    this.handleUpdate(id, game)
+    await this.handleUpdate(id, game)
   }
 
   async handleUpdate(id: string, game: Game){

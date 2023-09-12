@@ -11,7 +11,6 @@ export type Game = {
   settings: GameSettings,
   status: Status,
   players: Player[],
-  alivePlayers: Player[],
   deck: Deck,
   LibPoliciesEnacted: number,
   FascPoliciesEnacted: number,

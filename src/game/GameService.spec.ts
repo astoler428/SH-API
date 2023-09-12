@@ -35,6 +35,8 @@ describe("GameService", () => {
   })
 
   beforeEach(async () => {
+    //don't do this. test createGame and joniGame like this
+    //otherwise useGameMockFactory and just setplayers...
     id = await gameService.createGame("player-1", '1')
     gameService.joinGame(id, "player-2", "2")
     gameService.joinGame(id, "player-3", "3")

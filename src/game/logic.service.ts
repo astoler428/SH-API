@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { CHAN2, Color, Conf, PRES3, Policy, Role, Status, Team, Vote, draws2, draws3 } from "../consts";
+import { CHAN2, Color, Conf, PRES3, Policy, RRR, Role, Status, Team, Vote, draws2, draws3 } from "../consts";
 import { Game } from "../models/game.model";
 import { Card } from "src/models/card.model";
 import { Deck } from "src/models/deck.model";
@@ -11,7 +11,6 @@ export class LogicService{
   startGame(game: Game){
     game.status = Status.CHOOSE_CHAN
     this.initPlayers(game)
-    game.alivePlayers = [...game.players]
     game.currentPres = game.players[game.presIdx]
     this.initDeck(game)
     if(game.settings.redDown){
@@ -58,15 +57,16 @@ export class LogicService{
       player.vote = vote
     }
     else{
-      player.vote = undefined
+      player.vote = null
     }
     this.countVotes(game)
   }
 
   countVotes(game: Game){
-    let votes = 0
-    game.players.forEach(player => player.vote ? votes++ : '')
-    if(game.alivePlayers.length === votes){
+    const numVotes = game.players.reduce((acc, player) => player.vote ? acc+1 : acc, 0)
+    // let numVotes = 0
+    // game.players.forEach(player => player.vote ? numVotes++ : '')
+    if(this.numAlivePlayers(game) === numVotes){
       game.status = Status.VOTE_RESULT
     }
     // if(game.alivePlayers.length > 0){
@@ -88,12 +88,10 @@ export class LogicService{
     this.enactPolicy(game, game.chanPlay, false)
   }
 
-  //here in testing...
   determineResultofVote(game: Game){
-    let jas = 0
-    game.players.forEach(player => player.vote === Vote.JA ? jas++ : '')
+    const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
 
-    if(jas > game.alivePlayers.length / 2){
+    if(jas > this.numAlivePlayers(game) / 2){
     // if(jas > 0){
       if(this.checkHitler(game)){
         game.log.push(`${game.currentChan.name} is Hitler. Fascists win!`)
@@ -101,7 +99,6 @@ export class LogicService{
       }
       else{
         this.presDraw3(game)
-        game.status = Status.PRES_DISCARD
       }
     }
     else{
@@ -113,6 +110,7 @@ export class LogicService{
 
   presDraw3(game: Game){
     game.presCards = this.draw3(game.deck)
+    game.status = Status.PRES_DISCARD
   }
 
   advanceTracker(game: Game){
@@ -127,17 +125,21 @@ export class LogicService{
   }
 
   nextPres(game: Game){
-    game.presIdx = (game.presIdx + 1) % game.alivePlayers.length
-    game.currentPres = game.alivePlayers[game.presIdx]
-    game.currentChan = undefined
+    do{
+      game.presIdx = (game.presIdx + 1) % game.players.length
+    }
+    while(!game.players[game.presIdx].alive)
+    game.currentPres = game.players[game.presIdx]
+    game.currentChan = null
     game.status = Status.CHOOSE_CHAN
   }
 
   resetVotes(game: Game){
     for(const player of game.players){
-      player.vote = undefined
+      player.vote = null
     }
   }
+
 
   gameOver(game: Game){
     return game.status === Status.END_FASC || game.status === Status.END_LIB
@@ -152,7 +154,7 @@ export class LogicService{
   }
 
   enactPolicy(game: Game, card: Card, topDeck: boolean){
-    game.log.push(`${topDeck ? 'Topdecking. ' : ' '} A ${card.policy} policy is enacted.`)
+    game.log.push(`${topDeck ? 'Topdecking. ' : ''}A ${card.policy} policy is enacted.`)
     if(card.policy === Policy.LIB){
       game.LibPoliciesEnacted++
       if(game.LibPoliciesEnacted === 5){
@@ -160,8 +162,10 @@ export class LogicService{
           game.status = Status.END_FASC
           game.log.push(`The liberal spy did not play a red. Fascists win!`)
         }
-        game.status = Status.END_LIB
-        game.log.push(`Liberals win!`)
+        else{
+          game.status = Status.END_LIB
+          game.log.push(`Liberals win!`)
+        }
       }
     }
     else{
@@ -171,15 +175,15 @@ export class LogicService{
         game.log.push(`Fascists win!`)
       }
     }
-    //can maybe combine !gameOver  with !topdeck conditional. It's okay to reset the tracker even on game over as long as status doesn't get set to chanClaim
-    // if(this.gameOver(game)){
-    //   return
-    // }
+
     if(!this.gameOver(game) && !topDeck){
       this.setPrevLocks(game) //was settting in after pres claim
       game.status = Status.CHAN_CLAIM
     }
     this.resetTracker(game)
+    if(game.deck.drawPile.length < 3){
+      this.reshuffle(game.deck)
+    }
   }
 
   presClaim(game: Game, claim: PRES3){
@@ -187,10 +191,7 @@ export class LogicService{
     game.log.push(`${game.currentPres.name} claims ${game.presClaim}`)
     this.addGov(game)
     this.determinePolicyConf(game)
-    // if(!this.gameOver(game)){
-    //   this.setPrevLocks(game) //only time locks won't be set here is if a veto occurs
-     this.determineNextStatus(game)
-    // }
+    this.determineNextStatus(game)
   }
 
   addGov(game: Game){
@@ -206,6 +207,8 @@ export class LogicService{
       underclaim: this.determineUnderClaim(game)
     })
   }
+
+  //here in testing
 
   determinePolicyConf(game: Game){
     //chan claims 0 blues, pres claims at least 1 blue
@@ -244,7 +247,7 @@ export class LogicService{
 
   setPrevLocks(game: Game){
     game.prevChan = game.currentChan
-    game.prevPres = game.alivePlayers.length > 5 ? game.currentPres : undefined
+    game.prevPres = this.numAlivePlayers(game) > 5 ? game.currentPres : null
   }
 
   chanClaim(game: Game, claim: CHAN2){
@@ -287,9 +290,9 @@ export class LogicService{
 
     const shotPlayer = this.findPlayerIngame(game, shotName)
     shotPlayer.alive = false
-    game.alivePlayers = game.alivePlayers.filter(player => player !== shotPlayer)
-    if(game.alivePlayers.length <=5 ){
-      game.prevPres = undefined
+    // game.alivePlayers = game.alivePlayers.filter(player => player !== shotPlayer)
+    if(this.numAlivePlayers(game) <= 5){
+      game.prevPres = null
     }
     if(shotPlayer.role === Role.HITLER){
       game.status = Status.END_LIB
@@ -325,8 +328,8 @@ export class LogicService{
 
 
   removePrevLocks(game: Game){
-    game.prevChan = undefined
-    game.prevPres = undefined
+    game.prevChan = null
+    game.prevPres = null
   }
 
   resetTracker(game: Game){
@@ -340,15 +343,19 @@ export class LogicService{
   libSpyCondition(game: Game){
     //return boolean
     const libSpy = game.players.find(player => player.role === Role.LIB_SPY)
-    return game.govs.find(gov => gov.policyPlayed.policy === Policy.FASC && (libSpy === gov.pres || libSpy === gov.chan)) !== undefined
+    return game.govs.find(gov => gov.policyPlayed.policy === Policy.FASC && (libSpy === gov.pres || libSpy === gov.chan)) !== null
   }
 
   findPlayerIngame(game: Game, name: string){
-    const player = game.alivePlayers.find(player => player.name === name)
+    const player = game.players.find(player => player.name === name)
     if(!player){
       throw new BadRequestException(`${name} is not a player in this game`)
     }
     return player
+  }
+
+  numAlivePlayers(game: Game){
+    return game.players.reduce((n, player) => player.alive ? n + 1 : n, 0)
   }
 
   //likely used later when I want to know what the pres cards were for determining claim, etc
@@ -390,16 +397,16 @@ export class LogicService{
   }
 
   topDeckCard(deck: Deck){
-    if(deck.drawPile.length < 3){
-      this.reshuffle(deck)
-    }
+    // if(deck.drawPile.length < 3){
+    //   this.reshuffle(deck)
+    // }
     return deck.drawPile.pop()
   }
 
   draw3(deck: Deck){
-    if(deck.drawPile.length < 3){
-      this.reshuffle(deck)
-    }
+    // if(deck.drawPile.length < 3){
+    //   this.reshuffle(deck)
+    // }
     const card1 = deck.drawPile.pop()
     const card2 = deck.drawPile.pop()
     const card3 = deck.drawPile.pop()
@@ -408,9 +415,9 @@ export class LogicService{
   }
 
   inspect3(deck: Deck){
-    if(deck.drawPile.length < 3){
-      this.reshuffle(deck)
-    }
+    // if(deck.drawPile.length < 3){
+    //   this.reshuffle(deck)
+    // }
     const n = deck.drawPile.length
     const card1 = deck.drawPile[n-1]
     const card2 = deck.drawPile[n-2]

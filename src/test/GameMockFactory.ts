@@ -15,7 +15,6 @@ export class GameMockFactory{
       },
       status: Status.CREATED,
       players: [],
-      alivePlayers: [],
       deck: new DeckMockFactory().createEmptyDeck(),
       LibPoliciesEnacted: 0,
       FascPoliciesEnacted: 0,
