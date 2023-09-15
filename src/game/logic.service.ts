@@ -11,7 +11,7 @@ export class LogicService{
   startGame(game: Game){
     game.status = Status.CHOOSE_CHAN
     this.initPlayers(game)
-    game.currentPres = game.players[game.presIdx]
+    game.currentPres = game.players[game.presIdx].name
     this.initDeck(game)
     if(game.settings.redDown){
       this.removeRed(game.deck)
@@ -44,10 +44,10 @@ export class LogicService{
   }
 
   chooseChan(game: Game, chanName: string){
-    const chanPlayer = this.findPlayerIngame(game, chanName)
-    game.currentChan = chanPlayer
+    // const chanPlayer = this.findPlayerIngame(game, chanName)
+    game.currentChan = chanName
     this.resetVotes(game)
-    game.log.push(`${game.currentPres.name} chooses ${chanName} as chancellor.`)
+    game.log.push(`${game.currentPres} chooses ${chanName} as chancellor.`)
     game.status = Status.VOTE
   }
 
@@ -94,7 +94,7 @@ export class LogicService{
     if(jas > this.numAlivePlayers(game) / 2){
     // if(jas > 0){
       if(this.checkHitler(game)){
-        game.log.push(`${game.currentChan.name} is Hitler. Fascists win!`)
+        game.log.push(`${game.currentChan} is Hitler. Fascists win!`)
         game.status = Status.END_FASC
       }
       else{
@@ -129,7 +129,7 @@ export class LogicService{
       game.presIdx = (game.presIdx + 1) % game.players.length
     }
     while(!game.players[game.presIdx].alive)
-    game.currentPres = game.players[game.presIdx]
+    game.currentPres = game.players[game.presIdx].name
     game.currentChan = null
     game.status = Status.CHOOSE_CHAN
   }
@@ -188,7 +188,7 @@ export class LogicService{
 
   presClaim(game: Game, claim: PRES3){
     game.presClaim = claim
-    game.log.push(`${game.currentPres.name} claims ${game.presClaim}`)
+    game.log.push(`${game.currentPres} claims ${game.presClaim}`)
     this.addGov(game)
     this.determinePolicyConf(game)
     this.determineNextStatus(game)
@@ -208,8 +208,6 @@ export class LogicService{
     })
   }
 
-  //here in testing
-
   determinePolicyConf(game: Game){
     //chan claims 0 blues, pres claims at least 1 blue
     if(draws2.indexOf(game.chanClaim) === 0 && draws3.indexOf(game.presClaim) > 0){
@@ -218,8 +216,7 @@ export class LogicService{
   }
 
   determineUnderClaim(game: Game): number{
-    let bluesDrawn = 0
-    game.presCards.forEach(card => card.policy === Policy.LIB ? bluesDrawn++ : '' )
+    const bluesDrawn = game.presCards.reduce((acc, card) => card.policy === Policy.LIB ? acc+1 : acc, 0)
     return bluesDrawn - draws3.indexOf(game.presClaim)
   }
 
@@ -252,51 +249,45 @@ export class LogicService{
 
   chanClaim(game: Game, claim: CHAN2){
     game.chanClaim = claim
-    game.log.push(`${game.currentChan.name} claims ${game.chanClaim}`)
+    game.log.push(`${game.currentChan} claims ${game.chanClaim}`)
     game.status = Status.PRES_CLAIM
   }
 
   chooseInv(game: Game, invName: string){
     const invPlayer = this.findPlayerIngame(game, invName)
     invPlayer.investigated = true
-    game.currentPres.investigations.push(invPlayer)
+    this.getCurrentPres(game).investigations.push(invName)
     game.status = Status.INV_CLAIM
   }
 
   invClaim(game: Game, claim: Role){
-    const investigatee = game.currentPres.investigations.slice(-1)[0]
-    game.log.push(`${game.currentPres.name} claims ${investigatee.name} is a ${claim}`)
+    const investigatee = this.getCurrentPres(game).investigations.slice(-1)[0]
+    game.log.push(`${game.currentPres} claims ${investigatee} is a ${claim}`)
     game.invClaims.push({investigator: game.currentPres, investigatee, claim })
-    this.determineInvConf(game, claim)
+    if(claim === Role.FASC){
+      game.confs.push({confer: game.currentPres, confee: this.getCurrentPres(game).investigations.slice(-1)[0], type: Conf.INV})
+    }
     this.nextPres(game)
   }
 
-  determineInvConf(game: Game, claim: Role){
-    if(claim === Role.FASC){
-      game.confs.push({confer: game.currentPres, confee: game.currentPres.investigations.slice(-1)[0], type: Conf.INV})
-    }
-  }
-
+  //here in testing
   chooseSE(game: Game, seName: string){
-    const sePlayer = this.findPlayerIngame(game, seName)
-    game.log.push(`${game.currentPres.name} special elects ${seName}`)
-
-    game.currentPres = sePlayer
+    game.log.push(`${game.currentPres} special elects ${seName}`)
+    game.currentPres = seName
     game.status = Status.CHOOSE_CHAN
   }
 
   shootPlayer(game: Game, shotName: string){
-    game.log.push(`${game.currentPres.name} shoots ${shotName}.`)
+    game.log.push(`${game.currentPres} shoots ${shotName}`)
 
     const shotPlayer = this.findPlayerIngame(game, shotName)
     shotPlayer.alive = false
-    // game.alivePlayers = game.alivePlayers.filter(player => player !== shotPlayer)
     if(this.numAlivePlayers(game) <= 5){
       game.prevPres = null
     }
     if(shotPlayer.role === Role.HITLER){
       game.status = Status.END_LIB
-      game.log.push(`${shotName} as Hitler. Liberals win!`)
+      game.log.push(`${shotName} was Hitler. Liberals win!`)
     }
     else{
       this.nextPres(game)
@@ -304,28 +295,27 @@ export class LogicService{
   }
 
   vetoRequest(game: Game){
-    game.log.push(`${game.currentChan.name} requests a veto.`)
+    game.log.push(`${game.currentChan} requests a veto.`)
     game.status = Status.VETO_REQUEST
   }
 
   vetoReply(game: Game, vetoAccepted: boolean){
     if(vetoAccepted){
-      game.log.push(`${game.currentPres.name} agrees to a veto.`)
+      game.log.push(`${game.currentPres} agrees to a veto.`)
       game.chanCards.forEach(card => this.discard(card, game.deck))
       this.setPrevLocks(game)
       this.advanceTracker(game)
     }
     else{
-      game.log.push(`${game.currentPres.name} declines a veto.`)
+      game.log.push(`${game.currentPres} declines a veto.`)
       game.status = Status.VETO_DECLINED
     }
   }
 
   inspect3Claim(game: Game, claim: PRES3){
-    game.log.push(`${game.currentPres.name} claims the top 3 are ${claim}. Policies are shuffled.`)
+    game.log.push(`${game.currentPres} claims the top 3 are ${claim}. Policies are shuffled.`)
     this.nextPres(game)
   }
-
 
   removePrevLocks(game: Game){
     game.prevChan = null
@@ -337,13 +327,13 @@ export class LogicService{
   }
 
   checkHitler(game: Game){
-    return game.FascPoliciesEnacted >= 3 && game.currentChan.role === Role.HITLER
+    return game.FascPoliciesEnacted >= 3 && this.getCurrentChan(game).role === Role.HITLER
   }
 
   libSpyCondition(game: Game){
     //return boolean
     const libSpy = game.players.find(player => player.role === Role.LIB_SPY)
-    return game.govs.find(gov => gov.policyPlayed.policy === Policy.FASC && (libSpy === gov.pres || libSpy === gov.chan)) !== null
+    return game.govs.find(gov => gov.policyPlayed.policy === Policy.FASC && (libSpy.name === gov.pres || libSpy.name === gov.chan)) !== undefined
   }
 
   findPlayerIngame(game: Game, name: string){
@@ -358,6 +348,13 @@ export class LogicService{
     return game.players.reduce((n, player) => player.alive ? n + 1 : n, 0)
   }
 
+  getCurrentPres(game: Game){
+    return this.findPlayerIngame(game, game.currentPres)
+  }
+
+  getCurrentChan(game: Game){
+    return this.findPlayerIngame(game, game.currentChan)
+  }
   //likely used later when I want to know what the pres cards were for determining claim, etc
   determinePresCards(cards3: Card[]){
     let blues = 0
@@ -369,10 +366,6 @@ export class LogicService{
     const draw = draws3[blues]
     return draw
   }
-
-
-  //deck logic - redo tests
-
 
   buildDeck(deck: Deck){
     for(let i = 0; i < 6; i++){

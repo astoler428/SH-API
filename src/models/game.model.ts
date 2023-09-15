@@ -16,21 +16,21 @@ export type Game = {
   FascPoliciesEnacted: number,
   tracker: number,
   presIdx: number,
-  SE: Player | undefined,
-  currentPres: Player | undefined,
-  currentChan: Player | undefined,
-  prevPres: Player | undefined,
-  prevChan: Player | undefined,
+  SE: string, //not player
+  currentPres: string, //not player
+  currentChan: string, //not player
+  prevPres: string, //not player
+  prevChan: string, //not player
   presCards: Card[] | undefined,
   chanCards: Card[] | undefined,
   presDiscard: Card | undefined,
   chanPlay: Card | undefined,
   presClaim: PRES3 | undefined,
   chanClaim: CHAN2 | undefined,
-  top3: Card[] | undefined,
+  top3: Card[],
   govs: Gov[],
   log: string[],
-  invClaims: {investigator: Player, investigatee: Player, claim: Role | undefined}[],
-  confs: {confer: Player, confee: Player, type: Conf }[]
+  invClaims: {investigator: string, investigatee: string, claim: Role}[],
+  confs: {confer: string, confee: string, type: Conf }[]
 }
 //Figure out how they work with game logic: veto, topdecked

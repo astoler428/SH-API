@@ -4,12 +4,12 @@ import { Card } from './card.model'
 
 export type Gov = {
   deckNum: number,
-  pres: Player,
-  chan: Player,
+  pres: string,
+  chan: string,
   policyPlayed: Card,
-  presCards: Card[] | undefined,
-  chanCards: Card[] | undefined,
-  presClaim: PRES3 | undefined,
-  chanClaim: CHAN2 | undefined,
+  presCards: Card[],
+  chanCards: Card[],
+  presClaim: PRES3,
+  chanClaim: CHAN2,
   underclaim: number
 }

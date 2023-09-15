@@ -4,12 +4,13 @@ import { Player } from "../models/player.model";
 import { PlayerMockFactory } from "../test/PlayerMockFactory";
 import { Game } from "../models/game.model";
 import { GameMockFactory } from "../test/GameMockFactory";
-import { CHAN2, Color, GameSettings, GameType, PRES3, Policy, Role, Status, Team, Vote } from "../consts";
+import { CHAN2, Color, Conf, GameSettings, GameType, PRES3, Policy, Role, Status, Team, Vote } from "../consts";
 import { CardMockFactory } from "../test/CardMockFactory";
 import { Card } from "../models/card.model";
 import { Deck } from "../models/deck.model";
 import { DeckMockFactory } from "../test/DeckMockFactory";
 import { log } from "console";
+import { Gov } from "src/models/gov.model";
 
 describe("Logic Service", () => {
   let logicService: LogicService
@@ -207,7 +208,7 @@ describe("Logic Service", () => {
 
     it('sets the current chan', () => {
       expect(game.currentChan).toBeDefined()
-      expect(game.currentChan.name).toEqual('player-2')
+      expect(game.currentChan).toEqual('player-2')
     })
 
     it('calls to reset votes', () => {
@@ -216,7 +217,7 @@ describe("Logic Service", () => {
 
     it('adds to the log', () => {
       expect(game.log).toHaveLength(1)
-      expect(game.log[0]).toEqual(`${game.currentPres.name} chooses player-2 as chancellor.`)
+      expect(game.log[0]).toEqual(`${game.currentPres} chooses player-2 as chancellor.`)
     })
 
     it('sets the status to VOTE', ()=> {
@@ -378,7 +379,7 @@ describe("Logic Service", () => {
 
     it('it checks hitler condition and makes appropriate calls', () => {
       const mockCheckHitler = jest.spyOn(logicService, 'checkHitler').mockImplementation(() => true)
-      game.currentChan = new PlayerMockFactory().create({name: 'player-1'})
+      game.currentChan = 'player-1'
       logicService.determineResultofVote(game)
       expect(mockCheckHitler).toBeCalledWith(game)
       expect(game.status).toEqual(Status.END_FASC)
@@ -434,17 +435,17 @@ describe("Logic Service", () => {
 
     beforeEach(() => {
       game.presIdx = 3
-      game.currentChan = new PlayerMockFactory().create({name: 'player-1'})
+      game.currentChan = 'player-1'
       logicService.nextPres(game)
     })
 
     it('assigns the next president', () => {
       expect(game.presIdx).toEqual(4)
-      expect(game.currentPres).toBe(game.players[4])
+      expect(game.currentPres).toBe(game.players[4].name)
       // expect(game.currentPres.name).toBe('player-5')
       logicService.nextPres(game)
       expect(game.presIdx).toBe(0)
-      expect(game.currentPres).toBe(game.players[0])
+      expect(game.currentPres).toBe(game.players[0].name)
     })
 
     it('assigns the next president if someone is dead', () => {
@@ -452,7 +453,7 @@ describe("Logic Service", () => {
       game.players[0].alive = false
       logicService.nextPres(game)
       expect(game.presIdx).toBe(1)
-      expect(game.currentPres).toBe(game.players[1])
+      expect(game.currentPres).toBe(game.players[1].name)
     })
 
     it('removes the currentChan and sets the status', ()=>{
@@ -600,7 +601,7 @@ describe("Logic Service", () => {
   describe('presClaim', () => {
     const claim = PRES3.RRR
     beforeEach(()=> {
-      game.currentPres.name = 'player-1'
+      game.currentPres = 'player-1'
       jest.spyOn(logicService, 'addGov').mockImplementation((game) => {})
       jest.spyOn(logicService, 'determinePolicyConf').mockImplementation((game) => {})
       jest.spyOn(logicService, 'determineNextStatus').mockImplementation((game) => Status.INV)
@@ -626,8 +627,8 @@ describe("Logic Service", () => {
     let presCards = [0,1,2].map( i => new CardMockFactory().createFasc())
     let chanCards = [0,1].map( i => new CardMockFactory().createFasc())
     beforeEach(()=> {
-      game.currentPres =  game.players[0]
-      game.currentChan = game.players[1]
+      game.currentPres =  game.players[0].name
+      game.currentChan = game.players[1].name
       game.chanPlay = chanPlay
       game.presCards = presCards
       game.chanCards = chanCards
@@ -643,8 +644,8 @@ describe("Logic Service", () => {
 
     it('adds the corect values to the gov', () => {
       expect(game.govs[0].deckNum).toEqual(1)
-      expect(game.govs[0].pres).toBe(game.players[0])
-      expect(game.govs[0].chan).toBe(game.players[1])
+      expect(game.govs[0].pres).toBe(game.players[0].name)
+      expect(game.govs[0].chan).toBe(game.players[1].name)
       expect(game.govs[0].policyPlayed).toBe(chanPlay)
       expect(game.govs[0].presCards).toBe(presCards)
       expect(game.govs[0].chanCards).toBe(chanCards)
@@ -654,8 +655,496 @@ describe("Logic Service", () => {
     })
   })
 
-  /**
 
+  describe('determinePolicyConf', () => {
+
+    beforeEach(()=> {
+    game.confs = []
+    })
+
+    it('it recognizes conflict on RRB RR', () => {
+      game.chanClaim = CHAN2.RR
+      game.presClaim = PRES3.RRB
+      logicService.determinePolicyConf(game)
+      expect(game.confs).toHaveLength(1)
+    })
+
+    it('it recognizes conflict on RBB RR', () => {
+      game.chanClaim = CHAN2.RR
+      game.presClaim = PRES3.RBB
+      logicService.determinePolicyConf(game)
+      expect(game.confs).toHaveLength(1)
+    })
+
+    it('it does not conflict on RBB RB', () => {
+      game.chanClaim = CHAN2.RB
+      game.presClaim = PRES3.RBB
+      logicService.determinePolicyConf(game)
+      expect(game.confs).toHaveLength(0)
+    })
+  })
+
+  describe('determineUnderclaim', () => {
+
+    it('it recognizes underclaim', () => {
+      game.presCards = [0, 1, 2].map(i => new CardMockFactory().createLib())
+      game.presClaim = PRES3.RRB
+      expect(logicService.determineUnderClaim(game)).toEqual(2)
+
+      game.presCards = [0, 1, 2].map(i => new CardMockFactory().createLib())
+      game.presClaim = PRES3.BBB
+      expect(logicService.determineUnderClaim(game)).toEqual(0)
+
+      game.presCards = [0, 1, 2].map(i => new CardMockFactory().createFasc())
+      game.presClaim = PRES3.RRB
+      expect(logicService.determineUnderClaim(game)).toEqual(-1)
+    })
+  })
+
+  describe('determineNextStatus', () => {
+
+    beforeEach(() => {
+      game.status = Status.CHAN_CLAIM
+    })
+
+    it('determines no power on lib policy', () => {
+      game.chanPlay = new CardMockFactory().createLib()
+      game.FascPoliciesEnacted = 1
+      game.players = [1,2,3,4,5,6,7,8,9].map(i => new PlayerMockFactory().create())
+      expect(logicService.determineNextStatus(game)).not.toBe(Status.INV)
+     })
+
+    it('determines inv in 9 and 10 player games', () => {
+     game.chanPlay = new CardMockFactory().createFasc()
+     game.FascPoliciesEnacted = 1
+     game.players = [1,2,3,4,5,6,7,8,9].map(i => new PlayerMockFactory().create())
+     expect(logicService.determineNextStatus(game)).toBe(Status.INV)
+    })
+
+    it('determines inv in 7 and 8 player games', () => {
+      game.chanPlay = new CardMockFactory().createFasc()
+      game.FascPoliciesEnacted = 2
+      game.players = [1,2,3,4,5,6,7].map(i => new PlayerMockFactory().create())
+      expect(logicService.determineNextStatus(game)).toBe(Status.INV)
+     })
+
+     it('no inv in 5 and 6 player games', () => {
+      game.chanPlay = new CardMockFactory().createFasc()
+      game.FascPoliciesEnacted = 2
+      game.players = [1,2,3,4,5,6].map(i => new PlayerMockFactory().create())
+      expect(logicService.determineNextStatus(game)).not.toBe(Status.INV)
+     })
+
+     it('inspect top 3 in 5 and 6 player games', () => {
+      jest.spyOn(logicService, 'inspect3')
+      game.chanPlay = new CardMockFactory().createFasc()
+      game.FascPoliciesEnacted = 3
+      game.players = [1,2,3,4,5,6].map(i => new PlayerMockFactory().create())
+      expect(logicService.determineNextStatus(game)).toBe(Status.INSPECT_TOP3)
+      expect(logicService.inspect3).toBeCalledTimes(1)
+     })
+
+     it('SE in 7 and above player games', () => {
+      game.chanPlay = new CardMockFactory().createFasc()
+      game.FascPoliciesEnacted = 3
+      game.players = [1,2,3,4,5,6, 7].map(i => new PlayerMockFactory().create())
+      expect(logicService.determineNextStatus(game)).toBe(Status.SE)
+     })
+
+     it('sets gun on 4 reds', () => {
+      game.chanPlay = new CardMockFactory().createFasc()
+      game.FascPoliciesEnacted = 4
+      game.players = [1,2,3,4,5].map(i => new PlayerMockFactory().create())
+      expect(logicService.determineNextStatus(game)).toBe(Status.GUN)
+     })
+
+     it('sets gun on 5 reds', () => {
+      game.chanPlay = new CardMockFactory().createFasc()
+      game.FascPoliciesEnacted = 5
+      game.players = [1,2,3,4,5,6,7].map(i => new PlayerMockFactory().create())
+      expect(logicService.determineNextStatus(game)).toBe(Status.GUN)
+     })
+
+     it('calls next pres if no power', () => {
+      game.chanPlay = new CardMockFactory().createLib()
+      game.FascPoliciesEnacted = 5
+      game.players = [1,2,3,4,5,6,7].map(i => new PlayerMockFactory().create())
+      jest.spyOn(logicService, 'nextPres')
+      logicService.determineNextStatus(game)
+      expect(logicService.nextPres).toBeCalledTimes(1)
+     })
+  })
+
+  describe('setPrevLocks', () => {
+
+    it('sets the prevChan', () => {
+      game.currentChan = 'the-chan'
+      logicService.setPrevLocks(game)
+      expect(game.prevChan).toBeDefined()
+      expect(game.prevChan).toBe('the-chan')
+    })
+
+    it('sets the prevPres in 6 or more', () => {
+      game.players = [1, 2, 3, 4, 5, 6].map(i => new PlayerMockFactory().create())
+      game.currentPres = 'the-pres'
+      logicService.setPrevLocks(game)
+      expect(game.prevPres).toBeDefined()
+      expect(game.prevPres).toBe('the-pres')
+    })
+
+    it('does not set the prevPres in 5 or less', () => {
+      game.players = [1, 2, 3, 4, 5].map(i => new PlayerMockFactory().create())
+      game.currentPres = 'the-pres'
+      logicService.setPrevLocks(game)
+      expect(game.prevPres).toBeNull()
+    })
+  })
+
+  describe('chanClaim', () => {
+
+    beforeEach(() => {
+      game.currentChan = 'chan-player'
+      logicService.chanClaim(game, CHAN2.RB)
+    })
+
+    it('sets the chanClaim', () => {
+      expect(game.chanClaim).toBeDefined()
+      expect(game.chanClaim).toBe(CHAN2.RB)
+    })
+
+    it('adds the claim to the log', () => {
+      expect(game.log[0]).toBe(`chan-player claims RB`)
+    })
+
+    it('sets the status to PRES CLAIM', () => {
+      expect(game.status).toBe(Status.PRES_CLAIM)
+    })
+  })
+
+  describe('chooseInv', () => {
+    let player1: Player, player2: Player
+    beforeEach(() => {
+      player1 = game.players.find(player => player.name === 'player-1')
+      player2 = game.players.find(player => player.name === 'player-2')
+      game.presIdx = game.players.indexOf(player1)
+      game.currentPres = player1.name
+      logicService.chooseInv(game, 'player-2')
+    })
+
+    it('sets the player to investigated', () => {
+      expect(player2.investigated).toBe(true)
+    })
+
+    it('adds the inved player to the player who inved', () => {
+      console.log(player1)
+
+      expect(player1.investigations[0]).toEqual(player2.name)
+    })
+
+    it('sets the status to INV_CLAIM', () => {
+      expect(game.status).toBe(Status.INV_CLAIM)
+    })
+  })
+
+  describe('invClaim', () => {
+    let player1: Player, player2: Player
+    beforeEach(() => {
+      player1 = game.players.find(player => player.name === 'player-1')
+      player2 = game.players.find(player => player.name === 'player-2')
+      game.presIdx = game.players.indexOf(player1)
+      game.currentPres = player1.name
+      player1.investigations.push(player2.name)
+      jest.spyOn(logicService, 'nextPres')
+      logicService.invClaim(game, Role.LIB)
+    })
+
+    it('sets investigation in the log', () => {
+      expect(game.log[0]).toBe(`player-1 claims player-2 is a Liberal`)
+    })
+
+    it('sets the inv claim', () => {
+      const claim = game.invClaims[0]
+      expect(claim.investigator).toBe('player-1')
+      expect(claim.investigatee).toBe('player-2')
+      expect(claim.claim).toBe(Role.LIB)
+    })
+
+    it('calls nextPres', () => {
+      expect(logicService.nextPres).toBeCalledTimes(1)
+    })
+
+    it('does not conf on a lib inv', () => {
+      expect(game.confs).toHaveLength(0)
+    })
+
+    it('does  conf on a fasc inv', () => {
+      game.currentPres = player1.name
+      logicService.invClaim(game, Role.FASC)
+      expect(game.confs).toHaveLength(1)
+      const conf = game.confs[0]
+      expect(conf.confer).toBe('player-1')
+      expect(conf.confee).toBe('player-2')
+      expect(conf.type).toBe(Conf.INV)
+    })
+  })
+
+
+  describe('chooseSE', () => {
+    beforeEach(() => {
+      game.currentPres = 'player-1'
+      logicService.chooseSE(game, 'player-2')
+    })
+
+    it('adds action to game log', () => {
+      expect(game.log[0]).toBe(`player-1 special elects player-2`)
+    })
+    it('makes the current pres the Se', () => {
+      expect(game.currentPres).toBe('player-2')
+    })
+    it('sets the status to choose chan', () => {
+      expect(game.status).toBe(Status.CHOOSE_CHAN)
+    })
+  })
+
+  describe('shootPlayer', () => {
+    let player2: Player
+    let player5: Player
+    beforeEach(() => {
+      game.players.push(new PlayerMockFactory().create({name: 'player-6'}))
+      game.players.push(new PlayerMockFactory().create({name: 'player-7'}))
+      player2 = game.players.find(player => player.name === 'player-2')
+      player5 = game.players.find(player => player.name === 'player-5')
+      player5.role = Role.HITLER
+      game.currentPres = 'player-1'
+      game.prevPres = 'player-3'
+      jest.clearAllMocks()
+      jest.spyOn(logicService, 'nextPres')
+    })
+
+    it('adds action to game log', () => {
+      logicService.shootPlayer(game, 'player-2')
+      expect(game.log[0]).toBe(`player-1 shoots player-2`)
+    })
+    it('sets player to not alive', () => {
+      logicService.shootPlayer(game, 'player-2')
+      expect(player2.alive).toBe(false)
+    })
+    it('removes the prev pres if down to 5 or less', () => {
+      logicService.shootPlayer(game, 'player-2')
+      expect(game.prevPres).toBe('player-3')
+      logicService.shootPlayer(game, 'player-4')
+      expect(game.prevPres).toBeNull()
+    })
+    it('handles when hitler gets shot', () => {
+      logicService.shootPlayer(game, 'player-5')
+      expect(game.status).toBe(Status.END_LIB)
+      expect(game.log.includes(`player-5 was Hitler. Liberals win!`)).toBe(true)
+      expect(logicService.nextPres).not.toBeCalled()
+    })
+
+    it('calls next pres if hitler is not shot', () => {
+      logicService.shootPlayer(game, 'player-2')
+      expect(logicService.nextPres).toBeCalledTimes(1)
+    })
+  })
+
+
+  describe('vetoRequest', () => {
+    beforeEach(() => {
+      game.currentChan = 'player-1'
+      logicService.vetoRequest(game)
+    })
+
+    it('adds action to game log', () => {
+      expect(game.log[0]).toBe(`player-1 requests a veto.`)
+    })
+    it('sets the status to veto request', () => {
+      expect(game.status).toBe(Status.VETO_REQUEST)
+    })
+  })
+
+  describe('vetoReply', () => {
+    let player2: Player
+    beforeEach(() => {
+      player2 = game.players.find(player => player.name === 'player-2')
+      game.currentPres = 'player-1'
+      game.chanCards = [0,1].map(i => new CardMockFactory().createFasc())
+      jest.clearAllMocks()
+      jest.spyOn(logicService, 'setPrevLocks').mockImplementation(() => {})
+      jest.spyOn(logicService, 'advanceTracker').mockImplementation(() => {})
+      jest.spyOn(logicService, 'discard').mockImplementation((card, deck) => {deck.discardPile.push(card)})
+    })
+
+    it('handles veto accept', () => {
+      logicService.vetoReply(game, true)
+      expect(game.log[0]).toBe(`player-1 agrees to a veto.`)
+      expect(logicService.discard).toBeCalledTimes(2)
+      expect(game.deck.discardPile).toHaveLength(2)
+      expect(game.deck.discardPile[0].policy).toBe(Policy.FASC)
+      expect(logicService.setPrevLocks).toBeCalledTimes(1)
+      expect(logicService.advanceTracker).toBeCalledTimes(1)
+
+    })
+    it('handles veto decline', () => {
+      logicService.vetoReply(game, false)
+      expect(game.log[0]).toBe(`player-1 declines a veto.`)
+      expect(game.status).toBe(Status.VETO_DECLINED)
+      expect(logicService.setPrevLocks).not.toBeCalled()
+    })
+  })
+
+  describe('inspect3Claim', () => {
+    it('sets the log and calls next pres', () => {
+      game.currentPres = 'player-1'
+      jest.spyOn(logicService, 'nextPres').mockImplementation(() => {})
+      logicService.inspect3Claim(game, PRES3.RBB)
+      expect(game.log[0]).toBe(`player-1 claims the top 3 are RBB. Policies are shuffled.`)
+      expect(logicService.nextPres).toBeCalledTimes(1)
+    })
+  })
+
+  describe('removePrevLocks', () => {
+    it('sets prev locks to null', () => {
+      game.prevChan = 'player-1'
+      game.prevPres = 'player-2'
+      logicService.removePrevLocks(game)
+      expect(game.prevChan).toBeNull()
+      expect(game.prevPres).toBeNull()
+    })
+  })
+
+  describe('resetTracker', () => {
+    it('sets tracker to 0', () => {
+      game.tracker = 2
+      logicService.resetTracker(game)
+      expect(game.tracker).toEqual(0)
+    })
+  })
+
+  describe('checkHitler', () => {
+    let player1: Player
+    beforeEach(() => {
+      player1 = game.players.find(player => player.name === 'player-1')
+      player1.role = Role.HITLER
+      game.currentChan = 'player-1'
+    })
+    it('does not return true for hitler if less than 3 reds down', () => {
+     game.FascPoliciesEnacted = 2
+     expect(logicService.checkHitler(game)).toBe(false)
+    })
+    it('does not return true for hitler if 3 reds down but not hitler', () => {
+      player1.role = Role.FASC
+      game.FascPoliciesEnacted = 3
+      expect(logicService.checkHitler(game)).toBe(false)
+     })
+    it('does return true for hitler and 3 reds down', () => {
+      game.FascPoliciesEnacted = 3
+      expect(logicService.checkHitler(game)).toBe(true)
+     })
+  })
+
+  describe('libSpyCondition', () => {
+    let player1: Player
+    let gov: Gov
+    beforeEach(() => {
+      game.settings.libSpy = true
+      player1 = game.players.find(player => player.name === 'player-1')
+      player1.role = Role.LIB_SPY
+      gov = {
+        deckNum: 1,
+        pres: 'player-1',
+        chan: 'player-2',
+        policyPlayed: new CardMockFactory().createLib(),
+        presCards: [0,1,2].map(i => new CardMockFactory().createLib()),
+        chanCards: [0,1].map(i => new CardMockFactory().createLib()),
+        presClaim: PRES3.BBB,
+        chanClaim: CHAN2.BB,
+        underclaim: 1
+      }
+    })
+    it('does not return true it libSpy in no gov', () => {
+     expect(logicService.libSpyCondition(game)).toBe(false)
+    })
+    it('does not return true it libSpy in lib gov', () => {
+      game.govs.push(gov)
+      expect(logicService.libSpyCondition(game)).toBe(false)
+     })
+     it('returns true if libSpy in fasc gov as pres', () => {
+      gov.policyPlayed = new CardMockFactory().createFasc()
+      game.govs.push(gov)
+      expect(logicService.libSpyCondition(game)).toBe(true)
+     })
+     it('returns true if libSpy in fasc gov as chan', () => {
+      gov.policyPlayed = new CardMockFactory().createFasc()
+      gov.pres = 'player-2'
+      gov.chan = 'player-1'
+      game.govs.push(gov)
+      expect(logicService.libSpyCondition(game)).toBe(true)
+     })
+  })
+
+  describe('findPlayerInGame', () => {
+    it('throws error if no player found', () => {
+      expect(() => logicService.findPlayerIngame(game, 'player-DNE')).toThrow(`player-DNE is not a player in this game`)
+    })
+    it('returns the player found', () => {
+      const player1 = game.players.find(player => player.name === 'player-1')
+      expect(logicService.findPlayerIngame(game, 'player-1')).toBe(player1)
+    })
+  })
+
+  describe('numAlivePlayers', () => {
+    it('correctly determines the number of alive players', () => {
+      game.players[0].alive = false
+      game.players[3].alive = false
+      expect(logicService.numAlivePlayers(game)).toEqual(3)
+    })
+  })
+
+  describe('getCurrentPres', () => {
+    it('correctly return the player that is president', () => {
+      const player5 = game.players.find(player => player.name === 'player-5')
+      game.currentPres = player5.name
+      expect(logicService.getCurrentPres(game)).toBe(player5)
+    })
+  })
+
+  describe('getCurrentChan', () => {
+    it('correctly return the player that is chancellor', () => {
+      const player3 = game.players.find(player => player.name === 'player-3')
+      game.currentChan = player3.name
+      expect(logicService.getCurrentChan(game)).toBe(player3)
+    })
+  })
+
+  describe('determinePreCards', () => {
+
+    it('correctly determines', () => {
+      const R = new CardMockFactory().createFasc()
+      const B = new CardMockFactory().createLib()
+      const presCards = [[B, B, B], [R, B, B], [R, R, B], [R, R, R] ]
+      const presDraws = ['BBB', 'RBB', 'RRB', 'RRR']
+      for(let i = 0; i < 4; i ++){
+        expect(logicService.determinePresCards(presCards[i])).toBe(presDraws[i])
+      }
+    })
+  })
+
+  /**
+   *
+
+
+  //likely used later when I want to know what the pres cards were for determining claim, etc
+  determinePresCards(cards3: Card[]){
+    let blues = 0
+    cards3.forEach(card => {
+      if(card.policy === Policy.LIB){
+        blues++
+      }
+    })
+    const draw = draws3[blues]
+    return draw
+  }
    */
 
   /**

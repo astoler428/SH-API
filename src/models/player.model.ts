@@ -8,7 +8,7 @@ import {Role, Vote, Team} from '../consts'
   alive: boolean,
   vote: Vote,
   investigated: boolean,
-  investigations: Player[],
+  investigations: string[],
   bluesPlay: number,
   confirmedFasc: boolean,
   omniFasc: boolean
