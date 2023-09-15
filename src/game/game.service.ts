@@ -15,8 +15,6 @@ import { GameRepository } from "./game.repository";
 export class GameService{
   constructor(private eventEmitter: EventEmitter2, private logicService: LogicService, private gameRespository: GameRepository
 ){}
-  //temp fake database
-  // public gameDatabase: Game[] = []
 
   async createGame(name: string, socketId: string) {
     let id: string
@@ -61,7 +59,6 @@ export class GameService{
       confs: []
     }
 
-    // this.gameDatabase.push(game)
     await this.gameRespository.set(id, game)
     this.joinGame(id, name, socketId)
     return id
@@ -106,7 +103,7 @@ export class GameService{
           confirmedFasc: false,
           omniFasc: false
         })
-      }
+     }
     }
     await this.handleUpdate(id, game)
     this.eventEmitter.emit(JOIN_GAME, {socketId, id} )
@@ -153,9 +150,7 @@ export class GameService{
   }
 
   async startGame(id: string){
-    //do game setup logic
     const game = await this.findById(id)
-
     if(game.status !== Status.CREATED){
       throw new BadRequestException(`Game ${id} has already started`)
     }
@@ -169,13 +164,10 @@ export class GameService{
 
   async deleteGame(id: string){
     await this.gameRespository.delete(id)
-    // this.gameDatabase = this.gameDatabase.filter(game => game.id !== id)
   }
 
   async findById(id: string): Promise<Game>{
     const game = await this.gameRespository.get(id)
-
-    // const game = this.gameDatabase.find(game => game.id === id)
     if(!game){
       throw new BadRequestException(`No game found with id ${id}`)
     }
@@ -311,12 +303,4 @@ export class GameService{
     await this.gameRespository.update(id, game)
     this.eventEmitter.emit(UPDATE_GAME, game)
   }
-
-
-
-  // async setGameDataInCache(game: Game){
-  //   const client = this.redisService.getClient()
-  //   console.log('this is called')
-  //   await client.set(game.id, JSON.stringify(game))
-  // }
 }

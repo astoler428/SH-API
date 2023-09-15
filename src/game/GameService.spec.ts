@@ -9,6 +9,7 @@ import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME } from "../consts/socket
 import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
 import { GameRepositoryMock } from "../test/GameRepositoryMock";
+import { Player } from "src/models/player.model";
 
 
 describe("GameService", () => {
@@ -37,17 +38,23 @@ describe("GameService", () => {
   beforeEach(async () => {
     //don't do this. test createGame and joniGame like this
     //otherwise useGameMockFactory and just setplayers...
-    id = await gameService.createGame("player-1", '1')
-    gameService.joinGame(id, "player-2", "2")
-    gameService.joinGame(id, "player-3", "3")
-    gameService.joinGame(id, "player-4", "4")
-    gameService.joinGame(id, "player-5", "5")
-    gameService.joinGame(id, "player-6", "6")
-    gameService.joinGame(id, "player-7", "7")
-    gameService.joinGame(id, "player-8", "8")
-    gameService.joinGame(id, "player-9", "9")
-    gameService.joinGame(id, "player-10", "10")
-    game = await gameService.findById(id)
+    // id = await gameService.createGame("player-1", '1')
+    // gameService.joinGame(id, "player-2", "2")
+    // gameService.joinGame(id, "player-3", "3")
+    // gameService.joinGame(id, "player-4", "4")
+    // gameService.joinGame(id, "player-5", "5")
+    // gameService.joinGame(id, "player-6", "6")
+    // gameService.joinGame(id, "player-7", "7")
+    // gameService.joinGame(id, "player-8", "8")
+    // gameService.joinGame(id, "player-9", "9")
+    // gameService.joinGame(id, "player-10", "10")
+    // game = await gameService.findById(id)
+    const players = []
+    for(let i = 1; i <= 10; i ++){
+      players.push(new PlayerMockFactory().create({name: `player-${i}`}))
+    }
+    game = new GameMockFactory().create({players})
+    id = game.id
   });
 
   describe("createGame", ()=> {
@@ -55,64 +62,70 @@ describe("GameService", () => {
       jest.spyOn(gameService, "joinGame").mockImplementation(async () => new GameMockFactory().create());
       await gameService.createGame('player', 'ABCD')
 
-      expect(gameRepositoryMock.map.size).toEqual(2)
+      expect(gameRepositoryMock.map.size).toEqual(1)
       expect(() => gameRepositoryMock.map.get('ABCD')).toBeDefined()
       expect(gameService.joinGame).toBeCalled()
     })
   })
 
-  // describe("joinGame", ()=> {
-  //   it('throws if no name', async () => {
-  //     expect(async () => await gameService.joinGame(id, undefined, undefined )).toThrow(`Player must have a name`)
-  //   })
+  describe("joinGame", ()=> {
+    let gameId: string
+    let player1: Player
 
-    // it('throws if no game id found', async () => {
-    //   expect(() => gameService.joinGame('ABCD', 'player', '1' )).toThrow(`No game found with id ABCD`)
-    // })
+    beforeEach(async () => {
+      // gameId = await gameService.createGame('player-1', 'socket id')
+      player1 = new PlayerMockFactory().create({name: 'player-1', socketId: 'socket id'})
+      game = new GameMockFactory().create({players: [player1], id: 'mockId'})
+      id = game.id
+      gameRepositoryMock.set(id, game)
+    })
 
-    // it('throws if game at capacity', async () => {
-    //   expect(() => gameService.joinGame(id, 'player-11', '11' )).toThrow(`up to 10 players per game.`)
-    // })
+    it('throws if no name', async () => {
+      await expect(gameService.joinGame(id, undefined, undefined )).rejects.toThrow(`Player must have a name`)
+    })
 
-    // it('throws when repeated name tries to join', ()=> {
-    //   expect(() => gameService.joinGame(id, 'player-2', '20')).toThrow(`A player with that name is already in the game. Choose a different name.`)
-    // })
+    it('throws if no game id found', async () => {
+      await expect(gameService.joinGame('random_game_id', 'player', '1' )).rejects.toThrow(`No game found with id random_game_id`)
+    })
 
-    // it('throws when new player joins a game in progress', ()=> {
-    //   const game = new GameMockFactory().create({status: Status.CHOOSE_CHAN});
-    //   gameRepositoryMock.set(game.id, game)
-    //   expect(() => gameService.joinGame(game.id, 'player-2', '20')).toThrow(`Cannot join a game that has already started.`)
-    // })
+    it('throws if game at capacity', async () => {
+      for(let i = 2; i <= 10; i++){
+        await gameService.joinGame(id, `player-${i}`, undefined)
+      }
+      await expect(gameService.joinGame(id, 'player-11', '11' )).rejects.toThrow(`up to 10 players per game.`)
+    })
 
-    // it('allows player to rejoin a game in progress', ()=> {
-    //   const player = new PlayerMockFactory().create({socketId: undefined})
-    //   const game = new GameMockFactory().create({status: Status.CHOOSE_CHAN});
-    //   gameRepositoryMock.set(game.id, game)
-    //   game.players.push(player)
-    //   expect(() => gameService.joinGame(game.id, player.name, '20')).not.toThrow()
-    //   expect(player.socketId).toEqual('20')
-    // })
+    it('throws when repeated name tries to join', async ()=> {
+      await expect(gameService.joinGame(id, 'player-1', 'new socket id')).rejects.toThrow(`A player with that name is already in the game. Choose a different name.`)
+    })
 
-    // it('adds new player to the game', async () => {
-    //   const id = await gameService.createGame('player', '1')
-    //   gameService.joinGame(id, 'player-2', '2')
-    //   const game = await gameService.findById(id)
+    it('throws when new player joins a game in progress', async ()=> {
+      game.status = Status.CHOOSE_CHAN
+      await expect(gameService.joinGame(id, 'player-2', '20')).rejects.toThrow(`Cannot join a game that has already started.`)
+    })
 
-    //   expect(game.players).toHaveLength(2)
-    //   expect(game.players[1].name).toEqual('player-2')
-    // })
+    it('allows player to rejoin a game in progress', async ()=> {
+      player1.socketId = undefined
+      game.status = Status.CHOOSE_CHAN
+      await expect(gameService.joinGame(id, 'player-1', 'new socket id')).resolves.not.toThrow()
+      expect(player1.socketId).toBe('new socket id')
+    })
 
-    // it('emits the proper messages', async () => {
-    //   jest.spyOn(eventEmitter, 'emit')
-    //   const id = await gameService.createGame('player', '1')
-    //   gameService.joinGame(id, 'player-2', '2')
-    //   const game = gameService.findById(id)
-    //   expect(eventEmitter.emit).toHaveBeenCalledWith(UPDATE_GAME, game)
-    //   expect(eventEmitter.emit).toHaveBeenCalledWith(JOIN_GAME, {socketId: '2', id})
-    // })
-  // })
+    it('adds new player to the game', async () => {
+      await gameService.joinGame(id, 'player-2', undefined)
+      expect(game.players).toHaveLength(2)
+      expect(game.players[1].name).toEqual('player-2')
+    })
 
-
+    it('emits the proper messages', async () => {
+      jest.spyOn(eventEmitter, 'emit')
+      jest.spyOn(gameService, 'handleUpdate')
+      await gameService.joinGame(id, 'player-3', 'socket id')
+      expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game)
+      expect(gameService.handleUpdate).toHaveBeenCalledTimes(1)
+      expect(eventEmitter.emit).toHaveBeenCalledWith(JOIN_GAME, {socketId: 'socket id', id})
+    })
+  })
 
 //   describe("leaveGame", ()=> {
 //     beforeEach(async () => {

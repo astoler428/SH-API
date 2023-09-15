@@ -4,10 +4,10 @@ import { Game } from "../models/game.model";
 
 @Injectable()
 export class GameRepositoryMock{
-  public map: Map<string, string>
+  public map: Map<string, Game>
 
   constructor(){
-    this.map = new Map<string, string>()
+    this.map = new Map<string, Game>()
   }
 
   async connect() {
@@ -17,7 +17,7 @@ export class GameRepositoryMock{
   }
 
   set(key: string, value: Game){
-    this.map.set(key, JSON.stringify(value))
+    this.map.set(key, value)
   }
 
   update(key: string, value:  Game){
@@ -29,7 +29,7 @@ export class GameRepositoryMock{
     if(!value){
       return value
     }
-    return JSON.parse(value)
+    return value
   }
 
   delete(key: string){
