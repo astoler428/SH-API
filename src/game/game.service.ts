@@ -292,8 +292,15 @@ export class GameService{
     await this.handleUpdate(id, game)
   }
 
-  async handleUpdate(id: string, game: Game){
-    await this.gameRespository.update(id, game)
-    this.eventEmitter.emit(UPDATE_GAME, game)
+  async confirmFasc(id: string, name: string){
+    const game = await this.findById(id)
+    this.logicService.confirmFasc(game, name)
+    await this.handleUpdate(id, game)
+
   }
+
+async handleUpdate(id: string, game: Game){
+  await this.gameRespository.update(id, game)
+  this.eventEmitter.emit(UPDATE_GAME, game)
+}
 }

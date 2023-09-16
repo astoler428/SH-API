@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { GameService } from "./game.service";
 import { Socket } from "socket.io";
-import { CHAN2, GameSettings, GameType, PRES3, Role, Vote } from "../consts";
+import { CHAN2, GameSettings, GameType, PRES3, Role, Status, Vote } from "../consts";
 import { Card } from "src/models/card.model";
 
 class CreateGameDTO {
@@ -123,6 +123,53 @@ export class GameController {
     return this.gameService.vetoReply(id, body.vetoAccepted);
   }
 
+  //blind controllers
+
+  @Post(`/confirmFasc/:id`)
+  async confirmFasc(@Param("id") id: string, @Body() body: {name: string}){
+    return this.gameService.confirmFasc(id, body.name);
+  }
+
+  @Post(`/default/${Status.PRES_DISCARD}/:id`)
+  async defaultPresDiscard(@Param("id") id: string){
+    console.log('here')
+    // return this.gameService.defaultPresDiscard();
+  }
+
+  @Post(`/default/${Status.CHAN_PLAY}/:id`)
+  async defaultChanPlay(@Param("id") id: string){
+    console.log('here')
+
+    // return this.gameService.defaultChanPlay();
+  }
+
+  @Post(`/default/${Status.CHAN_CLAIM}/:id`)
+  async defaultChanClaim(@Param("id") id: string){
+    // return this.gameService.defaultChanClaim();
+    console.log('here')
+
+  }
+
+  @Post(`/default/${Status.PRES_CLAIM}/:id`)
+  async defaultPresClaim(@Param("id") id: string){
+    // return this.gameService.defaultPresClaim();
+    console.log('here')
+
+  }
+
+  @Post(`/default/${Status.INV_CLAIM}/:id`)
+  async defaultInvClaim(@Param("id") id: string){
+    // return this.gameService.defaultInvClaim();
+    console.log('here')
+
+  }
+
+  @Post(`/default/${Status.INSPECT_TOP3}/:id`)
+  async defaultInspect3Claim(@Param("id") id: string){
+    // return this.gameService.defaultInspect3Claim();
+    console.log('here')
+
+  }
 
 
 

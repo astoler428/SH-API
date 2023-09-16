@@ -17,26 +17,19 @@ export class LogicService{
       this.removeRed(game.deck)
       game.FascPoliciesEnacted = 1
     }
+    if(game.players.length < 7){
+      game.settings.hitlerKnowsFasc = true
+    }
   }
 
   initPlayers(game: Game){
     const teams = gameTeams.slice(1, game.players.length)
     const roles = gameRoles.slice(1, game.players.length)
 
-    // let i = 0
-    // for(; i < game.players.length / 2 - 1; i++){
-    //   game.players[i].team = Team.FASC
-    //   // game.players[i].role = Role.FASC
-    // }
-    // for(; i < game.players.length; i++){
-    //   game.players[i].team = Team.LIB
-    //   // game.players[i].role = Role.LIB
-    // }
     game.players.sort(() => Math.random() - .5)
     game.players[0].role = Role.HITLER
     game.players[0].team = Team.FASC
     const nonHitlerPlayers = game.players.slice(1)
-
 
     if(game.settings.type === GameType.LIB_SPY){
       roles[1] = Role.LIB_SPY
@@ -53,7 +46,6 @@ export class LogicService{
     if(game.settings.type === GameType.BLIND){
       nonHitlerPlayers[0].omniFasc = true
     }
-
     game.players.sort(() => Math.random() - .5)
   }
 
@@ -63,7 +55,6 @@ export class LogicService{
   }
 
   chooseChan(game: Game, chanName: string){
-    // const chanPlayer = this.findPlayerIngame(game, chanName)
     game.currentChan = chanName
     this.resetVotes(game)
     game.log.push(`${game.currentPres} chooses ${chanName} as chancellor.`)
@@ -373,6 +364,25 @@ export class LogicService{
   getCurrentChan(game: Game){
     return this.findPlayerIngame(game, game.currentChan)
   }
+
+
+  //blind functions
+
+  confirmFasc(game: Game, name: string){
+    const playerTryingToConfirmFasc = this.findPlayerIngame(game, name)
+    if(playerTryingToConfirmFasc.team === Team.FASC){
+      playerTryingToConfirmFasc.confirmedFasc = true
+    }
+    else{
+      game.log.push(`${name} tried to confirm themself as a Fascist, but was Liberal.`)
+      game.status = Status.END_FASC
+    }
+  }
+
+
+
+
+
   //likely used later when I want to know what the pres cards were for determining claim, etc
   determinePresCards(cards3: Card[]){
     let blues = 0
@@ -448,3 +458,4 @@ export class LogicService{
     deck.discardPile.push(card)
   }
 }
+

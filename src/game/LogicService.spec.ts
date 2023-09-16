@@ -16,7 +16,7 @@ describe("Logic Service", () => {
   let players: Player[]
   let game: Game
   let gameSettings: GameSettings
-  let mockStartGame: jest.SpyInstance
+  let mockInitDeck: jest.SpyInstance
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -29,7 +29,7 @@ describe("Logic Service", () => {
       players.push(new PlayerMockFactory().create(({name: `player-${i}`})))
     }
     game = new GameMockFactory().create({players})
-    mockStartGame = jest.spyOn(logicService, 'startGame')
+    mockInitDeck = jest.spyOn(logicService, 'initDeck')
     logicService.startGame(game)
   })
 
@@ -39,6 +39,21 @@ describe("Logic Service", () => {
       expect(game.status).toEqual(Status.CHOOSE_CHAN)
     })
 
+    it('sets hitler knows fasc automatically in 5 or 6', () => {
+      let players = []
+      for(let i = 1; i <= 5; i++){
+        players.push(new PlayerMockFactory().create(({name: `player-${i}`})))
+      }
+      const newGame = new GameMockFactory().create({players, settings: {
+        type: GameType.NORMAL,
+        redDown: true,
+        hitlerKnowsFasc: false
+      }, })
+      logicService.startGame(newGame)
+      expect(newGame.settings.hitlerKnowsFasc).toBe(true)
+    })
+
+
     it('starts with a red down in redDown setting', ()=> {
       for(let i = 1; i <= 5; i++){
         players.push(new PlayerMockFactory().create(({name: `player-${i}`})))
@@ -46,7 +61,6 @@ describe("Logic Service", () => {
       game = new GameMockFactory().create({players, settings: {
         type: GameType.BLIND,
         redDown: true,
-        libSpy: false,
         hitlerKnowsFasc: false
       }, })
       logicService.startGame(game)
@@ -57,7 +71,7 @@ describe("Logic Service", () => {
     })
 
     it('calls init deck', () => {
-      expect(mockStartGame).toBeCalled()
+      expect(mockInitDeck).toBeCalled()
     })
 
     it('assigns roles properly in 5 player', ()=>{
@@ -1166,21 +1180,30 @@ describe("Logic Service", () => {
     })
   })
 
+  describe('confirmFasc', () => {
+
+    it('ends the game if a lib tries to confirm fasc', () => {
+      const player1 = game.players.find(player => player.name === 'player-1')
+      player1.role = Role.LIB
+      player1.team = Team.LIB
+      logicService.confirmFasc(game, 'player-1')
+      expect(game.log.includes(`player-1 tried to confirm themself as a Fascist, but was Liberal.`)).toBe(true)
+      expect(game.status).toBe(Status.END_FASC)
+  })
+
+  it('sets player to confirmed fasc if they are fasc', () => {
+    const player1 = game.players.find(player => player.name === 'player-1')
+    player1.team = Team.FASC
+    logicService.confirmFasc(game, 'player-1')
+    expect(game.log.includes(`player-1 tried to confirm themself as a Fascist, but was Liberal.`)).toBe(false)
+    expect(game.status).not.toBe(Status.END_FASC)
+    expect(player1.confirmedFasc).toBe(true)
+})
+})
+
   /**
    *
 
-
-  //likely used later when I want to know what the pres cards were for determining claim, etc
-  determinePresCards(cards3: Card[]){
-    let blues = 0
-    cards3.forEach(card => {
-      if(card.policy === Policy.LIB){
-        blues++
-      }
-    })
-    const draw = draws3[blues]
-    return draw
-  }
    */
 
   /**
