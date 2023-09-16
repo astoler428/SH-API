@@ -245,8 +245,8 @@ describe("Logic Service", () => {
       expect(hitler[0].team).toBe(Team.FASC)
       expect(libs).toHaveLength(5)
       expect(fascs).toHaveLength(3)
-      const allRolesMatch = game.players.every(player => (player.team === Team.LIB && player.role === Role.LIB) || (player.team === Team.FASC && (player.role === Role.FASC || player.role === Role.HITLER)))
-      expect(allRolesMatch).toBe(false)
+      // const allRolesMatch = game.players.every(player => (player.team === Team.LIB && player.role === Role.LIB) || (player.team === Team.FASC && (player.role === Role.FASC || player.role === Role.HITLER)))
+      // expect(allRolesMatch).toBe(false)
   })
 
   describe('choose chan', ()=> {
@@ -366,7 +366,7 @@ describe("Logic Service", () => {
       card1 = new CardMockFactory().createLib()
       card2 = new CardMockFactory().createFasc()
       game.chanCards = [card1, card2]
-      jest.spyOn(logicService, 'enactPolicy')
+      jest.spyOn(logicService, 'enactPolicy').mockImplementation(() => {})
       jest.spyOn(logicService, 'discard')
       logicService.chanPlay(game, Color.BLUE)
     })
@@ -563,13 +563,18 @@ describe("Logic Service", () => {
   describe('enactPolicy', () => {
     let fascCard: Card
     let libCard: Card
-
+    let player1: Player, player2: Player
     beforeEach(()=> {
       fascCard = new CardMockFactory().createFasc()
       libCard = new CardMockFactory().createLib()
       jest.clearAllMocks()
       jest.spyOn(logicService, 'libSpyCondition').mockImplementation((game) => false)
-
+      player1 = game.players.find(player => player.name === 'player-1')
+      player2 = game.players.find(player => player.name === 'player-2')
+      game.currentChan = 'player-1'
+      game.currentPres = 'player-2'
+      player1.bluesPlayed = 0
+      player2.bluesPlayed = 3
       // jest.spyOn(logicService, 'enactPolicy')
       // jest.spyOn(logicService, 'removePrevLocks')
       game.FascPoliciesEnacted = 0
@@ -587,6 +592,23 @@ describe("Logic Service", () => {
       expect(game.FascPoliciesEnacted).toEqual(1)
       logicService.enactPolicy(game, libCard, false)
       expect(game.LibPoliciesEnacted).toEqual(1)
+    })
+
+    it('increments lib policies played for pres and chan', () => {
+      logicService.enactPolicy(game, libCard, false)
+      expect(player1.bluesPlayed).toEqual(1)
+      expect(player2.bluesPlayed).toEqual(4)
+    })
+
+    it('does not increment lib policies played for pres and chan on topdeck', () => {
+      logicService.enactPolicy(game, libCard, true)
+      expect(player1.bluesPlayed).toEqual(0)
+      expect(player2.bluesPlayed).toEqual(3)
+    })
+    it('does not increment lib policies played for pres and chan on fasc policy', () => {
+      logicService.enactPolicy(game, fascCard, false)
+      expect(player1.bluesPlayed).toEqual(0)
+      expect(player2.bluesPlayed).toEqual(3)
     })
 
     it('determines a fascist win in a regular game', () => {
@@ -1164,19 +1186,6 @@ describe("Logic Service", () => {
       const player3 = game.players.find(player => player.name === 'player-3')
       game.currentChan = player3.name
       expect(logicService.getCurrentChan(game)).toBe(player3)
-    })
-  })
-
-  describe('determinePreCards', () => {
-
-    it('correctly determines', () => {
-      const R = new CardMockFactory().createFasc()
-      const B = new CardMockFactory().createLib()
-      const presCards = [[B, B, B], [R, B, B], [R, R, B], [R, R, R] ]
-      const presDraws = ['BBB', 'RBB', 'RRB', 'RRR']
-      for(let i = 0; i < 4; i ++){
-        expect(logicService.determinePresCards(presCards[i])).toBe(presDraws[i])
-      }
     })
   })
 

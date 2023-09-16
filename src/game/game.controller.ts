@@ -131,44 +131,34 @@ export class GameController {
   }
 
   @Post(`/default/${Status.PRES_DISCARD}/:id`)
-  async defaultPresDiscard(@Param("id") id: string){
-    console.log('here')
-    // return this.gameService.defaultPresDiscard();
+    async defaultPresDiscard(@Param("id") id: string){
+    return this.gameService.defaultPresDiscard(id);
   }
 
   @Post(`/default/${Status.CHAN_PLAY}/:id`)
-  async defaultChanPlay(@Param("id") id: string){
-    console.log('here')
-
-    // return this.gameService.defaultChanPlay();
+    async defaultChanPlay(@Param("id") id: string){
+    return this.gameService.defaultChanPlay(id);
   }
 
   @Post(`/default/${Status.CHAN_CLAIM}/:id`)
-  async defaultChanClaim(@Param("id") id: string){
-    // return this.gameService.defaultChanClaim();
-    console.log('here')
+    async defaultChanClaim(@Param("id") id: string){
+    return this.gameService.defaultChanClaim(id);
 
   }
 
   @Post(`/default/${Status.PRES_CLAIM}/:id`)
-  async defaultPresClaim(@Param("id") id: string){
-    // return this.gameService.defaultPresClaim();
-    console.log('here')
-
+    async defaultPresClaim(@Param("id") id: string){
+    return this.gameService.defaultPresClaim(id);
   }
 
   @Post(`/default/${Status.INV_CLAIM}/:id`)
-  async defaultInvClaim(@Param("id") id: string){
-    // return this.gameService.defaultInvClaim();
-    console.log('here')
-
+    async defaultInvClaim(@Param("id") id: string){
+    return this.gameService.defaultInvClaim(id);
   }
 
   @Post(`/default/${Status.INSPECT_TOP3}/:id`)
-  async defaultInspect3Claim(@Param("id") id: string){
-    // return this.gameService.defaultInspect3Claim();
-    console.log('here')
-
+    async defaultInspect3Claim(@Param("id") id: string){
+    return this.gameService.defaultInspect3Claim(id);
   }
 
 

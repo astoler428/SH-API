@@ -9,11 +9,12 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
 import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
+import { DefaultActionService } from "./defaultAction.service";
 
 
 @Injectable()
 export class GameService{
-  constructor(private eventEmitter: EventEmitter2, private logicService: LogicService, private gameRespository: GameRepository
+  constructor(private eventEmitter: EventEmitter2, private logicService: LogicService, private gameRespository: GameRepository, private defaultActionService: DefaultActionService
 ){}
 
   async createGame(name: string, socketId: string) {
@@ -77,7 +78,7 @@ export class GameService{
 
     if(playerAlreadyInGame){
       if(!playerAlreadyInGame.socketId){
-        console.log('reassigning socketId')
+        // console.log('reassigning socketId')
         playerAlreadyInGame.socketId = socketId
       }
       else if(playerAlreadyInGame.socketId !== socketId){
@@ -98,7 +99,7 @@ export class GameService{
           vote: null,
           investigated: false,
           investigations: [],
-          bluesPlay: 0,
+          bluesPlayed: 0,
           confirmedFasc: false,
           omniFasc: false
         })
@@ -110,7 +111,7 @@ export class GameService{
   }
 
   async leaveGame(id: string, socketId: string){
-    console.log(`player leaving has socketId ${socketId}`)
+    // console.log(`player leaving has socketId ${socketId}`)
     const game = await this.findById(id)
     const playerLeaving = game.players.find(player => player.socketId === socketId)
 
@@ -121,22 +122,22 @@ export class GameService{
     let gameDeleted = false
     //completely leave the game if in lobby
     if(game.status === Status.CREATED){
-      console.log('deleting player')
+      // console.log('deleting player')
       game.players = game.players.filter(player => player !== playerLeaving)
       if(game.players.length === 0){
-        console.log('deleting game')
+        // console.log('deleting game')
         gameDeleted = true
         this.deleteGame(id)
       }
     }
     else{
       //game in progress - disconnect
-      console.log('player disconnected - removing socketId')
+      // console.log('player disconnected - removing socketId')
       playerLeaving.socketId = null
 
       //if everybody disconnects - thenn delete game
       if(game.players.every(player => player.socketId === null)){
-        console.log('deleting game')
+        // console.log('deleting game')
         gameDeleted = true
         this.deleteGame(id)
       }
@@ -296,7 +297,43 @@ export class GameService{
     const game = await this.findById(id)
     this.logicService.confirmFasc(game, name)
     await this.handleUpdate(id, game)
+  }
 
+
+  async defaultPresDiscard(id: string){
+    const game = await this.findById(id)
+    const cardColor = this.defaultActionService.defaultPresDiscard(game)
+    await this.presDiscard(id, cardColor)
+  }
+
+  async defaultChanPlay(id: string){
+    const game = await this.findById(id)
+    const cardColor = this.defaultActionService.defaultChanPlay(game);
+    await this.chanPlay(id, cardColor)
+  }
+
+  async defaultChanClaim(id: string){
+    const game = await this.findById(id)
+    const claim = this.defaultActionService.defaultChanClaim(game);
+    await this.chanClaim(id, claim)
+  }
+
+  async defaultPresClaim(id: string){
+    const game = await this.findById(id)
+    const claim = this.defaultActionService.defaultPresClaim(game);
+    await this.presClaim(id, claim)
+  }
+
+  async defaultInvClaim(id: string){
+    const game = await this.findById(id)
+    const claim = this.defaultActionService.defaultInvClaim(game);
+    await this.invClaim(id, claim)
+  }
+
+  async defaultInspect3Claim(id: string){
+    const game = await this.findById(id)
+    const claim = this.defaultActionService.defaultInspect3Claim(game);
+    await this.inspect3Claim(id, claim)
   }
 
 async handleUpdate(id: string, game: Game){

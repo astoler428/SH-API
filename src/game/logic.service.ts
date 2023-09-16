@@ -166,6 +166,10 @@ export class LogicService{
     game.log.push(`${topDeck ? 'Topdecking. ' : ''}A ${card.policy} policy is enacted.`)
     if(card.policy === Policy.LIB){
       game.LibPoliciesEnacted++
+      if(!topDeck){
+        this.getCurrentPres(game).bluesPlayed++
+        this.getCurrentChan(game).bluesPlayed++
+      }
       if(game.LibPoliciesEnacted === 5){
         if(game.settings.type === GameType.LIB_SPY && !this.libSpyCondition(game)){
           game.status = Status.END_FASC
@@ -380,21 +384,6 @@ export class LogicService{
   }
 
 
-
-
-
-  //likely used later when I want to know what the pres cards were for determining claim, etc
-  determinePresCards(cards3: Card[]){
-    let blues = 0
-    cards3.forEach(card => {
-      if(card.policy === Policy.LIB){
-        blues++
-      }
-    })
-    const draw = draws3[blues]
-    return draw
-  }
-
   buildDeck(deck: Deck){
     for(let i = 0; i < 6; i++){
       deck.drawPile.push({policy: Policy.LIB, color: Color.BLUE })
@@ -410,7 +399,6 @@ export class LogicService{
   }
 
   reshuffle(deck: Deck){
-    console.log('reshuffling the deck')
     deck.deckNum++
     deck.drawPile = [...deck.drawPile, ...deck.discardPile]
     deck.discardPile = []

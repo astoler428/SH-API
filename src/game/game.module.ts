@@ -6,13 +6,14 @@ import { LogicService } from "./logic.service";
 import { EventsGateway } from "src/game/events.gateway";
 import { CacheModule } from '@nestjs/cache-manager';
 import { GameRepository } from './game.repository';
+import { DefaultActionService } from './defaultAction.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot()
   ],
   controllers: [GameController],
-  providers: [GameService, EventsGateway, LogicService, GameRepository]
+  providers: [GameService, EventsGateway, LogicService, GameRepository, DefaultActionService]
 })
 export class GameModule {}
 

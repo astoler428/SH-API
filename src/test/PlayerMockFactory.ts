@@ -13,7 +13,7 @@ import { Player } from '../models/player.model'
       vote: undefined,
       investigated: false,
       investigations: [],
-      bluesPlay: 0,
+      bluesPlayed: 0,
       confirmedFasc: false,
       omniFasc: false,
       ...params

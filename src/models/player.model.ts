@@ -9,7 +9,7 @@ import {Role, Vote, Team} from '../consts'
   vote: Vote,
   investigated: boolean,
   investigations: string[],
-  bluesPlay: number,
+  bluesPlayed: number,
   confirmedFasc: boolean,
   omniFasc: boolean
 }

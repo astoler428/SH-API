@@ -10,6 +10,7 @@ import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
 import { GameRepositoryMock } from "../test/GameRepositoryMock";
 import { Player } from "src/models/player.model";
+import { DefaultActionService } from "./defaultAction.service";
 
 
 jest.useFakeTimers()
@@ -18,6 +19,7 @@ describe("GameService", () => {
   let gameService: GameService
   let eventEmitter: EventEmitter2
   let logicService: LogicService
+  let defaultActionService: DefaultActionService
   let id: string
   let game: Game
   let gameRepositoryMock: GameRepositoryMock = new GameRepositoryMock()
@@ -30,12 +32,13 @@ describe("GameService", () => {
         provide: GameRepository,
         useValue: gameRepositoryMock,
       },
-        GameService, EventEmitter2, LogicService],
+        GameService, EventEmitter2, LogicService, DefaultActionService],
     }).compile();
 
     gameService = module.get<GameService>(GameService)
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);
     logicService = module.get<LogicService>(LogicService);
+    defaultActionService = module.get<DefaultActionService>(DefaultActionService);
   })
 
   beforeEach(async () => {
@@ -136,7 +139,6 @@ describe("GameService", () => {
       gameRepositoryMock.set(id, game)
       player1 = game.players.find(player => player.name === 'player-1')
       player1.socketId = 'player-1-socketid'
-
     });
 
     it('throws when player leaving not found', async () => {

@@ -13,6 +13,7 @@ import MockedSocket from 'socket.io-mock';
 import { Player } from "src/models/player.model";
 import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
+import { DefaultActionService } from "./defaultAction.service";
 
 
 describe("EventsGateway", () => {
@@ -26,7 +27,7 @@ describe("EventsGateway", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [EventsGateway, EventEmitter2, GameService, LogicService, GameRepository],
+      providers: [EventsGateway, EventEmitter2, GameService, LogicService, GameRepository, DefaultActionService],
     }).compile();
 
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);
