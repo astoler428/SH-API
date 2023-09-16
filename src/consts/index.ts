@@ -9,7 +9,6 @@ export const RR = 'RR'
 // export const CHAN2 = [RR, RB, BB]
 // export const PRES3 = [RRR, RRB, RBB, BBB]
 
-
 export enum CHAN2 {
   RR = 'RR',
   RB = 'RB',
@@ -60,13 +59,14 @@ export enum Policy {
 
 export enum GameType {
   BLIND = 'Blind',
-  NORMAL = 'normal'
+  NORMAL = 'Normal',
+  MIXED_ROLES = 'Mixed Roles',
+  LIB_SPY = 'Liberal Spy'
 }
 
 export type GameSettings = {
   type: GameType,
   redDown: boolean,
-  libSpy: boolean,
   hitlerKnowsFasc: boolean
 }
 
@@ -90,3 +90,5 @@ export enum Status {
   END_FASC = 'END_FASC',
 }
 
+export const gameTeams = [Team.FASC, Team.FASC, Team.LIB, Team.LIB, Team.LIB, Team.LIB, Team.FASC, Team.LIB, Team.FASC, Team.LIB]
+export const gameRoles = [Role.HITLER, Role.FASC, Role.LIB, Role.LIB, Role.LIB, Role.LIB, Role.FASC, Role.LIB, Role.FASC, Role.LIB]

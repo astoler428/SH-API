@@ -31,7 +31,6 @@ export class GameService{
       settings: {
         type: GameType.BLIND,
         redDown: false,
-        libSpy: false,
         hitlerKnowsFasc: false
       },
       status: Status.CREATED,
@@ -111,6 +110,7 @@ export class GameService{
   }
 
   async leaveGame(id: string, socketId: string){
+    console.log(`player leaving has socketId ${socketId}`)
     const game = await this.findById(id)
     const playerLeaving = game.players.find(player => player.socketId === socketId)
 
@@ -183,10 +183,10 @@ export class GameService{
     if(gameSettings.type === GameType.BLIND){
       game.settings = {
         ...gameSettings,
-        libSpy: false,
         hitlerKnowsFasc: false
       }
     }
+
     else{
       game.settings = gameSettings
     }
@@ -221,29 +221,25 @@ export class GameService{
   }
 
   async chanPlay(id: string, cardColor: string){
-        const game = await this.findById(id)
-
+    const game = await this.findById(id)
     this.logicService.chanPlay(game, cardColor)
     await this.handleUpdate(id, game)
   }
 
   async chanClaim(id: string, claim: CHAN2){
-        const game = await this.findById(id)
-
+    const game = await this.findById(id)
     this.logicService.chanClaim(game, claim)
     await this.handleUpdate(id, game)
   }
 
   async presClaim(id: string, claim: PRES3){
-        const game = await this.findById(id)
-
+    const game = await this.findById(id)
     this.logicService.presClaim(game, claim)
     await this.handleUpdate(id, game)
   }
 
   async chooseInv(id: string, invName: string){
-        const game = await this.findById(id)
-
+    const game = await this.findById(id)
     if(game.status !== Status.INV){
       throw new BadRequestException(`Can't investigate at this time`)
     }
@@ -252,8 +248,7 @@ export class GameService{
   }
 
   async invClaim(id: string, claim: Role){
-        const game = await this.findById(id)
-
+    const game = await this.findById(id)
     if(game.status !== Status.INV_CLAIM){
       throw new BadRequestException(`Can't claim inv at this time`)
     }
@@ -262,8 +257,7 @@ export class GameService{
   }
 
   async chooseSE(id: string, seName: string){
-        const game = await this.findById(id)
-
+    const game = await this.findById(id)
     if(game.status !== Status.SE){
       throw new BadRequestException(`Can't SE at this time`)
     }
@@ -272,8 +266,7 @@ export class GameService{
   }
 
   async chooseGun(id: string, shotName: string){
-        const game = await this.findById(id)
-
+    const game = await this.findById(id)
     if(game.status !== Status.GUN){
       throw new BadRequestException(`Can't shoot at this time`)
     }

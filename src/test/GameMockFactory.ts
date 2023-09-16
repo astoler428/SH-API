@@ -5,12 +5,11 @@ import { DeckMockFactory } from "./DeckMockFactory";
 export class GameMockFactory{
   create(params?: object): Game {
     return {
-      id: "test",
+      id: "MockID",
       createdBy: "player",
       settings: {
         type: GameType.BLIND,
         redDown: false,
-        libSpy: false,
         hitlerKnowsFasc: false
       },
       status: Status.CREATED,

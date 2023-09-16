@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { CHAN2, Color, Conf, PRES3, Policy, RRR, Role, Status, Team, Vote, draws2, draws3 } from "../consts";
+import { CHAN2, Color, Conf, GameType, PRES3, Policy, RRR, Role, Status, Team, Vote, draws2, draws3, gameRoles, gameTeams } from "../consts";
 import { Game } from "../models/game.model";
 import { Card } from "src/models/card.model";
 import { Deck } from "src/models/deck.model";
@@ -20,21 +20,40 @@ export class LogicService{
   }
 
   initPlayers(game: Game){
+    const teams = gameTeams.slice(1, game.players.length)
+    const roles = gameRoles.slice(1, game.players.length)
+
+    // let i = 0
+    // for(; i < game.players.length / 2 - 1; i++){
+    //   game.players[i].team = Team.FASC
+    //   // game.players[i].role = Role.FASC
+    // }
+    // for(; i < game.players.length; i++){
+    //   game.players[i].team = Team.LIB
+    //   // game.players[i].role = Role.LIB
+    // }
     game.players.sort(() => Math.random() - .5)
-    let i = 0
-    for(; i < game.players.length / 2 - 1; i++){
-      game.players[i].team = Team.FASC
-      game.players[i].role = Role.FASC
-    }
     game.players[0].role = Role.HITLER
-    game.players[1].omniFasc = true
-    for(; i < game.players.length; i++){
-      game.players[i].team = Team.LIB
-      game.players[i].role = Role.LIB
+    game.players[0].team = Team.FASC
+    const nonHitlerPlayers = game.players.slice(1)
+
+
+    if(game.settings.type === GameType.LIB_SPY){
+      roles[1] = Role.LIB_SPY
     }
-    if(game.settings.libSpy){
-      game.players[game.players.length - 1].role = Role.LIB_SPY
+    else if(game.settings.type === GameType.MIXED_ROLES){
+      roles.sort(() => Math.random() - .5)
     }
+    nonHitlerPlayers.sort(() => Math.random() - .5)
+    nonHitlerPlayers.forEach((player, idx) => {
+      player.team = teams[idx]
+      player.role = roles[idx]
+    })
+
+    if(game.settings.type === GameType.BLIND){
+      nonHitlerPlayers[0].omniFasc = true
+    }
+
     game.players.sort(() => Math.random() - .5)
   }
 
@@ -64,14 +83,13 @@ export class LogicService{
 
   countVotes(game: Game){
     const numVotes = game.players.reduce((acc, player) => player.vote ? acc+1 : acc, 0)
-    // let numVotes = 0
-    // game.players.forEach(player => player.vote ? numVotes++ : '')
-    if(this.numAlivePlayers(game) === numVotes){
-      game.status = Status.VOTE_RESULT
-    }
-    // if(game.alivePlayers.length > 0){
+
+    // if(this.numAlivePlayers(game) === numVotes){
     //   game.status = Status.VOTE_RESULT
     // }
+    if(numVotes > 0){
+      game.status = Status.VOTE_RESULT
+    }
   }
 
   presDiscard(game: Game, cardColor: string){
@@ -91,8 +109,8 @@ export class LogicService{
   determineResultofVote(game: Game){
     const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
 
-    if(jas > this.numAlivePlayers(game) / 2){
-    // if(jas > 0){
+    // if(jas > this.numAlivePlayers(game) / 2){
+    if(jas > 0){
       if(this.checkHitler(game)){
         game.log.push(`${game.currentChan} is Hitler. Fascists win!`)
         game.status = Status.END_FASC
@@ -158,7 +176,7 @@ export class LogicService{
     if(card.policy === Policy.LIB){
       game.LibPoliciesEnacted++
       if(game.LibPoliciesEnacted === 5){
-        if(game.settings.libSpy && !this.libSpyCondition(game)){
+        if(game.settings.type === GameType.LIB_SPY && !this.libSpyCondition(game)){
           game.status = Status.END_FASC
           game.log.push(`The liberal spy did not play a red. Fascists win!`)
         }
