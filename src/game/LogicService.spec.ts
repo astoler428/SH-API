@@ -926,7 +926,7 @@ describe("Logic Service", () => {
       game.currentPres = player1.name
       player1.investigations.push(player2.name)
       jest.spyOn(logicService, 'nextPres')
-      logicService.invClaim(game, Role.LIB)
+      logicService.invClaim(game, Team.LIB)
     })
 
     it('sets investigation in the log', () => {
@@ -950,7 +950,7 @@ describe("Logic Service", () => {
 
     it('does  conf on a fasc inv', () => {
       game.currentPres = player1.name
-      logicService.invClaim(game, Role.FASC)
+      logicService.invClaim(game, Team.FASC)
       expect(game.confs).toHaveLength(1)
       const conf = game.confs[0]
       expect(conf.confer).toBe('player-1')
@@ -1309,7 +1309,8 @@ describe("Logic Service", () => {
         expect(cards).toBeDefined()
         expect(cards).toHaveLength(3)
         expect(deck.drawPile).toHaveLength(17)
-        let top3 = [deck.drawPile.pop(), deck.drawPile.pop(), deck.drawPile.pop()]
+        // let top3 = [deck.drawPile.pop(), deck.drawPile.pop(), deck.drawPile.pop()]
+        let top3 = logicService.draw3(deck)
         expect(top3.every(card => cards.includes(card))).toBe(true)
       })
     })

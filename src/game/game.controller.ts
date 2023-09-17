@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { GameService } from "./game.service";
 import { Socket } from "socket.io";
-import { CHAN2, GameSettings, GameType, PRES3, Role, Status, Vote } from "../consts";
+import { CHAN2, GameSettings, GameType, PRES3, Role, Status, Team, Vote } from "../consts";
 import { Card } from "src/models/card.model";
 
 class CreateGameDTO {
@@ -92,7 +92,7 @@ export class GameController {
   }
 
   @Post("/invClaim/:id")
-  async invClaim(@Param("id") id: string, @Body() body: {claim: Role}){
+  async invClaim(@Param("id") id: string, @Body() body: {claim: Team}){
     return this.gameService.invClaim(id, body.claim);
   }
 

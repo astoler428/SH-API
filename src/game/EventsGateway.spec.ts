@@ -14,6 +14,7 @@ import { Player } from "src/models/player.model";
 import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
 import { DefaultActionService } from "./defaultAction.service";
+import { ProbabilityService } from "./probability.service";
 
 
 describe("EventsGateway", () => {
@@ -27,7 +28,7 @@ describe("EventsGateway", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [EventsGateway, EventEmitter2, GameService, LogicService, GameRepository, DefaultActionService],
+      providers: [EventsGateway, EventEmitter2, GameService, LogicService, GameRepository, DefaultActionService, ProbabilityService],
     }).compile();
 
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);

@@ -1,6 +1,6 @@
 import {Player} from './player.model'
 import { Deck } from './deck.model'
-import {Status, PRES3, CHAN2, Role, Conf, GameType, GameSettings} from '../consts'
+import {Status, PRES3, CHAN2, Role, Conf, GameType, GameSettings, Team} from '../consts'
 import {Card} from './card.model'
 import {Gov} from './gov.model'
 import {Socket} from 'socket.io'
@@ -30,7 +30,7 @@ export type Game = {
   top3: Card[],
   govs: Gov[],
   log: string[],
-  invClaims: {investigator: string, investigatee: string, claim: Role}[],
+  invClaims: {investigator: string, investigatee: string, claim: Team}[],
   confs: {confer: string, confee: string, type: Conf }[]
 }
 //Figure out how they work with game logic: veto, topdecked

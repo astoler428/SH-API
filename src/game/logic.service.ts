@@ -273,11 +273,11 @@ export class LogicService{
     game.status = Status.INV_CLAIM
   }
 
-  invClaim(game: Game, claim: Role){
+  invClaim(game: Game, claim: Team){
     const investigatee = this.getCurrentPres(game).investigations.slice(-1)[0]
     game.log.push(`${game.currentPres} claims ${investigatee} is a ${claim}`)
     game.invClaims.push({investigator: game.currentPres, investigatee, claim })
-    if(claim === Role.FASC){
+    if(claim === Team.FASC){
       game.confs.push({confer: game.currentPres, confee: this.getCurrentPres(game).investigations.slice(-1)[0], type: Conf.INV})
     }
     this.nextPres(game)

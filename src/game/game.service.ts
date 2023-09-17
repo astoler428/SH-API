@@ -248,7 +248,7 @@ export class GameService{
     await this.handleUpdate(id, game)
   }
 
-  async invClaim(id: string, claim: Role){
+  async invClaim(id: string, claim: Team){
     const game = await this.findById(id)
     if(game.status !== Status.INV_CLAIM){
       throw new BadRequestException(`Can't claim inv at this time`)

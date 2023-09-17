@@ -11,6 +11,7 @@ import { GameRepository } from "./game.repository";
 import { GameRepositoryMock } from "../test/GameRepositoryMock";
 import { Player } from "src/models/player.model";
 import { DefaultActionService } from "./defaultAction.service";
+import { ProbabilityService } from "./probability.service";
 
 
 jest.useFakeTimers()
@@ -32,7 +33,7 @@ describe("GameService", () => {
         provide: GameRepository,
         useValue: gameRepositoryMock,
       },
-        GameService, EventEmitter2, LogicService, DefaultActionService],
+        GameService, EventEmitter2, LogicService, DefaultActionService, ProbabilityService],
     }).compile();
 
     gameService = module.get<GameService>(GameService)
