@@ -14,14 +14,11 @@ export class DefaultActionService{
 
   defaultPresDiscard(game: Game): Color{
     const currentPresPlayer = this.logicService.getCurrentPres(game)
-
-    if(currentPresPlayer.role === Role.LIB){
+    if(currentPresPlayer.team === Team.LIB){
       return game.presCards.some(card => card.policy === Policy.FASC) ? Color.RED : Color.BLUE
     }
-
     const pres3 = this.determine3Cards(game.presCards)
     const [fascPresRBBDropProb, fascPresRRBDropProb] = this.getPresDropProbs(game)
-
     if(pres3 === PRES3.BBB){
       return Color.BLUE
     }
@@ -37,7 +34,22 @@ export class DefaultActionService{
   }
 
   defaultChanPlay(game: Game): Color{
-    return Color.BLUE
+    const currentChanPlayer = this.logicService.getCurrentChan(game)
+    if(currentChanPlayer.team === Team.LIB){
+      return game.chanCards.some(card => card.policy === Policy.LIB) ? Color.BLUE : Color.RED
+    }
+    const chan2 = this.determine2Cards(game.chanCards)
+    const fascChanDropProb = this.getChanDropProbs(game)
+
+    if(chan2 === CHAN2.BB){
+      return Color.BLUE
+    }
+    else if(chan2 === CHAN2.RB){
+      return this.testProb(fascChanDropProb) ? Color.RED : Color.BLUE
+    }
+    else{ //RR
+      return Color.RED
+    }
   }
 
   defaultChanClaim(game: Game): CHAN2{
@@ -210,7 +222,7 @@ export class DefaultActionService{
 
     vanillaFascPresRBBDropProb = .5
     if(this.lib3RedOnThisDeck(game)){
-      vanillaFascPresRBBDropProb = .8
+      vanillaFascPresRBBDropProb = .9
     }
     if(currentChanPlayer.team === Team.FASC){
       vanillaFascPresRBBDropProb = 1
@@ -223,8 +235,6 @@ export class DefaultActionService{
       vanillaFascPresRBBDropProb = 1
       hitlerPresRBBDropProb = 1
     }
-
-
 
     vanillaFascPresRRBDropProb = 1
     if(currentChanPlayer.team === Team.FASC){
@@ -258,11 +268,193 @@ export class DefaultActionService{
     return [RBBDropProb, RRBDropProb]
   }
 
+  /**
+   *
+   * Vanilla:
+   * matrix mostly dropping
+   * if fasc pres - for sure drop to give power (designed where pres will pass a blue assuming you will drop it)
+   * if no power and 0 or 1 blues down, .15 drop for credit
+   * if 0 or 1 blues down and pres is on inv - less likely to give it (varies in number of players)
+   * cucu variations and ensure win or avoid loss
+   */
+  getChanDropProbs(game: Game){
+    const currentPresPlayer = this.logicService.getCurrentPres(game)
+    const currentChanPlayer = this.logicService.getCurrentChan(game)
+    const bluesPlayedByChan = currentChanPlayer.bluesPlayed
+    let vanillaFascChanDropProb: number, hitlerChanDropProb: number
 
+    //hilterChanDropProbs[blues on board][blues played by chan already]
+    const hilterChanDropProbs = [[.25, null, null, null, null],
+                                 [.3, .15, null, null, null],
+                                 [.7, .4, .3, null, null],
+                                 [.85, .75, .5, .1, null],
+                                 [1, 1, 1, 1, 1]]
+
+    const vanillaFascChanDropProbs = [[.75, null, null, null, null],
+                                      [.85, .85, null, null, null],
+                                      [.9, .9, .9, null, null],
+                                      [.95, .95, .95, .95, null],
+                                      [1, 1, 1, 1, 1]]
+
+    hitlerChanDropProb = hilterChanDropProbs[game.LibPoliciesEnacted][bluesPlayedByChan]
+    vanillaFascChanDropProb = vanillaFascChanDropProbs[game.LibPoliciesEnacted][bluesPlayedByChan]
+
+    //fasc fasc and power - drop, otherwise play blue
+    if(currentPresPlayer.team === Team.FASC){
+      if(this.isPower(game)){
+        vanillaFascChanDropProb = 1
+      }
+      else if(game.LibPoliciesEnacted <= 1){
+        vanillaFascChanDropProb = .15
+      }
+    }
+    else{
+      //less likely to give inv
+      if(game.LibPoliciesEnacted <= 1 && this.invPower(game)){
+        vanillaFascChanDropProb = game.players.length <= 8 ? .3 : .65  //in 9 and 10, more likely to give inv
+      }
+    }
+    //vanilla should fail cucu with hihg prob
+    //cucu
+    if(this.isCucu(game)){
+      if(currentPresPlayer.team === Team.LIB){
+        hitlerChanDropProb = 0 //don't out
+        //vanillaFascDrop prob is pretty much the same - high
+      }
+      else{
+        //fasc fasc cucu - you already know you are fasc since you inved a fasc as lib...but you don't know if you are hitler
+        if(game.FascPoliciesEnacted >= 3 || game.LibPoliciesEnacted >= 3){
+          vanillaFascChanDropProb = 1
+          hitlerChanDropProb = 1
+        }
+        else{
+          hitlerChanDropProb = .3   //chan looks terrible if cucu fails
+          vanillaFascChanDropProb = .5  //random in this stage
+        }
+      }
+    }
+
+    //antiDD
+    //honestly nothing different - don't really pass it
+
+    if(game.LibPoliciesEnacted === 4 || game.FascPoliciesEnacted === 5){
+      hitlerChanDropProb = 1
+      vanillaFascChanDropProb = 1
+    }
+    return currentPresPlayer.role === Role.HITLER ? hitlerChanDropProb : vanillaFascChanDropProb
+  }
 
   testProb(threshold: number){
     const randomProb = Math.random()
     return randomProb < threshold
+  }
+
+
+
+
+
+
+
+/**
+ *
+ * vanilla drops unless it's fasc fasc and low blue count
+ * hitler has same matrix, but doesn't drop in lib cucu (outs) and less likely to drop in fasc fasc cucu (as they look bad)
+ */
+  getLessSmartChanDropProbs(game: Game){
+    const currentPresPlayer = this.logicService.getCurrentPres(game)
+    const currentChanPlayer = this.logicService.getCurrentChan(game)
+    const bluesPlayedByChan = currentChanPlayer.bluesPlayed
+    let vanillaFascChanDropProb: number, hitlerChanDropProb: number
+
+    //hilterChanDropProbs[blues on board][blues played by chan already]
+    const hilterChanDropProbs = [[.25, null, null, null, null],
+                                 [.3, .15, null, null, null],
+                                 [.7, .4, .3, null, null],
+                                 [.85, .75, .5, .1, null],
+                                 [1, 1, 1, 1, 1]]
+
+
+    hitlerChanDropProb = hilterChanDropProbs[game.LibPoliciesEnacted][bluesPlayedByChan]
+    vanillaFascChanDropProb = 1
+
+    //fasc fasc and low blue - play blue
+    if(currentPresPlayer.team === Team.FASC && game.LibPoliciesEnacted <= 1){
+      vanillaFascChanDropProb = .15
+    }
+    if(this.isCucu(game)){
+      if(currentPresPlayer.team === Team.LIB){
+        hitlerChanDropProb = 0 //don't out
+        //vanillaFascDrop prob is pretty much the same - high
+      }
+      else{
+        //fasc fasc cucu - you already know you are fasc since you inved a fasc as lib...but you don't know if you are hitler
+        if(game.FascPoliciesEnacted >= 3 || game.LibPoliciesEnacted >= 3){
+          vanillaFascChanDropProb = 1
+          hitlerChanDropProb = 1
+        }
+        else{
+          hitlerChanDropProb = .3   //chan looks terrible if cucu fails
+          vanillaFascChanDropProb = 1
+        }
+      }
+    }
+
+    if(game.LibPoliciesEnacted === 4 || game.FascPoliciesEnacted === 5){
+      hitlerChanDropProb = 1
+      vanillaFascChanDropProb = 1
+    }
+    return currentPresPlayer.role === Role.HITLER ? hitlerChanDropProb : vanillaFascChanDropProb
+  }
+
+
+  /**
+   *
+   * RBB always drop
+   * RRB vanilla always drop unless fasc fasc
+   * Hitler on RRB has a mix
+   */
+
+  getLessSmartPresDropProbs(game: Game){
+    const currentPresPlayer = this.logicService.getCurrentPres(game)
+    const currentChanPlayer = this.logicService.getCurrentChan(game)
+    const bluesPlayedByPres = currentPresPlayer.bluesPlayed
+
+    let vanillaFascPresRBBDropProb: number, hitlerPresRBBDropProb: number, vanillaFascPresRRBDropProb: number, hitlerPresRRBDropProb: number
+
+    vanillaFascPresRBBDropProb = 1
+    hitlerPresRBBDropProb = 1
+
+    vanillaFascPresRRBDropProb = 1
+    if(currentChanPlayer.team === Team.FASC){
+      //if chan is not hitler or they are hitler but it's an early blue for no power, always pass blue
+      if(currentChanPlayer.role !== Role.HITLER || (game.LibPoliciesEnacted <= 1 && !this.isPower(game))){
+        vanillaFascPresRRBDropProb = 0
+      }
+      else if(game.LibPoliciesEnacted <= 3 && !this.isPower(game)){
+        //chan is hitler and 2 or 3 blues down, .6 pass the blue because hitler dropping allows them to confirm they are hitler and you are their fasc
+        vanillaFascPresRRBDropProb = .4
+      }
+    }
+
+    const ifPower = this.isPower(game) ? .3 : 0
+
+    const hitlerPresRRBDropProbs = [[.25, null, null, null, null],
+                                    [.4, .3, null, null, null],
+                                    [.9 + ifPower, .5 + ifPower, .7 + ifPower, null, null],
+                                    [1, 1, 1, 1, null],
+                                    [1, 1, 1, 1, 1]]
+
+    hitlerPresRRBDropProb = hitlerPresRRBDropProbs[game.LibPoliciesEnacted][bluesPlayedByPres]
+
+    if(game.FascPoliciesEnacted >= 3){
+      //auto win or take gun
+      vanillaFascPresRRBDropProb = 1
+      hitlerPresRRBDropProb = 1
+    }
+    const RBBDropProb = currentPresPlayer.role === Role.HITLER ? hitlerPresRBBDropProb : vanillaFascPresRBBDropProb
+    const RRBDropProb = currentPresPlayer.role === Role.HITLER ? hitlerPresRRBDropProb: vanillaFascPresRRBDropProb
+    return [RBBDropProb, RRBDropProb]
+
   }
 
 }
