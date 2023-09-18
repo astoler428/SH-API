@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Game } from "../models/game.model";
-import { CHAN2, Color, Conf, PRES3, Policy, Role, Team, draws2, draws3 } from "../consts";
+import { CHAN2, Color, Conf, PRES3, Policy, Role, Status, Team, draws2, draws3 } from "../consts";
 import { Card } from "../models/card.model";
 import { LogicService } from "./logic.service";
 import { ProbabilityService } from "./probability.service";
@@ -14,10 +14,11 @@ export class DefaultActionService{
 
   defaultPresDiscard(game: Game): Color{
     const currentPresPlayer = this.logicService.getCurrentPres(game)
-    if(currentPresPlayer.team === Team.LIB){
-      return game.presCards.some(card => card.policy === Policy.FASC) ? Color.RED : Color.BLUE
-    }
     const pres3 = this.determine3Cards(game.presCards)
+    if(currentPresPlayer.team === Team.LIB){
+      // return game.presCards.some(card => card.policy === Policy.FASC) ? Color.RED : Color.BLUE
+      return pres3 === PRES3.BBB ? Color.BLUE : Color.RED
+    }
     const [fascPresRBBDropProb, fascPresRRBDropProb] = this.getPresDropProbs(game)
     if(pres3 === PRES3.BBB){
       return Color.BLUE
@@ -35,12 +36,23 @@ export class DefaultActionService{
 
   defaultChanPlay(game: Game): Color{
     const currentChanPlayer = this.logicService.getCurrentChan(game)
-    if(currentChanPlayer.team === Team.LIB){
-      return game.chanCards.some(card => card.policy === Policy.LIB) ? Color.BLUE : Color.RED
-    }
+    const currentPresPlayer = this.logicService.getCurrentPres(game)
     const chan2 = this.determine2Cards(game.chanCards)
-    const fascChanDropProb = this.getChanDropProbs(game)
 
+    //default vetos
+    if(game.FascPoliciesEnacted === 5 && game.status !== Status.VETO_DECLINED){
+      if(currentChanPlayer.team === Team.LIB && chan2 === CHAN2.RR){
+        return null //no color means veto
+      }
+      else if(currentChanPlayer.team === Team.FASC && currentPresPlayer.team === Team.FASC && chan2 === CHAN2.BB){
+        return null
+      }
+    }
+    if(currentChanPlayer.team === Team.LIB){
+      // return game.chanCards.some(card => card.policy === Policy.LIB) ? Color.BLUE : Color.RED
+      return chan2 === CHAN2.RR ? Color.RED : Color.BLUE
+    }
+    const fascChanDropProb = this.getChanDropProbs(game)
     if(chan2 === CHAN2.BB){
       return Color.BLUE
     }
@@ -95,6 +107,12 @@ export class DefaultActionService{
       }
     }
     return top3
+  }
+
+  defaultVetoReply(game: Game): boolean{
+    const currentPresPlayer = this.logicService.getCurrentPres(game)
+    const chan2 = this.determine2Cards(game.chanCards)
+    return (currentPresPlayer.team === Team.LIB && chan2 === CHAN2.RR) || (currentPresPlayer.team === Team.FASC && chan2 === CHAN2.BB)
   }
 
   determine3Cards(cards3: Card[]){

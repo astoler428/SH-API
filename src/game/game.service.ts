@@ -309,7 +309,13 @@ export class GameService{
   async defaultChanPlay(id: string){
     const game = await this.findById(id)
     const cardColor = this.defaultActionService.defaultChanPlay(game);
-    await this.chanPlay(id, cardColor)
+    if(!cardColor){
+      //means veto
+      await this.vetoRequest(id)
+    }
+    else{
+      await this.chanPlay(id, cardColor)
+    }
   }
 
   async defaultChanClaim(id: string){
@@ -335,6 +341,15 @@ export class GameService{
     const claim = this.defaultActionService.defaultInspect3Claim(game);
     await this.inspect3Claim(id, claim)
   }
+
+  async defaultVetoReply(id: string){
+    const game = await this.findById(id)
+    const vetoReply = this.defaultActionService.defaultVetoReply(game);
+    await this.vetoReply(id, vetoReply)
+  }
+
+
+
 
 async handleUpdate(id: string, game: Game){
   await this.gameRespository.update(id, game)

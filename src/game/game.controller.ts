@@ -161,6 +161,12 @@ export class GameController {
     return this.gameService.defaultInspect3Claim(id);
   }
 
+  //confusing but this is actually for the reply, the veto request comes in through chan_play
+  @Post(`/default/${Status.VETO_REQUEST}:id`)
+  async defaultVetoReply(@Param("id") id: string ){
+    return this.gameService.defaultVetoReply(id);
+  }
+
 
 
 
