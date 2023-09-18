@@ -14,7 +14,11 @@ import { DefaultActionService } from "./defaultAction.service";
 
 @Injectable()
 export class GameService{
-  constructor(private eventEmitter: EventEmitter2, private logicService: LogicService, private gameRespository: GameRepository, private defaultActionService: DefaultActionService
+  constructor(
+    private eventEmitter: EventEmitter2,
+    private logicService: LogicService,
+    private gameRespository: GameRepository,
+    private defaultActionService: DefaultActionService
 ){}
 
   async createGame(name: string, socketId: string) {
@@ -348,11 +352,8 @@ export class GameService{
     await this.vetoReply(id, vetoReply)
   }
 
-
-
-
-async handleUpdate(id: string, game: Game){
-  await this.gameRespository.update(id, game)
-  this.eventEmitter.emit(UPDATE_GAME, game)
-}
+  async handleUpdate(id: string, game: Game){
+    await this.gameRespository.update(id, game)
+    this.eventEmitter.emit(UPDATE_GAME, game)
+  }
 }
