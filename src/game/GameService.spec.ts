@@ -226,7 +226,7 @@ describe("GameService", () => {
   describe("setGameSettings", ()=> {
     let gameSettings: GameSettings
     beforeEach(() => {
-      gameSettings = {type: GameType.NORMAL, redDown: true, hitlerKnowsFasc: true}
+      gameSettings = {type: GameType.NORMAL, redDown: true, simpleBlind: true, hitlerKnowsFasc: true}
       jest.clearAllMocks()
       jest.spyOn(gameService, 'findById').mockImplementation(async () => game)
       jest.spyOn(gameService, 'handleUpdate')
@@ -235,6 +235,7 @@ describe("GameService", () => {
       await gameService.setGameSettings(id, gameSettings)
       expect(game.settings.type).toEqual(GameType.NORMAL)
       expect(game.settings.redDown).toEqual(true)
+      expect(game.settings.simpleBlind).toEqual(true)
       expect(game.settings.hitlerKnowsFasc).toEqual(true)
       expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game)
       expect(gameService.handleUpdate).toHaveBeenCalledTimes(1)

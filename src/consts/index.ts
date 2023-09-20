@@ -67,6 +67,7 @@ export enum GameType {
 export type GameSettings = {
   type: GameType,
   redDown: boolean,
+  simpleBlind: boolean,
   hitlerKnowsFasc: boolean
 }
 
@@ -84,7 +85,7 @@ export enum Status {
   SE = 'SE',
   INSPECT_TOP3 = 'INSPECT_TOP3',
   GUN = 'GUN',
-  VETO_REQUEST = 'VETO_REQUEST',
+  VETO_REPLY = 'VETO_REPLY',
   VETO_DECLINED = 'VETO_DECLINED',
   END_LIB = 'END_LIB',
   END_FASC = 'END_FASC',

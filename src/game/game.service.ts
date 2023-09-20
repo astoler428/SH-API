@@ -36,6 +36,7 @@ export class GameService{
       settings: {
         type: GameType.BLIND,
         redDown: false,
+        simpleBlind: false,
         hitlerKnowsFasc: false
       },
       status: Status.CREATED,
@@ -191,7 +192,6 @@ export class GameService{
         hitlerKnowsFasc: false
       }
     }
-
     else{
       game.settings = gameSettings
     }

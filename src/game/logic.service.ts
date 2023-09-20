@@ -309,7 +309,7 @@ export class LogicService{
 
   vetoRequest(game: Game){
     game.log.push(`${game.currentChan} requests a veto.`)
-    game.status = Status.VETO_REQUEST
+    game.status = Status.VETO_REPLY
   }
 
   vetoReply(game: Game, vetoAccepted: boolean){

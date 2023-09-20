@@ -10,6 +10,7 @@ export class GameMockFactory{
       settings: {
         type: GameType.BLIND,
         redDown: false,
+        simpleBlind: false,
         hitlerKnowsFasc: false
       },
       status: Status.CREATED,
