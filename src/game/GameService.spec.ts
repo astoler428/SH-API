@@ -3,7 +3,7 @@ import { GameService } from "./game.service"
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { GameMockFactory } from "../test/GameMockFactory";
 import { PlayerMockFactory } from "../test/PlayerMockFactory";
-import { GameSettings, GameType, Status, Vote } from "../consts";
+import { Color, GameSettings, GameType, Status, Vote } from "../consts";
 import { Game } from "../models/game.model";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME } from "../consts/socketEventNames";
 import { LogicService } from "./logic.service";
@@ -297,6 +297,29 @@ describe("GameService", () => {
       jest.advanceTimersByTime(2000)
       expect(gameService.handleUpdate).toBeCalledTimes(1)
       expect(logicService.determineResultofVote).toBeCalledTimes(0)
+    })
+  })
+
+  describe("defaultChanPlay", ()=> {
+
+    beforeEach(() => {
+      jest.resetAllMocks()
+      jest.spyOn(gameService, 'vetoRequest').mockImplementation(async () => {})
+      jest.spyOn(gameService, 'chanPlay').mockImplementation(async () => {})
+    })
+
+    it('calls request veto if defaultChanPlay is null', async () => {
+      defaultActionService.defaultChanPlay = () => null
+      await gameService.defaultChanPlay(id)
+      expect(gameService.vetoRequest).toBeCalledTimes(1)
+      expect(gameService.chanPlay).toBeCalledTimes(0)
+    })
+
+    it('calls chan play is defaultChanPlay is not null', async () => {
+      defaultActionService.defaultChanPlay = () => Color.BLUE
+      await gameService.defaultChanPlay(id)
+      expect(gameService.chanPlay).toBeCalledTimes(1)
+      expect(gameService.vetoRequest).toBeCalledTimes(0)
     })
   })
 })
