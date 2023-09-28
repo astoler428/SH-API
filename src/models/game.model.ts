@@ -4,6 +4,7 @@ import {Status, PRES3, CHAN2, Role, Conf, GameType, GameSettings, Team} from '..
 import {Card} from './card.model'
 import {Gov} from './gov.model'
 import {Socket} from 'socket.io'
+import { chatMessage } from './chatMessage.model'
 
 export type Game = {
   id: string,
@@ -30,6 +31,7 @@ export type Game = {
   top3: Card[],
   govs: Gov[],
   log: string[],
+  chat: chatMessage[],
   invClaims: {investigator: string, investigatee: string, claim: Team}[],
   confs: {confer: string, confee: string, type: Conf }[]
 }

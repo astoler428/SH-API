@@ -10,6 +10,10 @@ class JoinGameDTO {
   constructor(public socketId: string, public id: string){}
 }
 
+class ChatMessageDTO {
+  constructor(public id: string, public name: string, public message: string) {}
+}
+
 
 @WebSocketGateway({
   cors: true,
@@ -26,12 +30,12 @@ export class EventsGateway{
     this.socketMap.set(socket.id, socket);
   }
 
-  handleDisconnect(socket: Socket) {
+  async handleDisconnect(socket: Socket) {
     console.log('disconnected')
     this.socketMap.delete(socket.id);
     const id = this.socketGameIdMap.get(socket.id)
     if(id){
-      this.gameService.leaveGame(id, socket.id)
+      await this.gameService.leaveGame(id, socket.id)
     }
     return id
   }
@@ -52,6 +56,11 @@ export class EventsGateway{
       const socket = this.socketMap.get(player.socketId)
       socket?.emit(UPDATE, game);
     }
+  }
+
+  @SubscribeMessage('chat')
+  async chatMessage(@MessageBody() body: ChatMessageDTO){
+    await this.gameService.chatMessage(body.id, body.name, body.message)
   }
 }
 

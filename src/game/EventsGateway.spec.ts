@@ -70,11 +70,11 @@ describe("EventsGateway", () => {
   })
 
   describe('handleDisconnection', () => {
-    it('delete socket from socket map', () => {
+    it('delete socket from socket map', async () => {
       const mockLeaveGame = jest.spyOn(gameService, 'leaveGame').mockImplementation(async () => {})
       expect(eventsGateway.socketGameIdMap.size).toEqual(1)
-      const gameId = eventsGateway.handleDisconnect(socket)
-      expect(gameId).toEqual(id)
+      const gameId = await eventsGateway.handleDisconnect(socket)
+      expect(gameId).toBe(id)
       expect(eventsGateway.socketMap.size).toEqual(0)
       expect(mockLeaveGame).toBeCalled()
     })

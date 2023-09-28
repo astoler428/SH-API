@@ -11,7 +11,6 @@ import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
 import { DefaultActionService } from "./defaultAction.service";
 
-
 @Injectable()
 export class GameService{
   constructor(
@@ -59,6 +58,7 @@ export class GameService{
       chanClaim: null,
       top3: null,
       log: [],
+      chat: [],
       govs: [],
       invClaims: [],
       confs: []
@@ -143,8 +143,15 @@ export class GameService{
       //if everybody disconnects - thenn delete game
       if(game.players.every(player => player.socketId === null)){
         // console.log('deleting game')
-        gameDeleted = true
-        this.deleteGame(id)
+        setTimeout(async ()=> {
+          const game = await this.gameRespository.get(id)
+          if(game?.players.every(player => player.socketId === null)){
+            gameDeleted = true
+            this.deleteGame(id)
+          }
+        }, 1000*5*60)
+
+        //maybe try adding something like settimeout for a while, then if still all null, then delete game in case everyone gets kicked or something
       }
     }
     if(!gameDeleted){
@@ -355,5 +362,11 @@ export class GameService{
   async handleUpdate(id: string, game: Game){
     await this.gameRespository.update(id, game)
     this.eventEmitter.emit(UPDATE_GAME, game)
+  }
+
+  async chatMessage(id: string, name: string, message: string){
+    const game = await this.findById(id)
+    game.chat.push({name, message})
+    await this.handleUpdate(id, game)
   }
 }

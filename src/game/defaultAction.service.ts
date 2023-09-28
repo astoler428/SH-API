@@ -100,7 +100,6 @@ export class DefaultActionService{
           return this.testProb(fascRRBconfProb) ? PRES3.RRB : PRES3.RRR
         }
         else if(pres3 === PRES3.RBB){
-          console.log('this case')
           return PRES3.RRB
         }
         else{ //BBB
@@ -253,8 +252,8 @@ export class DefaultActionService{
 
     hitlerPresRBBDropProb = game.LibPoliciesEnacted === 2 ? .9 : game.LibPoliciesEnacted === 3 ? 1 : .6
 
-    //hitler knows the chan is fasc since the person that conflicted hitler also conflicted them
-    if(this.isAntiDD(game) && currentChanPlayer.team === Team.FASC){
+    //hitler knows the chan is fasc since the person that conflicted hitler also conflicted them, same with cucu
+    if((this.isAntiDD(game) && currentChanPlayer.team === Team.FASC) || this.isCucu(game)){
       hitlerPresRBBDropProb = 1
     }
 
@@ -375,7 +374,7 @@ export class DefaultActionService{
       hitlerChanDropProb = 1
       vanillaFascChanDropProb = 1
     }
-    return currentPresPlayer.role === Role.HITLER ? hitlerChanDropProb : vanillaFascChanDropProb
+    return currentChanPlayer.role === Role.HITLER ? hitlerChanDropProb : vanillaFascChanDropProb
   }
 
   testProb(threshold: number){
@@ -498,7 +497,7 @@ export class DefaultActionService{
       hitlerChanDropProb = 1
       vanillaFascChanDropProb = 1
     }
-    return currentPresPlayer.role === Role.HITLER ? hitlerChanDropProb : vanillaFascChanDropProb
+    return currentChanPlayer.role === Role.HITLER ? hitlerChanDropProb : vanillaFascChanDropProb
   }
 
 
@@ -549,7 +548,6 @@ export class DefaultActionService{
     const RBBDropProb = currentPresPlayer.role === Role.HITLER ? hitlerPresRBBDropProb : vanillaFascPresRBBDropProb
     const RRBDropProb = currentPresPlayer.role === Role.HITLER ? hitlerPresRRBDropProb: vanillaFascPresRRBDropProb
     return [RBBDropProb, RRBDropProb]
-
   }
 
 
@@ -575,7 +573,7 @@ export class DefaultActionService{
       fascRRBconfProb = .5
     }
 
-    if(game.players.length < 7){
+    if(game.players.length < 7 || game.players.length === 8){
       fascRRBconfProb = .2
       fascRRRconfProb = .1
     }
@@ -601,7 +599,7 @@ export class DefaultActionService{
 
     if(currentPresPlayer.role === Role.HITLER){
       fascRRBconfProb = 0
-      fascRRRconfProb = .1
+      fascRRRconfProb = underclaimTotal >= 2 ? .9 : underclaimTotal === 1 ? .5 : .1
     }
 
     return [fascRRBconfProb, fascBBBunderclaimProb, fascRRRconfProb, fascRRBoverclaimProb, fascRBBoverclaimProb]
@@ -619,6 +617,10 @@ export class DefaultActionService{
     //need to conf if 3 blues underclaimed
     if((pres3 === PRES3.RBB && underclaimTotal >= 1) || (PRES3.RRB && underclaimTotal >= 2)){
       fascFascConfProb = .9
+    }
+
+    if(this.isCucu(game) && currentChanPlayer.role === Role.HITLER){
+      fascFascConfProb = 0
     }
 
     //when to conf the cucu
@@ -639,7 +641,8 @@ export class DefaultActionService{
   }
 
   getSimplePresClaimWithFascProbs(game: Game){
-    const RBBoverclaimProb = 0
+    // const RBBoverclaimProb = 0
+    const RBBoverclaimProb = this.underclaimTotal(game) >= 1 ? 1 : 0
     const fascFascConfProb = 0
 
     return [fascFascConfProb, RBBoverclaimProb]

@@ -34,6 +34,7 @@ export class GameMockFactory{
       top3: null,
       govs: [],
       log: [],
+      chat: [],
       invClaims: [],
       confs: [],
       ...params

@@ -30,10 +30,10 @@ export class GameRepository{
     await this.set(key, value)
   }
 
-  async get(key: string){
+  async get(key: string): Promise<Game>{
     const value = await this.redisClient.get(key)
     if(!value){
-      return value
+      return null
     }
     return JSON.parse(value)
   }
