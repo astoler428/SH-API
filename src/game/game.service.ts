@@ -31,7 +31,7 @@ export class GameService{
 
     const game: Game = {
       id,
-      createdBy: name,
+      host: name,
       settings: {
         type: GameType.BLIND,
         redDown: false,
@@ -72,13 +72,13 @@ export class GameService{
   async joinGame(id: string, name: string, socketId: string){
     //in case they bypass the home page and go straight to url - frontend should catch this first anyway
     if(!name){
-      throw new BadRequestException(`Player must have a name`)
+      throw new BadRequestException(`You must have a name`)
     }
     const game = await this.findById(id)
 
     const playerAlreadyInGame = game.players.find(player => player.name === name)
     if(!playerAlreadyInGame && game.players.length === 10){
-      throw new BadRequestException(`up to 10 players per game.`)
+      throw new BadRequestException(`Game is full`)
     }
 
     if(playerAlreadyInGame){
@@ -87,12 +87,12 @@ export class GameService{
         playerAlreadyInGame.socketId = socketId
       }
       else if(playerAlreadyInGame.socketId !== socketId){
-        throw new BadRequestException(`A player with that name is already in the game. Choose a different name.`)
+        throw new BadRequestException(`A player with that name is already in the game`)
       }
     }
     else{
       if(game.status !== Status.CREATED){
-        throw new BadRequestException("Cannot join a game that has already started.");
+        throw new BadRequestException("Game already started");
       }
       else{
         game.players.push({
@@ -134,6 +134,11 @@ export class GameService{
         gameDeleted = true
         this.deleteGame(id)
       }
+      else if(playerLeaving.name === game.host){
+        game.host = game.players[0]?.name
+      }
+
+      //here set new host
     }
     else{
       //game in progress - disconnect
@@ -182,14 +187,13 @@ export class GameService{
   async findById(id: string): Promise<Game>{
     const game = await this.gameRespository.get(id)
     if(!game){
-      throw new BadRequestException(`No game found with id ${id}`)
+      throw new BadRequestException(`No game found with ID ${id}`)
     }
     return game
   }
 
   async setGameSettings(id: string, gameSettings: GameSettings){
     const game = await this.findById(id)
-
     if(game.status !== Status.CREATED){
       throw new BadRequestException('Cannot change the game settings after the game has started')
     }
@@ -200,7 +204,10 @@ export class GameService{
       }
     }
     else{
-      game.settings = gameSettings
+      game.settings = {
+        ...gameSettings,
+        simpleBlind: false
+      }
     }
     await this.handleUpdate(id, game)
   }

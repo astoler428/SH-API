@@ -166,20 +166,4 @@ export class GameController {
   async defaultVetoReply(@Param("id") id: string ){
     return this.gameService.defaultVetoReply(id);
   }
-
-
-
-
-
-  // @Get('/updatePlayers/:id')
-  // updatePlayers(@Param("id") id: string){
-  //   return this.gameService.updatePlayers(id)
-  // }
-
-  // @Get('/:id')
-  // findById(@Param("id") id: string){
-  //   const game = this.gameService.findById(id)
-  //   // console.log(game)
-  //   return game
-  // }
 }

@@ -8,7 +8,7 @@ import { chatMessage } from './chatMessage.model'
 
 export type Game = {
   id: string,
-  createdBy: string,
+  host: string,
   settings: GameSettings,
   status: Status,
   players: Player[],

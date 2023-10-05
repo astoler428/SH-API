@@ -6,7 +6,7 @@ export class GameMockFactory{
   create(params?: object): Game {
     return {
       id: "MockID",
-      createdBy: "player",
+      host: "player",
       settings: {
         type: GameType.BLIND,
         redDown: false,

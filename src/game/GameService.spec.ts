@@ -87,23 +87,23 @@ describe("GameService", () => {
     })
 
     it('throws if no name', async () => {
-      await expect(gameService.joinGame(id, undefined, undefined )).rejects.toThrow(`Player must have a name`)
+      await expect(gameService.joinGame(id, undefined, undefined )).rejects.toThrow(`You must have a name`)
     })
 
     it('throws if game at capacity', async () => {
       for(let i = 2; i <= 10; i++){
         await gameService.joinGame(id, `player-${i}`, undefined)
       }
-      await expect(gameService.joinGame(id, 'player-11', '11' )).rejects.toThrow(`up to 10 players per game.`)
+      await expect(gameService.joinGame(id, 'player-11', '11' )).rejects.toThrow(`Game is full`)
     })
 
     it('throws when repeated name tries to join', async ()=> {
-      await expect(gameService.joinGame(id, 'player-1', 'new socket id')).rejects.toThrow(`A player with that name is already in the game. Choose a different name.`)
+      await expect(gameService.joinGame(id, 'player-1', 'new socket id')).rejects.toThrow(`A player with that name is already in the game`)
     })
 
     it('throws when new player joins a game in progress', async ()=> {
       game.status = Status.CHOOSE_CHAN
-      await expect(gameService.joinGame(id, 'player-2', '20')).rejects.toThrow(`Cannot join a game that has already started.`)
+      await expect(gameService.joinGame(id, 'player-2', '20')).rejects.toThrow(`Game already started`)
     })
 
     it('allows player to rejoin a game in progress', async ()=> {
@@ -136,6 +136,7 @@ describe("GameService", () => {
       gameRepositoryMock.set(id, game)
       player1 = game.players.find(player => player.name === 'player-1')
       player1.socketId = 'player-1-socketid'
+      game.status = Status.CREATED
     });
 
     it('throws when player leaving not found', async () => {
@@ -146,6 +147,21 @@ describe("GameService", () => {
       await gameService.leaveGame(id, 'player-1-socketid')
       const player1StillThere = game.players.find(player => player.name === 'player-1') !== undefined
       expect(player1StillThere).toBe(false)
+    })
+
+    it('adjusts the host if the host leaves in a created game', async () => {
+      game.host = player1.name
+      expect(game.host).toBe('player-1')
+      await gameService.leaveGame(id, 'player-1-socketid')
+      expect(game.host).toBe('player-2')
+    })
+
+    it('does not adjust the host if the host leaves in a started game', async () => {
+      game.host = player1.name
+      game.status = Status.CHOOSE_CHAN
+      expect(game.host).toBe('player-1')
+      await gameService.leaveGame(id, 'player-1-socketid')
+      expect(game.host).toBe('player-1')
     })
 
     it('deletes a created game when no players are in it', async () => {
@@ -224,7 +240,7 @@ describe("GameService", () => {
   describe("setGameSettings", ()=> {
     let gameSettings: GameSettings
     beforeEach(() => {
-      gameSettings = {type: GameType.NORMAL, redDown: true, simpleBlind: true, hitlerKnowsFasc: true}
+      gameSettings = {type: GameType.NORMAL, redDown: true, simpleBlind: false, hitlerKnowsFasc: true}
       jest.clearAllMocks()
       jest.spyOn(gameService, 'findById').mockImplementation(async () => game)
       jest.spyOn(gameService, 'handleUpdate')
@@ -233,7 +249,7 @@ describe("GameService", () => {
       await gameService.setGameSettings(id, gameSettings)
       expect(game.settings.type).toEqual(GameType.NORMAL)
       expect(game.settings.redDown).toEqual(true)
-      expect(game.settings.simpleBlind).toEqual(true)
+      expect(game.settings.simpleBlind).toEqual(false)
       expect(game.settings.hitlerKnowsFasc).toEqual(true)
       expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game)
       expect(gameService.handleUpdate).toHaveBeenCalledTimes(1)
@@ -249,6 +265,16 @@ describe("GameService", () => {
       expect(gameService.handleUpdate).toHaveBeenCalledTimes(1)
     })
 
+    it('resets the simple blind if game setting set to NOT BlIND', async () => {
+      gameSettings.type = GameType.NORMAL
+      game.settings.simpleBlind = true
+      await gameService.setGameSettings(id, gameSettings)
+      expect(game.settings.type).toEqual(GameType.NORMAL)
+      expect(game.settings.simpleBlind).toEqual(false)
+      expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game)
+      expect(gameService.handleUpdate).toHaveBeenCalledTimes(1)
+    })
+
     it('throws if game settings are changed after game has started', async ()=>{
       game.status = Status.CHOOSE_CHAN
       await expect(gameService.setGameSettings(id, gameSettings)).rejects.toThrow('Cannot change the game settings after the game has started')
@@ -257,7 +283,7 @@ describe("GameService", () => {
 
   describe("findById", ()=> {
     it('catches error if game not found', async () => {
-      await expect(gameService.findById('DNE_ID')).rejects.toThrow(`No game found with id DNE_ID`)
+      await expect(gameService.findById('DNE_ID')).rejects.toThrow(`No game found with ID DNE_ID`)
     })
 
     it('returns the game if it exists', async () => {
