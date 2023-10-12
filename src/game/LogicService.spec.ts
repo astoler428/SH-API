@@ -657,7 +657,7 @@ describe("Logic Service", () => {
       logicService.enactPolicy(game, libCard, false)
       expect(game.status).toBe(Status.CHAN_CLAIM)
       expect(logicService.gameOver).toBeCalledTimes(1)
-      expect(logicService.setPrevLocks).toBeCalledTimes(1)
+      // expect(logicService.setPrevLocks).toBeCalledTimes(1)
     })
 
     it('calls reshuffle if under 3 cards in the deck', () => {
@@ -678,6 +678,7 @@ describe("Logic Service", () => {
       jest.spyOn(logicService, 'addGov').mockImplementation((game) => {})
       jest.spyOn(logicService, 'determinePolicyConf').mockImplementation((game) => {})
       jest.spyOn(logicService, 'determineNextStatus').mockImplementation((game) => Status.INV)
+      jest.spyOn(logicService, 'setPrevLocks')
       logicService.presClaim(game, claim)
     })
 
@@ -690,6 +691,7 @@ describe("Logic Service", () => {
       expect(logicService.addGov).toBeCalledTimes(1)
       expect(logicService.determinePolicyConf).toBeCalledTimes(1)
       expect(logicService.determineNextStatus).toBeCalledTimes(1)
+      expect(logicService.setPrevLocks).toBeCalledTimes(1)
     })
   })
 

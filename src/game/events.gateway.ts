@@ -31,7 +31,6 @@ export class EventsGateway{
   }
 
   async handleDisconnect(socket: Socket) {
-    console.log('disconnected')
     this.socketMap.delete(socket.id);
     const id = this.socketGameIdMap.get(socket.id)
     if(id){

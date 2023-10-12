@@ -75,12 +75,12 @@ export class LogicService{
   countVotes(game: Game){
     const numVotes = game.players.reduce((acc, player) => player.vote ? acc+1 : acc, 0)
 
-    // if(this.numAlivePlayers(game) === numVotes){
-    //   game.status = Status.VOTE_RESULT
-    // }
-    if(numVotes > 0){
+    if(this.numAlivePlayers(game) === numVotes){
       game.status = Status.VOTE_RESULT
     }
+    // if(numVotes > 0){
+    //   game.status = Status.VOTE_RESULT
+    // }
   }
 
   presDiscard(game: Game, cardColor: string){
@@ -100,11 +100,12 @@ export class LogicService{
   determineResultofVote(game: Game){
     const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
 
-    // if(jas > this.numAlivePlayers(game) / 2){
-    if(jas > 0){
+    if(jas > this.numAlivePlayers(game) / 2){
+    // if(jas > 0){
       if(this.checkHitler(game)){
         game.log.push(`${game.currentChan} is Hitler. Fascists win!`)
         game.status = Status.END_FASC
+        this.addDeckToLog(game)
       }
       else{
         this.presDraw3(game)
@@ -179,18 +180,21 @@ export class LogicService{
           game.status = Status.END_LIB
           game.log.push(`Liberals win!`)
         }
+        this.addDeckToLog(game)
       }
     }
+
     else{
       game.FascPoliciesEnacted++
       if(game.FascPoliciesEnacted === 6){
         game.status = Status.END_FASC
         game.log.push(`Fascists win!`)
+        this.addDeckToLog(game)
       }
     }
 
     if(!this.gameOver(game) && !topDeck){
-      this.setPrevLocks(game) //was settting in after pres claim
+      // this.setPrevLocks(game) //was settting in after pres claim
       game.status = Status.CHAN_CLAIM
     }
     this.resetTracker(game)
@@ -199,11 +203,14 @@ export class LogicService{
     }
   }
 
+
+
   presClaim(game: Game, claim: PRES3){
     game.presClaim = claim
     game.log.push(`${game.currentPres} claims ${game.presClaim}`)
     this.addGov(game)
     this.determinePolicyConf(game)
+    this.setPrevLocks(game)
     this.determineNextStatus(game)
   }
 
@@ -301,6 +308,7 @@ export class LogicService{
     if(shotPlayer.role === Role.HITLER){
       game.status = Status.END_LIB
       game.log.push(`${shotName} was Hitler. Liberals win!`)
+      this.addDeckToLog(game)
     }
     else{
       this.nextPres(game)
@@ -380,6 +388,7 @@ export class LogicService{
     else{
       game.log.push(`${name} tried to confirm themself as a Fascist, but was Liberal.`)
       game.status = Status.END_FASC
+      this.addDeckToLog(game)
     }
   }
 
@@ -444,6 +453,12 @@ export class LogicService{
 
   discard(card: Card, deck: Deck){
     deck.discardPile.push(card)
+  }
+
+  addDeckToLog(game: Game){
+    if(game.deck.drawPile.length > 0){
+      game.log.push(`Remaining policies in the deck: ${game.deck.drawPile.map(card => card.color).join("")}`)
+    }
   }
 }
 

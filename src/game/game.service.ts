@@ -121,7 +121,8 @@ export class GameService{
     const playerLeaving = game.players.find(player => player.socketId === socketId)
 
     if(!playerLeaving){
-      throw new BadRequestException(`This player not found in game ${id}`)
+      return
+      // throw new BadRequestException(`This player not found in game ${id}`)
     }
 
     let gameDeleted = false
