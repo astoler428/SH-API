@@ -1,13 +1,14 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { createClient, RedisClientType } from 'redis';
 import { Game } from "../models/game.model";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
 
 
 @Injectable()
 export class GameRepository{
   private redisClient: RedisClientType
 
-  constructor(){
+  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache){
     this.redisClient = createClient({
       url: process.env.REDIS_URL
     })
@@ -23,6 +24,7 @@ export class GameRepository{
   }
 
   async set(key: string, value: Game){
+    await this.cacheManager.set(key, JSON.stringify(value))
     await this.redisClient.set(key, JSON.stringify(value))
   }
 
