@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { CHAN2, Color, Conf, GameType, PRES3, Policy, RRR, Role, Status, Team, Vote, draws2, draws3, gameRoles, gameTeams } from "../consts";
+import { LogType, CHAN2, Color, Conf, GameType, PRES3, Policy, RRR, Role, Status, Team, Vote, draws2, draws3, gameRoles, gameTeams } from "../consts";
 import { Game } from "../models/game.model";
 import { Card } from "src/models/card.model";
 import { Deck } from "src/models/deck.model";
@@ -9,6 +9,7 @@ export class LogicService{
 
   //initialize the deck here
   startGame(game: Game){
+
     game.status = Status.CHOOSE_CHAN
     this.initPlayers(game)
     game.currentPres = game.players[game.presIdx].name
@@ -20,6 +21,21 @@ export class LogicService{
     if(game.players.length < 7){
       game.settings.hitlerKnowsFasc = true
     }
+    game.log.push({type: LogType.INTRO_DECK})
+    game.log.push({type: LogType.INTRO_ROLES})
+    if(game.settings.type === GameType.LIB_SPY){
+      game.log.push({type: LogType.INTRO_LIB_SPY})
+    }
+    if(game.settings.type === GameType.MIXED_ROLES){
+      game.log.push({type: LogType.INTRO_MIXED})
+    }
+    if(game.settings.type !== GameType.BLIND && game.settings.hitlerKnowsFasc){
+      game.log.push({type: LogType.INTRO_HITLER_KNOWS_FASC})
+    }
+    if(game.settings.redDown){
+      game.log.push({type: LogType.INTRO_RED_DOWN})
+    }
+
   }
 
   initPlayers(game: Game){
@@ -57,7 +73,7 @@ export class LogicService{
   chooseChan(game: Game, chanName: string){
     game.currentChan = chanName
     this.resetVotes(game)
-    game.log.push(`${game.currentPres} chooses ${chanName} as chancellor.`)
+    game.log.push({type: LogType.CHOOSE_CHAN, payload: {pres: game.currentPres, chan: chanName}})
     game.status = Status.VOTE
   }
 
@@ -75,12 +91,12 @@ export class LogicService{
   countVotes(game: Game){
     const numVotes = game.players.reduce((acc, player) => player.vote ? acc+1 : acc, 0)
 
-    if(this.numAlivePlayers(game) === numVotes){
-      game.status = Status.VOTE_RESULT
-    }
-    // if(numVotes > 0){
+    // if(this.numAlivePlayers(game) === numVotes){
     //   game.status = Status.VOTE_RESULT
     // }
+    if(numVotes > 0){
+      game.status = Status.VOTE_RESULT
+    }
   }
 
   presDiscard(game: Game, cardColor: string){
@@ -100,12 +116,12 @@ export class LogicService{
   determineResultofVote(game: Game){
     const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
 
-    if(jas > this.numAlivePlayers(game) / 2){
-    // if(jas > 0){
+    // if(jas > this.numAlivePlayers(game) / 2){
+    if(jas > 0){
       if(this.checkHitler(game)){
-        game.log.push(`${game.currentChan} is Hitler. Fascists win!`)
+        game.log.push({type: LogType.HITLER_ELECTED})
         game.status = Status.END_FASC
-        this.addDeckToLog(game)
+        this.outroLogs(game)
       }
       else{
         this.presDraw3(game)
@@ -113,7 +129,7 @@ export class LogicService{
     }
     else{
       //vote didn't pass
-      game.log.push(`Vote does not pass.`)
+      game.log.push({type: LogType.ELECTION_FAIL})
       this.advanceTracker(game)
     }
   }
@@ -164,7 +180,11 @@ export class LogicService{
   }
 
   enactPolicy(game: Game, card: Card, topDeck: boolean){
-    game.log.push(`${topDeck ? 'Topdecking. ' : ''}A ${card.policy} policy is enacted.`)
+    if(topDeck){
+      game.log.push({type: LogType.TOP_DECK})
+    }
+    game.log.push({type: LogType.ENACT_POLICY, payload: {policy: card.policy }})
+
     if(card.policy === Policy.LIB){
       game.LibPoliciesEnacted++
       if(!topDeck){
@@ -172,15 +192,26 @@ export class LogicService{
         this.getCurrentChan(game).bluesPlayed++
       }
       if(game.LibPoliciesEnacted === 5){
-        if(game.settings.type === GameType.LIB_SPY && !this.libSpyCondition(game)){
-          game.status = Status.END_FASC
-          game.log.push(`The liberal spy did not play a red. Fascists win!`)
+        if(game.settings.type === GameType.LIB_SPY){
+          if(!this.libSpyCondition(game)){
+            if(game.settings.teamLibSpy){
+              game.status = Status.END_FASC
+              game.log.push({type: LogType.LIB_SPY_FAIL})
+            }
+            else{
+              game.status = Status.END_LIB
+              game.log.push({type: LogType.LIB_SPY_FAIL})
+            }
+          }
+          else{
+            game.status = Status.END_LIB
+            game.log.push({type: LogType.LIB_SPY_WIN})
+          }
         }
         else{
           game.status = Status.END_LIB
-          game.log.push(`Liberals win!`)
         }
-        this.addDeckToLog(game)
+        this.outroLogs(game)
       }
     }
 
@@ -188,8 +219,7 @@ export class LogicService{
       game.FascPoliciesEnacted++
       if(game.FascPoliciesEnacted === 6){
         game.status = Status.END_FASC
-        game.log.push(`Fascists win!`)
-        this.addDeckToLog(game)
+        this.outroLogs(game)
       }
     }
 
@@ -207,7 +237,7 @@ export class LogicService{
 
   presClaim(game: Game, claim: PRES3){
     game.presClaim = claim
-    game.log.push(`${game.currentPres} claims ${game.presClaim}`)
+    game.log.push({type: LogType.PRES_CLAIM, payload: {pres: game.currentPres, claim}})
     this.addGov(game)
     this.determinePolicyConf(game)
     this.setPrevLocks(game)
@@ -253,6 +283,7 @@ export class LogicService{
       }
       else if(game.FascPoliciesEnacted === 3 && game.players.length < 7){
         game.top3 = this.inspect3(game.deck)
+        game.log.push({type: LogType.INSPECT_TOP3, payload: {pres: game.currentPres}})
         return game.status = Status.INSPECT_TOP3
       }
       else if(game.FascPoliciesEnacted === 4 || game.FascPoliciesEnacted === 5){
@@ -269,7 +300,7 @@ export class LogicService{
 
   chanClaim(game: Game, claim: CHAN2){
     game.chanClaim = claim
-    game.log.push(`${game.currentChan} claims ${game.chanClaim}`)
+    game.log.push({type: LogType.CHAN_CLAIM, payload: {chan: game.currentChan, claim}})
     game.status = Status.PRES_CLAIM
   }
 
@@ -277,12 +308,14 @@ export class LogicService{
     const invPlayer = this.findPlayerIngame(game, invName)
     invPlayer.investigated = true
     this.getCurrentPres(game).investigations.push(invName)
+    game.log.push({type: LogType.INV, payload: {pres: game.currentPres, investigatee: invName}})
     game.status = Status.INV_CLAIM
   }
 
   invClaim(game: Game, claim: Team){
     const investigatee = this.getCurrentPres(game).investigations.slice(-1)[0]
-    game.log.push(`${game.currentPres} claims ${investigatee} is a ${claim}`)
+    game.log.push({type: LogType.INV_CLAIM, payload: {pres: game.currentPres, investigatee, claim}})
+
     game.invClaims.push({investigator: game.currentPres, investigatee, claim })
     if(claim === Team.FASC){
       game.confs.push({confer: game.currentPres, confee: this.getCurrentPres(game).investigations.slice(-1)[0], type: Conf.INV})
@@ -290,16 +323,17 @@ export class LogicService{
     this.nextPres(game)
   }
 
+
   //here in testing
   chooseSE(game: Game, seName: string){
-    game.log.push(`${game.currentPres} special elects ${seName}`)
+    game.log.push({type: LogType.SE, payload: {pres: game.currentPres, seName}})
     game.currentPres = seName
+    game.currentChan = null
     game.status = Status.CHOOSE_CHAN
   }
 
   shootPlayer(game: Game, shotName: string){
-    game.log.push(`${game.currentPres} shoots ${shotName}`)
-
+    game.log.push({type: LogType.GUN, payload: {pres: game.currentPres, shotName}})
     const shotPlayer = this.findPlayerIngame(game, shotName)
     shotPlayer.alive = false
     if(this.numAlivePlayers(game) <= 5){
@@ -307,8 +341,8 @@ export class LogicService{
     }
     if(shotPlayer.role === Role.HITLER){
       game.status = Status.END_LIB
-      game.log.push(`${shotName} was Hitler. Liberals win!`)
-      this.addDeckToLog(game)
+      game.log.push({type: LogType.HITLER_SHOT})
+      this.outroLogs(game)
     }
     else{
       this.nextPres(game)
@@ -316,25 +350,27 @@ export class LogicService{
   }
 
   vetoRequest(game: Game){
-    game.log.push(`${game.currentChan} requests a veto.`)
+    game.log.push({type: LogType.VETO_REQUEST, payload: {chan: game.currentChan}})
     game.status = Status.VETO_REPLY
   }
 
   vetoReply(game: Game, vetoAccepted: boolean){
     if(vetoAccepted){
-      game.log.push(`${game.currentPres} agrees to a veto.`)
       game.chanCards.forEach(card => this.discard(card, game.deck))
       this.setPrevLocks(game)
       this.advanceTracker(game)
+      if(game.deck.drawPile.length < 3){
+        this.reshuffle(game.deck)
+      }
     }
     else{
-      game.log.push(`${game.currentPres} declines a veto.`)
       game.status = Status.VETO_DECLINED
     }
+    game.log.push({type: LogType.VETO_REPLY, payload: {pres: game.currentPres, vetoAccepted}})
   }
 
   inspect3Claim(game: Game, claim: PRES3){
-    game.log.push(`${game.currentPres} claims the top 3 are ${claim}. Policies are shuffled.`)
+    game.log.push({type: LogType.INSPECT_TOP3_CLAIM, payload: {pres: game.currentPres, claim}})
     this.nextPres(game)
   }
 
@@ -354,7 +390,8 @@ export class LogicService{
   libSpyCondition(game: Game){
     //return boolean
     const libSpy = game.players.find(player => player.role === Role.LIB_SPY)
-    return game.govs.find(gov => gov.policyPlayed.policy === Policy.FASC && (libSpy.name === gov.pres || libSpy.name === gov.chan)) !== undefined
+    return game.govs.some(gov => gov.policyPlayed.policy === Policy.FASC && (libSpy.name === gov.pres || libSpy.name === gov.chan))
+
   }
 
   findPlayerIngame(game: Game, name: string){
@@ -373,6 +410,7 @@ export class LogicService{
     return this.findPlayerIngame(game, game.currentPres)
   }
 
+
   getCurrentChan(game: Game){
     return this.findPlayerIngame(game, game.currentChan)
   }
@@ -386,9 +424,9 @@ export class LogicService{
       playerTryingToConfirmFasc.confirmedFasc = true
     }
     else{
-      game.log.push(`${name} tried to confirm themself as a Fascist, but was Liberal.`)
+      game.log.push({type: LogType.CONFIRM_FASC, payload: {name}})
       game.status = Status.END_FASC
-      this.addDeckToLog(game)
+      this.outroLogs(game)
     }
   }
 
@@ -447,7 +485,6 @@ export class LogicService{
   removeRed(deck: Deck){
     const redCard = deck.drawPile.find(card => card.policy === Policy.FASC)
     deck.drawPile = deck.drawPile.filter(card => card !== redCard)
-    deck.discardPile.push(redCard)
     this.shuffleDeck(deck)
   }
 
@@ -455,9 +492,11 @@ export class LogicService{
     deck.discardPile.push(card)
   }
 
-  addDeckToLog(game: Game){
+  //call this end messages - state winners and do this with deck
+  outroLogs(game: Game){
+    game.log.push({type: game.status === Status.END_FASC ? LogType.FASC_WIN : LogType.LIB_WIN})
     if(game.deck.drawPile.length > 0){
-      game.log.push(`Remaining policies in the deck: ${game.deck.drawPile.map(card => card.color).join("")}`)
+      game.log.push({type: LogType.DECK, payload: {remainingPolicies: game.deck.drawPile.map(card => card.color).join("")}})
     }
   }
 }

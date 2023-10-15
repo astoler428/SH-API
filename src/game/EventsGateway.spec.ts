@@ -15,6 +15,8 @@ import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
 import { DefaultActionService } from "./defaultAction.service";
 import { ProbabilityService } from "./probability.service";
+import { CacheModule } from "@nestjs/cache-manager";
+import * as redisStore from 'cache-manager-redis-store';
 
 
 describe("EventsGateway", () => {
@@ -28,6 +30,12 @@ describe("EventsGateway", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [ CacheModule.register({
+        isGlobal: true,
+        store: redisStore as any,
+        host: 'localhost',
+        port: 6379
+      })],
       providers: [EventsGateway, EventEmitter2, GameService, LogicService, GameRepository, DefaultActionService, ProbabilityService],
     }).compile();
 

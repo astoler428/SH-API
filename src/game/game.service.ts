@@ -36,7 +36,8 @@ export class GameService{
         type: GameType.BLIND,
         redDown: false,
         simpleBlind: false,
-        hitlerKnowsFasc: false
+        hitlerKnowsFasc: false,
+        teamLibSpy: false,
       },
       status: Status.CREATED,
       players: [],
@@ -201,7 +202,7 @@ export class GameService{
     if(gameSettings.type === GameType.BLIND){
       game.settings = {
         ...gameSettings,
-        hitlerKnowsFasc: false
+        // hitlerKnowsFasc: false,
       }
     }
     else{
@@ -209,6 +210,9 @@ export class GameService{
         ...gameSettings,
         simpleBlind: false
       }
+    }
+    if(gameSettings.type !== GameType.LIB_SPY){
+      game.settings.teamLibSpy = false
     }
     await this.handleUpdate(id, game)
   }

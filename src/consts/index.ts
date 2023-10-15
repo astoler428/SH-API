@@ -68,7 +68,8 @@ export type GameSettings = {
   type: GameType,
   redDown: boolean,
   simpleBlind: boolean,
-  hitlerKnowsFasc: boolean
+  hitlerKnowsFasc: boolean,
+  teamLibSpy: boolean
 }
 
 export enum Status {
@@ -89,6 +90,38 @@ export enum Status {
   VETO_DECLINED = 'VETO_DECLINED',
   END_LIB = 'END_LIB',
   END_FASC = 'END_FASC',
+}
+
+export enum LogType {
+  CHOOSE_CHAN = 'CHOOSE_CHAN',
+  ENACT_POLICY = 'ENACT_POLICY',
+  CHAN_CLAIM = 'CHAN_CLAIM',
+  PRES_CLAIM = 'PRES_CLAIM',
+  INV = 'INV',
+  INV_CLAIM = 'INV_CLAIM',
+  SE = 'SE',
+  INSPECT_TOP3 = 'INSPECT_TOP3',
+  INSPECT_TOP3_CLAIM = 'INSPECT_TOP3_CLAIM',
+  GUN = 'GUN',
+  VETO_REQUEST = 'VETO_REQUEST',
+  VETO_REPLY = 'VETO_REPLY',
+  CONFIRM_FASC = 'CONFIRM_FASC',
+  DECK = 'DECK',
+  //these don't require data
+  ELECTION_FAIL = 'ELECTION_FAIL',
+  TOP_DECK = 'TOP_DECK',
+  LIB_WIN = 'LIB_WIN',
+  FASC_WIN = 'FASC_WIN',
+  LIB_SPY_WIN = 'LIB_SPY_WIN',
+  LIB_SPY_FAIL = 'LIB_SPY_FAIL',
+  HITLER_ELECTED = 'HITLER_ELECTED',
+  HITLER_SHOT = 'HITLER_SHOT',
+  INTRO_DECK = 'INTRO_DECK',
+  INTRO_ROLES = 'INTRO_ROLES',
+  INTRO_LIB_SPY = 'INTRO_LIB_SPY',
+  INTRO_MIXED = 'INTRO_MIXED',
+  INTRO_HITLER_KNOWS_FASC = 'INTRO_HITLER_KNOWS_FASC',
+  INTRO_RED_DOWN = 'INTRO_RED_DOWN'
 }
 
 export const gameTeams = [Team.FASC, Team.FASC, Team.LIB, Team.LIB, Team.LIB, Team.LIB, Team.FASC, Team.LIB, Team.FASC, Team.LIB]

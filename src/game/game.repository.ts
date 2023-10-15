@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { createClient, RedisClientType } from 'redis';
 import { Game } from "../models/game.model";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import {Cache} from 'cache-manager'
 
 
 @Injectable()
@@ -25,7 +26,8 @@ export class GameRepository{
 
   async set(key: string, value: Game){
     await this.cacheManager.set(key, JSON.stringify(value))
-    await this.redisClient.set(key, JSON.stringify(value))
+    //don't await since just for backup
+    this.redisClient.set(key, JSON.stringify(value))
   }
 
   async update(key: string, value:  Game){
@@ -33,7 +35,11 @@ export class GameRepository{
   }
 
   async get(key: string): Promise<Game>{
-    const value = await this.redisClient.get(key)
+    let value: string = await this.cacheManager.get(key)
+
+    if(!value){
+      value = await this.redisClient.get(key)
+    }
     if(!value){
       return null
     }
@@ -41,6 +47,7 @@ export class GameRepository{
   }
 
   async delete(key: string){
+    this.cacheManager.del(key)
     this.redisClient.del(key)
   }
 

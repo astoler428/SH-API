@@ -664,15 +664,15 @@ export class DefaultActionService{
   }
 
   lib3RedOnThisDeck(game: Game){
-    return game.govs.find(gov => {
+    return game.govs.some(gov => {
       const presPlayer = this.logicService.findPlayerIngame(game, gov.pres)
       return gov.deckNum === game.deck.deckNum && presPlayer.team === Team.LIB && gov.presClaim === PRES3.RRR
-    }) !== undefined
+    })
   }
 
   //checks if they have been a 3 red president
   is3Red(game: Game, playerName: string){
-    return game.govs.find(gov => gov.pres === playerName && gov.presClaim === PRES3.RRR) !== undefined
+    return game.govs.some(gov => gov.pres === playerName && gov.presClaim === PRES3.RRR)
   }
 
   underclaimTotal(game: Game){
@@ -681,14 +681,14 @@ export class DefaultActionService{
 
 
   isCucu(game: Game){
-    return game.invClaims.find(inv => inv.investigator === game.currentChan && inv.investigatee === game.currentPres && inv.claim === Team.LIB) !== undefined
+    return game.invClaims.some(inv => inv.investigator === game.currentChan && inv.investigatee === game.currentPres && inv.claim === Team.LIB)
   }
 
   isAntiDD(game: Game){
     const confsToCurrentPres = game.confs.filter(conf => conf.confee === game.currentPres)
-    const confsToCurrentChanAndPres = confsToCurrentPres.find(conf1 => game.confs.find(conf2 => conf1.confer === conf2.confer && conf2.confee === game.currentChan) !== undefined
+    const confsToCurrentChanAndPres = confsToCurrentPres.some(conf1 => game.confs.some(conf2 => conf1.confer === conf2.confer && conf2.confee === game.currentChan)
     )
-    return confsToCurrentChanAndPres !== undefined
+    return confsToCurrentChanAndPres
   }
 
   //this is will there be a power if a red gets played
@@ -711,7 +711,7 @@ export class DefaultActionService{
 
   //already assumes conditions are met of fasc player who is in the middle of investigating
   doubleDipping(game: Game){
-    return game.confs.find(conf => conf.confer === game.currentPres && conf.confee === game.currentChan && conf.type === Conf.POLICY) !== undefined
+    return game.confs.some(conf => conf.confer === game.currentPres && conf.confee === game.currentChan && conf.type === Conf.POLICY)
   }
 
 }

@@ -1,6 +1,6 @@
 import {Player} from './player.model'
 import { Deck } from './deck.model'
-import {Status, PRES3, CHAN2, Role, Conf, GameType, GameSettings, Team} from '../consts'
+import {Status, PRES3, CHAN2, Role, Conf, GameType, GameSettings, Team, LogType} from '../consts'
 import {Card} from './card.model'
 import {Gov} from './gov.model'
 import {Socket} from 'socket.io'
@@ -30,7 +30,7 @@ export type Game = {
   chanClaim: CHAN2 | undefined,
   top3: Card[],
   govs: Gov[],
-  log: string[],
+  log: {type: LogType, payload?: object}[],
   chat: chatMessage[],
   invClaims: {investigator: string, investigatee: string, claim: Team}[],
   confs: {confer: string, confee: string, type: Conf }[]
