@@ -379,6 +379,7 @@ export class GameService{
   async chatMessage(id: string, name: string, message: string){
     const game = await this.findById(id)
     game.chat.push({name, message})
+    game.log.push({name, message})
     await this.handleUpdate(id, game)
   }
 }

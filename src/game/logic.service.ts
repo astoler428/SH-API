@@ -130,7 +130,7 @@ export class LogicService{
     else{
       //vote didn't pass
       game.log.push({type: LogType.ELECTION_FAIL})
-      this.advanceTracker(game)
+      this.advanceTracker(game, false)
     }
   }
 
@@ -139,18 +139,24 @@ export class LogicService{
     game.status = Status.PRES_DISCARD
   }
 
-  advanceTracker(game: Game){
+  //setPrevLocks if it's a vetoAccepted
+  advanceTracker(game: Game, setPrevLocks: boolean){
     game.tracker++
     if(game.tracker === 3){
       this.topDeck(game)
+      setPrevLocks = false
     }
     //topdecking may have led to gameover
     if(!this.gameOver(game)){
-      this.nextPres(game)
+      this.nextPres(game, setPrevLocks)
     }
   }
 
-  nextPres(game: Game){
+  nextPres(game: Game, setPrevLocks: boolean){
+    if(setPrevLocks){
+      this.setPrevLocks(game)
+    }
+
     do{
       game.presIdx = (game.presIdx + 1) % game.players.length
     }
@@ -240,7 +246,7 @@ export class LogicService{
     game.log.push({type: LogType.PRES_CLAIM, payload: {pres: game.currentPres, claim}})
     this.addGov(game)
     this.determinePolicyConf(game)
-    this.setPrevLocks(game)
+    // this.setPrevLocks(game) do this after power and do it inside of nextPres
     this.determineNextStatus(game)
   }
 
@@ -290,7 +296,7 @@ export class LogicService{
         return game.status = Status.GUN
       }
     }
-    this.nextPres(game)
+    this.nextPres(game, true)
   }
 
   setPrevLocks(game: Game){
@@ -320,13 +326,14 @@ export class LogicService{
     if(claim === Team.FASC){
       game.confs.push({confer: game.currentPres, confee: this.getCurrentPres(game).investigations.slice(-1)[0], type: Conf.INV})
     }
-    this.nextPres(game)
+    this.nextPres(game, true)
   }
 
 
   //here in testing
   chooseSE(game: Game, seName: string){
     game.log.push({type: LogType.SE, payload: {pres: game.currentPres, seName}})
+    this.setPrevLocks(game)
     game.currentPres = seName
     game.currentChan = null
     game.status = Status.CHOOSE_CHAN
@@ -345,7 +352,7 @@ export class LogicService{
       this.outroLogs(game)
     }
     else{
-      this.nextPres(game)
+      this.nextPres(game, true)
     }
   }
 
@@ -357,8 +364,8 @@ export class LogicService{
   vetoReply(game: Game, vetoAccepted: boolean){
     if(vetoAccepted){
       game.chanCards.forEach(card => this.discard(card, game.deck))
-      this.setPrevLocks(game)
-      this.advanceTracker(game)
+      // this.setPrevLocks(game)
+      this.advanceTracker(game, true)
       if(game.deck.drawPile.length < 3){
         this.reshuffle(game.deck)
       }
@@ -371,7 +378,7 @@ export class LogicService{
 
   inspect3Claim(game: Game, claim: PRES3){
     game.log.push({type: LogType.INSPECT_TOP3_CLAIM, payload: {pres: game.currentPres, claim}})
-    this.nextPres(game)
+    this.nextPres(game, true)
   }
 
   removePrevLocks(game: Game){
