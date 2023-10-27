@@ -243,7 +243,7 @@ describe("GameService", () => {
   describe("setGameSettings", ()=> {
     let gameSettings: GameSettings
     beforeEach(() => {
-      gameSettings = {type: GameType.NORMAL, redDown: true, simpleBlind: false, hitlerKnowsFasc: true, teamLibSpy: false}
+      gameSettings = {type: GameType.NORMAL, redDown: true, simpleBlind: false, hitlerKnowsFasc: true}
       jest.clearAllMocks()
       jest.spyOn(gameService, 'findById').mockImplementation(async () => game)
       jest.spyOn(gameService, 'handleUpdate')
@@ -278,15 +278,15 @@ describe("GameService", () => {
       expect(gameService.handleUpdate).toHaveBeenCalledTimes(1)
     })
 
-    it('resets the teamLibSpy condition if game setting set to NOT LIB_SPY', async () => {
-      gameSettings.type = GameType.NORMAL
-      gameSettings.teamLibSpy = true
-      await gameService.setGameSettings(id, gameSettings)
-      // expect(game.settings.type).toEqual(GameType.NORMAL)
-      expect(game.settings.teamLibSpy).toEqual(false)
-      expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game)
-      expect(gameService.handleUpdate).toHaveBeenCalledTimes(1)
-    })
+    // it('resets the teamLibSpy condition if game setting set to NOT LIB_SPY', async () => {
+    //   gameSettings.type = GameType.NORMAL
+    //   gameSettings.teamLibSpy = true
+    //   await gameService.setGameSettings(id, gameSettings)
+    //   // expect(game.settings.type).toEqual(GameType.NORMAL)
+    //   expect(game.settings.teamLibSpy).toEqual(false)
+    //   expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game)
+    //   expect(gameService.handleUpdate).toHaveBeenCalledTimes(1)
+    // })
 
     it('throws if game settings are changed after game has started', async ()=>{
       game.status = Status.CHOOSE_CHAN

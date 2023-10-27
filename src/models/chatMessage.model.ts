@@ -1,4 +1,5 @@
 export type chatMessage = {
   name: string,
-  message: string
+  date: string,
+  message: string,
 }

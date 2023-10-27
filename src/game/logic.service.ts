@@ -3,42 +3,50 @@ import { LogType, CHAN2, Color, Conf, GameType, PRES3, Policy, RRR, Role, Status
 import { Game } from "../models/game.model";
 import { Card } from "src/models/card.model";
 import { Deck } from "src/models/deck.model";
+import { getFormattedDate } from "src/helperFunctions";
 
 @Injectable()
 export class LogicService{
 
   //initialize the deck here
   startGame(game: Game){
-
-    game.status = Status.CHOOSE_CHAN
+    game.status = Status.STARTED
+    // game.status = Status.CHOOSE_CHAN
     this.initPlayers(game)
     game.currentPres = game.players[game.presIdx].name
     this.initDeck(game)
     if(game.settings.redDown){
       this.removeRed(game.deck)
       game.FascPoliciesEnacted = 1
+      game.LibPoliciesEnacted = 4
     }
-    if(game.players.length < 7){
+    //in this lib spy version, hitler doesn't know fasc by default
+    if(game.players.length < 7 && game.settings.type !== GameType.LIB_SPY){
       game.settings.hitlerKnowsFasc = true
     }
-    game.log.push({type: LogType.INTRO_DECK})
-    game.log.push({type: LogType.INTRO_ROLES})
+    game.log.push({type: LogType.INTRO_DECK, date: getFormattedDate()})
+    game.log.push({type: LogType.INTRO_ROLES, date: getFormattedDate()})
     if(game.settings.type === GameType.LIB_SPY){
-      game.log.push({type: LogType.INTRO_LIB_SPY})
+      game.log.push({type: LogType.INTRO_LIB_SPY, date: getFormattedDate()})
     }
     if(game.settings.type === GameType.MIXED_ROLES){
-      game.log.push({type: LogType.INTRO_MIXED})
+      game.log.push({type: LogType.INTRO_MIXED, date: getFormattedDate()})
     }
     if(game.settings.type !== GameType.BLIND && game.settings.hitlerKnowsFasc){
-      game.log.push({type: LogType.INTRO_HITLER_KNOWS_FASC})
+      game.log.push({type: LogType.INTRO_HITLER_KNOWS_FASC, date: getFormattedDate()})
     }
     if(game.settings.redDown){
-      game.log.push({type: LogType.INTRO_RED_DOWN})
+      game.log.push({type: LogType.INTRO_RED_DOWN, date: getFormattedDate()})
     }
-
+    game.log.push({type: LogType.INDIVIDUAL_SEAT, date: getFormattedDate()})
+    if(game.settings.type !== GameType.BLIND){
+      game.log.push({type: LogType.HITLER_SEAT, date: getFormattedDate()})
+      game.log.push({type: LogType.OTHER_FASCIST_SEATS, date: getFormattedDate()})
+    }
   }
 
   initPlayers(game: Game){
+    const playerColors = ['blueViolet','yellowGreen', 'orange', 'darkGreen', 'magenta']
     const teams = gameTeams.slice(1, game.players.length)
     const roles = gameRoles.slice(1, game.players.length)
 
@@ -63,6 +71,8 @@ export class LogicService{
       nonHitlerPlayers[0].omniFasc = true
     }
     game.players.sort(() => Math.random() - .5)
+    game.players.forEach((player,idx) => player.color = playerColors[idx%5])
+    game.players.sort(() => Math.random() - .5)
   }
 
   initDeck(game: Game){
@@ -73,7 +83,7 @@ export class LogicService{
   chooseChan(game: Game, chanName: string){
     game.currentChan = chanName
     this.resetVotes(game)
-    game.log.push({type: LogType.CHOOSE_CHAN, payload: {pres: game.currentPres, chan: chanName}})
+    game.log.push({type: LogType.CHOOSE_CHAN, date: getFormattedDate(), payload: {pres: game.currentPres, chan: chanName}})
     game.status = Status.VOTE
   }
 
@@ -119,7 +129,7 @@ export class LogicService{
     // if(jas > this.numAlivePlayers(game) / 2){
     if(jas > 0){
       if(this.checkHitler(game)){
-        game.log.push({type: LogType.HITLER_ELECTED})
+        game.log.push({type: LogType.HITLER_ELECTED, date: getFormattedDate(),})
         game.status = Status.END_FASC
         this.outroLogs(game)
       }
@@ -129,7 +139,7 @@ export class LogicService{
     }
     else{
       //vote didn't pass
-      game.log.push({type: LogType.ELECTION_FAIL})
+      game.log.push({type: LogType.ELECTION_FAIL, date: getFormattedDate()})
       this.advanceTracker(game, false)
     }
   }
@@ -187,9 +197,9 @@ export class LogicService{
 
   enactPolicy(game: Game, card: Card, topDeck: boolean){
     if(topDeck){
-      game.log.push({type: LogType.TOP_DECK})
+      game.log.push({type: LogType.TOP_DECK, date: getFormattedDate(),})
     }
-    game.log.push({type: LogType.ENACT_POLICY, payload: {policy: card.policy }})
+    game.log.push({type: LogType.ENACT_POLICY, date: getFormattedDate(), payload: {policy: card.policy }})
 
     if(card.policy === Policy.LIB){
       game.LibPoliciesEnacted++
@@ -200,36 +210,34 @@ export class LogicService{
       if(game.LibPoliciesEnacted === 5){
         if(game.settings.type === GameType.LIB_SPY){
           if(!this.libSpyCondition(game)){
-            if(game.settings.teamLibSpy){
-              game.status = Status.END_FASC
-              game.log.push({type: LogType.LIB_SPY_FAIL})
-            }
-            else{
-              game.status = Status.END_LIB
-              game.log.push({type: LogType.LIB_SPY_FAIL})
-            }
+            game.log.push({type: LogType.LIB_SPY_FAIL, date: getFormattedDate(),})
+            game.status = Status.END_FASC
+            this.outroLogs(game)
+            return
           }
           else{
-            game.status = Status.END_LIB
-            game.log.push({type: LogType.LIB_SPY_WIN})
+            game.status = Status.LIB_SPY_GUESS
+            return
           }
         }
         else{
           game.status = Status.END_LIB
+          this.outroLogs(game)
+          return
         }
-        this.outroLogs(game)
       }
     }
-
     else{
       game.FascPoliciesEnacted++
       if(game.FascPoliciesEnacted === 6){
         game.status = Status.END_FASC
         this.outroLogs(game)
+        return
       }
     }
 
-    if(!this.gameOver(game) && !topDeck){
+    //!this.gameOver(game) &&
+    if(!topDeck){
       // this.setPrevLocks(game) //was settting in after pres claim
       game.status = Status.CHAN_CLAIM
     }
@@ -239,11 +247,31 @@ export class LogicService{
     }
   }
 
+  /**
+   *
+   *      if(!this.libSpyCondition(game)){
+            // if(game.settings.teamLibSpy){
+              game.status = Status.END_FASC
+              game.log.push({type: LogType.LIB_SPY_FAIL})
+            // }
+            // else{
+            //   game.status = Status.END_LIB
+            //   game.log.push({type: LogType.LIB_SPY_FAIL})
+            // }
+          }
+          // else{
+          //   game.status = Status.END_LIB
+          //   game.log.push({type: LogType.LIB_SPY_WIN})
+          // }
+        }
+   *
+   */
+
 
 
   presClaim(game: Game, claim: PRES3){
     game.presClaim = claim
-    game.log.push({type: LogType.PRES_CLAIM, payload: {pres: game.currentPres, claim}})
+    game.log.push({type: LogType.PRES_CLAIM, date: getFormattedDate(), payload: {pres: game.currentPres, claim}})
     this.addGov(game)
     this.determinePolicyConf(game)
     // this.setPrevLocks(game) do this after power and do it inside of nextPres
@@ -289,7 +317,7 @@ export class LogicService{
       }
       else if(game.FascPoliciesEnacted === 3 && game.players.length < 7){
         game.top3 = this.inspect3(game.deck)
-        game.log.push({type: LogType.INSPECT_TOP3, payload: {pres: game.currentPres}})
+        game.log.push({type: LogType.INSPECT_TOP3, date: getFormattedDate(), payload: {pres: game.currentPres}})
         return game.status = Status.INSPECT_TOP3
       }
       else if(game.FascPoliciesEnacted === 4 || game.FascPoliciesEnacted === 5){
@@ -306,7 +334,7 @@ export class LogicService{
 
   chanClaim(game: Game, claim: CHAN2){
     game.chanClaim = claim
-    game.log.push({type: LogType.CHAN_CLAIM, payload: {chan: game.currentChan, claim}})
+    game.log.push({type: LogType.CHAN_CLAIM, date: getFormattedDate(), payload: {chan: game.currentChan, claim}})
     game.status = Status.PRES_CLAIM
   }
 
@@ -314,13 +342,18 @@ export class LogicService{
     const invPlayer = this.findPlayerIngame(game, invName)
     invPlayer.investigated = true
     this.getCurrentPres(game).investigations.push(invName)
-    game.log.push({type: LogType.INV, payload: {pres: game.currentPres, investigatee: invName}})
+    game.status = Status.SHOW_INV_CHOICE
+  }
+
+  setInv(game: Game, invName: string){
+    game.log.push({type: LogType.INV, date: getFormattedDate(), payload: {pres: game.currentPres, investigatee: invName}})
     game.status = Status.INV_CLAIM
+
   }
 
   invClaim(game: Game, claim: Team){
     const investigatee = this.getCurrentPres(game).investigations.slice(-1)[0]
-    game.log.push({type: LogType.INV_CLAIM, payload: {pres: game.currentPres, investigatee, claim}})
+    game.log.push({type: LogType.INV_CLAIM, date: getFormattedDate(), payload: {pres: game.currentPres, investigatee, claim}})
 
     game.invClaims.push({investigator: game.currentPres, investigatee, claim })
     if(claim === Team.FASC){
@@ -332,7 +365,7 @@ export class LogicService{
 
   //here in testing
   chooseSE(game: Game, seName: string){
-    game.log.push({type: LogType.SE, payload: {pres: game.currentPres, seName}})
+    game.log.push({type: LogType.SE, date: getFormattedDate(), payload: {pres: game.currentPres, seName}})
     this.setPrevLocks(game)
     game.currentPres = seName
     game.currentChan = null
@@ -340,7 +373,7 @@ export class LogicService{
   }
 
   shootPlayer(game: Game, shotName: string){
-    game.log.push({type: LogType.GUN, payload: {pres: game.currentPres, shotName}})
+    game.log.push({type: LogType.GUN, date: getFormattedDate(), payload: {pres: game.currentPres, shotName}})
     const shotPlayer = this.findPlayerIngame(game, shotName)
     shotPlayer.alive = false
     if(this.numAlivePlayers(game) <= 5){
@@ -348,7 +381,7 @@ export class LogicService{
     }
     if(shotPlayer.role === Role.HITLER){
       game.status = Status.END_LIB
-      game.log.push({type: LogType.HITLER_SHOT})
+      game.log.push({type: LogType.HITLER_SHOT, date: getFormattedDate()} )
       this.outroLogs(game)
     }
     else{
@@ -356,8 +389,26 @@ export class LogicService{
     }
   }
 
+  guessLibSpy(game: Game, spyName: string){
+    const spyGuessPlayer = this.findPlayerIngame(game, spyName)
+    spyGuessPlayer.guessedToBeLibSpy = true
+    game.status = Status.SHOW_LIB_SPY_GUESS
+  }
+
+  determineResultOfLibSpyGuess(game: Game, spyName: string){
+    const spyGuessPlayer = this.findPlayerIngame(game, spyName)
+    if(spyGuessPlayer.role === Role.LIB_SPY){
+      game.status = Status.END_FASC
+    }
+    else{
+      game.status = Status.END_LIB
+    }
+    game.log.push({type: LogType.LIB_SPY_GUESS, date: getFormattedDate(), payload: {spyName}})
+    this.outroLogs(game)
+  }
+
   vetoRequest(game: Game){
-    game.log.push({type: LogType.VETO_REQUEST, payload: {chan: game.currentChan}})
+    game.log.push({type: LogType.VETO_REQUEST, date: getFormattedDate(), payload: {chan: game.currentChan}})
     game.status = Status.VETO_REPLY
   }
 
@@ -373,11 +424,11 @@ export class LogicService{
     else{
       game.status = Status.VETO_DECLINED
     }
-    game.log.push({type: LogType.VETO_REPLY, payload: {pres: game.currentPres, vetoAccepted}})
+    game.log.push({type: LogType.VETO_REPLY, date: getFormattedDate(), payload: {pres: game.currentPres, vetoAccepted}})
   }
 
   inspect3Claim(game: Game, claim: PRES3){
-    game.log.push({type: LogType.INSPECT_TOP3_CLAIM, payload: {pres: game.currentPres, claim}})
+    game.log.push({type: LogType.INSPECT_TOP3_CLAIM, date: getFormattedDate(), payload: {pres: game.currentPres, claim}})
     this.nextPres(game, true)
   }
 
@@ -431,7 +482,7 @@ export class LogicService{
       playerTryingToConfirmFasc.confirmedFasc = true
     }
     else{
-      game.log.push({type: LogType.CONFIRM_FASC, payload: {name}})
+      game.log.push({type: LogType.CONFIRM_FASC, date: getFormattedDate(), payload: {name}})
       game.status = Status.END_FASC
       this.outroLogs(game)
     }
@@ -486,6 +537,7 @@ export class LogicService{
     const card2 = deck.drawPile[n-2]
     const card3 = deck.drawPile[n-3]
     const top3 = [card1, card2, card3].sort(()=> Math.random() - .5)
+    //says in log that the policies are shuffled
     return top3
   }
 
@@ -501,9 +553,9 @@ export class LogicService{
 
   //call this end messages - state winners and do this with deck
   outroLogs(game: Game){
-    game.log.push({type: game.status === Status.END_FASC ? LogType.FASC_WIN : LogType.LIB_WIN})
+    game.log.push({type: game.status === Status.END_FASC ? LogType.FASC_WIN : LogType.LIB_WIN, date: getFormattedDate()})
     if(game.deck.drawPile.length > 0){
-      game.log.push({type: LogType.DECK, payload: {remainingPolicies: game.deck.drawPile.map(card => card.color).join("")}})
+      game.log.push({type: LogType.DECK, date: getFormattedDate(), payload: {remainingPolicies: game.deck.drawPile.map(card => card.color).join("")}})
     }
   }
 }

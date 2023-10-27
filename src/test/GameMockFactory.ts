@@ -12,7 +12,6 @@ export class GameMockFactory{
         redDown: false,
         simpleBlind: false,
         hitlerKnowsFasc: false,
-        teamLibSpy: false
       },
       status: Status.CREATED,
       players: [],

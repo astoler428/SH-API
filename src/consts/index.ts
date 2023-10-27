@@ -69,11 +69,12 @@ export type GameSettings = {
   redDown: boolean,
   simpleBlind: boolean,
   hitlerKnowsFasc: boolean,
-  teamLibSpy: boolean
+  // teamLibSpy: boolean
 }
 
 export enum Status {
   CREATED = 'CREATED',
+  STARTED = 'STARTED',
   CHOOSE_CHAN = 'CHOOSE_CHAN',
   VOTE = 'VOTE',
   VOTE_RESULT = 'VOTE_RESULT',
@@ -82,17 +83,23 @@ export enum Status {
   PRES_CLAIM = 'PRES_CLAIM',
   CHAN_CLAIM = 'CHAN_CLAIM',
   INV = 'INV',
+  SHOW_INV_CHOICE = 'SHOW_INV_CHOICE',
   INV_CLAIM = 'INV_CLAIM',
   SE = 'SE',
   INSPECT_TOP3 = 'INSPECT_TOP3',
   GUN = 'GUN',
   VETO_REPLY = 'VETO_REPLY',
   VETO_DECLINED = 'VETO_DECLINED',
+  LIB_SPY_GUESS = 'LIB_SPY_GUESS',
+  SHOW_LIB_SPY_GUESS = 'SHOW_LIB_SPY_GUESS',
   END_LIB = 'END_LIB',
   END_FASC = 'END_FASC',
 }
 
 export enum LogType {
+  INDIVIDUAL_SEAT = 'INDIVIDUAL_SEAT',
+  HITLER_SEAT = 'HITLER_SEAT',
+  OTHER_FASCIST_SEATS = 'OTHER_FASCIST_SEATS',
   CHOOSE_CHAN = 'CHOOSE_CHAN',
   ENACT_POLICY = 'ENACT_POLICY',
   CHAN_CLAIM = 'CHAN_CLAIM',
@@ -107,6 +114,7 @@ export enum LogType {
   VETO_REPLY = 'VETO_REPLY',
   CONFIRM_FASC = 'CONFIRM_FASC',
   DECK = 'DECK',
+  LIB_SPY_GUESS = 'LIB_SPY_GUESS',
   //these don't require data
   ELECTION_FAIL = 'ELECTION_FAIL',
   TOP_DECK = 'TOP_DECK',

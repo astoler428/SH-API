@@ -10,6 +10,7 @@ import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE, UPDATE_GAME, UPDATE_PLAYERS 
 import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
 import { DefaultActionService } from "./defaultAction.service";
+import { getFormattedDate } from "src/helperFunctions";
 
 @Injectable()
 export class GameService{
@@ -37,7 +38,6 @@ export class GameService{
         redDown: false,
         simpleBlind: false,
         hitlerKnowsFasc: false,
-        teamLibSpy: false,
       },
       status: Status.CREATED,
       players: [],
@@ -99,6 +99,7 @@ export class GameService{
         game.players.push({
           name,
           socketId,
+          color: 'black',
           team: Team.LIB,
           role: Role.LIB,
           alive: true,
@@ -107,7 +108,8 @@ export class GameService{
           investigations: [],
           bluesPlayed: 0,
           confirmedFasc: false,
-          omniFasc: false
+          omniFasc: false,
+          guessedToBeLibSpy: false,
         })
      }
     }
@@ -178,6 +180,11 @@ export class GameService{
       throw new BadRequestException(`Can't start a game with fewer than 5 players`)
     }
     this.logicService.startGame(game)
+    const timeout = game.settings.type === GameType.BLIND ? 1 : 5000
+    setTimeout(async () => {
+      game.status = Status.CHOOSE_CHAN
+      await this.handleUpdate(id, game)
+    }, timeout)
     await this.handleUpdate(id, game)
     return
   }
@@ -211,9 +218,9 @@ export class GameService{
         simpleBlind: false
       }
     }
-    if(gameSettings.type !== GameType.LIB_SPY){
-      game.settings.teamLibSpy = false
-    }
+    // if(gameSettings.type !== GameType.LIB_SPY){
+    //   game.settings.teamLibSpy = false
+    // }
     await this.handleUpdate(id, game)
   }
 
@@ -269,6 +276,11 @@ export class GameService{
     }
     this.logicService.chooseInv(game, invName)
     await this.handleUpdate(id, game)
+
+     setTimeout(async ()=> {
+      this.logicService.setInv(game, invName)
+      await this.handleUpdate(id, game)
+      }, 1000)
   }
 
   async invClaim(id: string, claim: Team){
@@ -295,6 +307,19 @@ export class GameService{
       throw new BadRequestException(`Can't shoot at this time`)
     }
     this.logicService.shootPlayer(game, shotName)
+    await this.handleUpdate(id, game)
+  }
+
+  async chooseLibSpy(id: string, spyName: string){
+    const game = await this.findById(id)
+    if(game.status !== Status.LIB_SPY_GUESS){
+      throw new BadRequestException(`Can't guess Lib Spy at this time`)
+    }
+    this.logicService.guessLibSpy(game, spyName)
+    setTimeout(async ()=> {
+      this.logicService.determineResultOfLibSpyGuess(game, spyName)
+      await this.handleUpdate(id, game)
+    }, 1000)
     await this.handleUpdate(id, game)
   }
 
@@ -378,8 +403,8 @@ export class GameService{
 
   async chatMessage(id: string, name: string, message: string){
     const game = await this.findById(id)
-    game.chat.push({name, message})
-    game.log.push({name, message})
+    game.chat.push({name, date: getFormattedDate(), message})
+    game.log.push({name, date: getFormattedDate(), message})
     await this.handleUpdate(id, game)
   }
 }

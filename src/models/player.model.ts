@@ -3,6 +3,7 @@ import {Role, Vote, Team} from '../consts'
  export type Player = {
   name: string,
   socketId: string,
+  color: string,
   team: Team,
   role: Role,
   alive: boolean,
@@ -11,5 +12,6 @@ import {Role, Vote, Team} from '../consts'
   investigations: string[],
   bluesPlayed: number,
   confirmedFasc: boolean,
-  omniFasc: boolean
+  omniFasc: boolean,
+  guessedToBeLibSpy: boolean,
 }

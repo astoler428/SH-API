@@ -108,6 +108,11 @@ export class GameController {
     return this.gameService.chooseGun(id, body.shotName);
   }
 
+  @Post("/chooseLibSpy/:id")
+  async chooseLibSpy(@Param("id") id: string, @Body() body: {spyName: string}){
+    return this.gameService.chooseLibSpy(id, body.spyName);
+  }
+
   @Post("/inspect3Claim/:id")
   async inspect3Claim(@Param("id") id: string, @Body() body: {claim: PRES3} ){
     return this.gameService.inspect3Claim(id, body.claim);

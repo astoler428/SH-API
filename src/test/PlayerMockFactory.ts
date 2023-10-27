@@ -7,6 +7,7 @@ import { Player } from '../models/player.model'
     return {
       name: "player",
       socketId: '1',
+      color: 'black',
       team: undefined,
       role: undefined,
       alive: true,
@@ -16,6 +17,7 @@ import { Player } from '../models/player.model'
       bluesPlayed: 0,
       confirmedFasc: false,
       omniFasc: false,
+      guessedToBeLibSpy: false,
       ...params
     }
   }
