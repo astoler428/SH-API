@@ -1,9 +1,10 @@
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway,OnGatewayConnection } from "@nestjs/websockets";
-import { JOIN_GAME, UPDATE_GAME, UPDATE, UPDATE_PLAYERS, START_GAME, LEAVE_GAME } from "../consts/socketEventNames";
+import { JOIN_GAME, UPDATE_GAME, UPDATE, UPDATE_PLAYERS, START_GAME, LEAVE_GAME, DISPLAY } from "../consts/socketEventNames";
 import { Socket } from "socket.io";
 import { Game } from "src/models/game.model";
 import { OnEvent } from "@nestjs/event-emitter";
 import { GameService } from "./game.service";
+import { DisplayType } from "src/consts";
 
 
 class JoinGameDTO {
@@ -56,6 +57,14 @@ export class EventsGateway{
       socket?.emit(UPDATE, game);
     }
   }
+
+  // @OnEvent(DISPLAY)
+  // sendDisplayUpdate(game: Game, displayType: DisplayType){
+  //   for (const player of game.players) {
+  //     const socket = this.socketMap.get(player.socketId)
+  //     socket?.emit(displayType, game);
+  //   }
+  // }
 
   @SubscribeMessage('chat')
   async chatMessage(@MessageBody() body: ChatMessageDTO){

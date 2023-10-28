@@ -317,7 +317,7 @@ describe("GameService", () => {
 
     })
     it('handles async calls', async () => {
-      game.status = Status.VOTE_RESULT
+      game.status = Status.SHOW_VOTE_RESULT
       await gameService.vote(id, 'player-1', Vote.JA)
       expect(gameService.handleUpdate).toBeCalledTimes(1)
       expect(logicService.determineResultofVote).toBeCalledTimes(0)

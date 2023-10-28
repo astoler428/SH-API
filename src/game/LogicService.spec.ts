@@ -373,12 +373,14 @@ describe("Logic Service", () => {
     })
 
     it.skip('correctly determines when all votes are in', ()=>{
-      expect(game.status).not.toEqual(Status.VOTE_RESULT)
+
+
+      expect(game.status).not.toEqual(Status.SHOW_VOTE_RESULT)
       logicService.vote(game, 'player-4', Vote.NEIN)
       logicService.vote(game, 'player-5', Vote.JA)
-      expect(game.status).not.toEqual(Status.VOTE_RESULT)
+      expect(game.status).not.toEqual(Status.SHOW_VOTE_RESULT)
       logicService.vote(game, 'player-4', Vote.NEIN)
-      expect(game.status).toEqual(Status.VOTE_RESULT)
+      expect(game.status).toEqual(Status.SHOW_VOTE_RESULT)
     })
   })
 
@@ -757,7 +759,7 @@ describe("Logic Service", () => {
       game.currentPres = 'player-1'
       jest.spyOn(logicService, 'addGov').mockImplementation((game) => {})
       jest.spyOn(logicService, 'determinePolicyConf').mockImplementation((game) => {})
-      jest.spyOn(logicService, 'determineNextStatus').mockImplementation((game) => Status.INV)
+      jest.spyOn(logicService, 'determinePower').mockImplementation((game) => Status.INV)
       jest.spyOn(logicService, 'setPrevLocks')
       logicService.presClaim(game, claim)
     })
@@ -770,7 +772,7 @@ describe("Logic Service", () => {
     it('calls the right functions', () => {
       expect(logicService.addGov).toBeCalledTimes(1)
       expect(logicService.determinePolicyConf).toBeCalledTimes(1)
-      expect(logicService.determineNextStatus).toBeCalledTimes(1)
+      expect(logicService.determinePower).toBeCalledTimes(1)
     })
   })
 
@@ -855,7 +857,7 @@ describe("Logic Service", () => {
     })
   })
 
-  describe('determineNextStatus', () => {
+  describe('determinePower', () => {
 
     beforeEach(() => {
       game.status = Status.CHAN_CLAIM
@@ -865,28 +867,28 @@ describe("Logic Service", () => {
       game.chanPlay = new CardMockFactory().createLib()
       game.FascPoliciesEnacted = 1
       game.players = [1,2,3,4,5,6,7,8,9].map(i => new PlayerMockFactory().create())
-      expect(logicService.determineNextStatus(game)).not.toBe(Status.INV)
+      expect(logicService.determinePower(game)).not.toBe(Status.INV)
      })
 
     it('determines inv in 9 and 10 player games', () => {
      game.chanPlay = new CardMockFactory().createFasc()
      game.FascPoliciesEnacted = 1
      game.players = [1,2,3,4,5,6,7,8,9].map(i => new PlayerMockFactory().create())
-     expect(logicService.determineNextStatus(game)).toBe(Status.INV)
+     expect(logicService.determinePower(game)).toBe(Status.INV)
     })
 
     it('determines inv in 7 and 8 player games', () => {
       game.chanPlay = new CardMockFactory().createFasc()
       game.FascPoliciesEnacted = 2
       game.players = [1,2,3,4,5,6,7].map(i => new PlayerMockFactory().create())
-      expect(logicService.determineNextStatus(game)).toBe(Status.INV)
+      expect(logicService.determinePower(game)).toBe(Status.INV)
      })
 
      it('no inv in 5 and 6 player games', () => {
       game.chanPlay = new CardMockFactory().createFasc()
       game.FascPoliciesEnacted = 2
       game.players = [1,2,3,4,5,6].map(i => new PlayerMockFactory().create())
-      expect(logicService.determineNextStatus(game)).not.toBe(Status.INV)
+      expect(logicService.determinePower(game)).not.toBe(Status.INV)
      })
 
      it('inspect top 3 in 5 and 6 player games', () => {
@@ -894,7 +896,7 @@ describe("Logic Service", () => {
       game.chanPlay = new CardMockFactory().createFasc()
       game.FascPoliciesEnacted = 3
       game.players = [1,2,3,4,5,6].map(i => new PlayerMockFactory().create())
-      expect(logicService.determineNextStatus(game)).toBe(Status.INSPECT_TOP3)
+      expect(logicService.determinePower(game)).toBe(Status.INSPECT_TOP3)
       expect(logicService.inspect3).toBeCalledTimes(1)
      })
 
@@ -902,21 +904,21 @@ describe("Logic Service", () => {
       game.chanPlay = new CardMockFactory().createFasc()
       game.FascPoliciesEnacted = 3
       game.players = [1,2,3,4,5,6, 7].map(i => new PlayerMockFactory().create())
-      expect(logicService.determineNextStatus(game)).toBe(Status.SE)
+      expect(logicService.determinePower(game)).toBe(Status.SE)
      })
 
      it('sets gun on 4 reds', () => {
       game.chanPlay = new CardMockFactory().createFasc()
       game.FascPoliciesEnacted = 4
       game.players = [1,2,3,4,5].map(i => new PlayerMockFactory().create())
-      expect(logicService.determineNextStatus(game)).toBe(Status.GUN)
+      expect(logicService.determinePower(game)).toBe(Status.GUN)
      })
 
      it('sets gun on 5 reds', () => {
       game.chanPlay = new CardMockFactory().createFasc()
       game.FascPoliciesEnacted = 5
       game.players = [1,2,3,4,5,6,7].map(i => new PlayerMockFactory().create())
-      expect(logicService.determineNextStatus(game)).toBe(Status.GUN)
+      expect(logicService.determinePower(game)).toBe(Status.GUN)
      })
 
      it('calls next pres if no power', () => {
@@ -924,7 +926,7 @@ describe("Logic Service", () => {
       game.FascPoliciesEnacted = 5
       game.players = [1,2,3,4,5,6,7].map(i => new PlayerMockFactory().create())
       jest.spyOn(logicService, 'nextPres')
-      logicService.determineNextStatus(game)
+      logicService.determinePower(game)
       expect(logicService.nextPres).toBeCalledTimes(1)
      })
   })

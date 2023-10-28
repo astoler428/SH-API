@@ -236,7 +236,7 @@ export class GameService{
   async vote(id: string, name: string, vote: Vote){
     const game = await this.findById(id)
     this.logicService.vote(game, name, vote)
-    if(game.status === Status.VOTE_RESULT){
+    if(game.status === Status.SHOW_VOTE_RESULT){
       setTimeout(async ()=> {
         this.logicService.determineResultofVote(game)
         await this.handleUpdate(id, game)
