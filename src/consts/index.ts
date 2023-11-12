@@ -119,6 +119,7 @@ export enum LogType {
   CONFIRM_FASC = 'CONFIRM_FASC',
   DECK = 'DECK',
   LIB_SPY_GUESS = 'LIB_SPY_GUESS',
+  SHUFFLE_DECK = 'SHUFFLE_DECK',
   //these don't require data
   ELECTION_FAIL = 'ELECTION_FAIL',
   TOP_DECK = 'TOP_DECK',
@@ -133,7 +134,8 @@ export enum LogType {
   INTRO_LIB_SPY = 'INTRO_LIB_SPY',
   INTRO_MIXED = 'INTRO_MIXED',
   INTRO_HITLER_KNOWS_FASC = 'INTRO_HITLER_KNOWS_FASC',
-  INTRO_RED_DOWN = 'INTRO_RED_DOWN'
+  INTRO_RED_DOWN = 'INTRO_RED_DOWN',
+
 }
 
 export enum DisplayType {

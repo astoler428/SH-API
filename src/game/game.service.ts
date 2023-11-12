@@ -24,8 +24,10 @@ export class GameService{
   async createGame(name: string, socketId: string) {
     let id: string
     let existingGame: Game
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     do{
-      id = Math.random().toString(36).slice(2).substring(0, 4).toUpperCase();
+      id = [1,2,3,4].map(() => letters.charAt(Math.floor(Math.random() * 26))).join('')
+      // id = Math.random().toString(36).slice(2).substring(0, 4).toUpperCase();
       existingGame = await this.gameRespository.get(id)
     }
     while(existingGame)
@@ -180,8 +182,9 @@ export class GameService{
       throw new BadRequestException(`Can't start a game with fewer than 5 players`)
     }
     this.logicService.startGame(game)
-    const timeout = game.settings.type === GameType.BLIND ? 1 : 5000
+    const timeout = game.settings.type === GameType.BLIND ? 2000 : 9000
     setTimeout(async () => {
+      const game = await this.findById(id)
       game.status = Status.CHOOSE_CHAN
       await this.handleUpdate(id, game)
     }, timeout)
@@ -209,7 +212,7 @@ export class GameService{
     if(gameSettings.type === GameType.BLIND){
       game.settings = {
         ...gameSettings,
-        // hitlerKnowsFasc: false,
+        hitlerKnowsFasc: false,
       }
     }
     else{
@@ -238,9 +241,10 @@ export class GameService{
     this.logicService.vote(game, name, vote)
     if(game.status === Status.SHOW_VOTE_RESULT){
       setTimeout(async ()=> {
+        const game = await this.findById(id)
         this.logicService.determineResultofVote(game)
         await this.handleUpdate(id, game)
-      }, 2000)
+      }, 3000)
     }
     await this.handleUpdate(id, game)
   }
@@ -254,6 +258,7 @@ export class GameService{
   async chanPlay(id: string, cardColor: string){
     const game = await this.findById(id)
     this.logicService.chanPlay(game, cardColor)
+    //if game didn't end (tell by status being chan claim), then
     await this.handleUpdate(id, game)
   }
 
@@ -276,11 +281,11 @@ export class GameService{
     }
     this.logicService.chooseInv(game, invName)
     await this.handleUpdate(id, game)
-
      setTimeout(async ()=> {
+      const game = await this.findById(id)
       this.logicService.setInv(game, invName)
       await this.handleUpdate(id, game)
-      }, 1000)
+      }, 3000)
   }
 
   async invClaim(id: string, claim: Team){
@@ -317,9 +322,10 @@ export class GameService{
     }
     this.logicService.guessLibSpy(game, spyName)
     setTimeout(async ()=> {
+      const game = await this.findById(id)
       this.logicService.determineResultOfLibSpyGuess(game, spyName)
       await this.handleUpdate(id, game)
-    }, 1000)
+    }, 2000)
     await this.handleUpdate(id, game)
   }
 

@@ -17,9 +17,10 @@ export class LogicService{
     this.initDeck(game)
     if(game.settings.redDown){
       this.removeRed(game.deck)
-      game.FascPoliciesEnacted = 1
+      game.FascPoliciesEnacted = 2
       game.LibPoliciesEnacted = 4
     }
+
     //in this lib spy version, hitler doesn't know fasc by default
     if(game.players.length < 7 && game.settings.type !== GameType.LIB_SPY){
       game.settings.hitlerKnowsFasc = true
@@ -105,7 +106,7 @@ export class LogicService{
     //   game.status = Status.VOTE_RESULT
     // }
     if(numVotes > 0){
-      game.status = Status.VOTE_RESULT
+      game.status = Status.SHOW_VOTE_RESULT
     }
   }
 
@@ -244,6 +245,7 @@ export class LogicService{
     this.resetTracker(game)
     if(game.deck.drawPile.length < 3){
       this.reshuffle(game.deck)
+      game.log.push({type: LogType.SHUFFLE_DECK, date: getFormattedDate(), payload: {libCount: 6 - game.LibPoliciesEnacted, fascCount: 11 - game.FascPoliciesEnacted}})
     }
   }
 
@@ -275,7 +277,7 @@ export class LogicService{
     this.addGov(game)
     this.determinePolicyConf(game)
     // this.setPrevLocks(game) do this after power and do it inside of nextPres
-    this.determineNextStatus(game)
+    this.determinePower(game)
   }
 
   addGov(game: Game){
@@ -304,7 +306,7 @@ export class LogicService{
     return bluesDrawn - draws3.indexOf(game.presClaim)
   }
 
-  determineNextStatus(game: Game){
+  determinePower(game: Game){
     if(game.chanPlay.policy === Policy.FASC){
       if(game.FascPoliciesEnacted === 1 && game.players.length >= 9){
         return game.status = Status.INV
@@ -413,18 +415,19 @@ export class LogicService{
   }
 
   vetoReply(game: Game, vetoAccepted: boolean){
+    game.log.push({type: LogType.VETO_REPLY, date: getFormattedDate(), payload: {pres: game.currentPres, vetoAccepted}})
     if(vetoAccepted){
       game.chanCards.forEach(card => this.discard(card, game.deck))
       // this.setPrevLocks(game)
-      this.advanceTracker(game, true)
       if(game.deck.drawPile.length < 3){
         this.reshuffle(game.deck)
+        game.log.push({type: LogType.SHUFFLE_DECK, date: getFormattedDate(), payload: {libCount: 6 - game.LibPoliciesEnacted, fascCount: 11 - game.FascPoliciesEnacted}})
       }
+      this.advanceTracker(game, true)
     }
     else{
       game.status = Status.VETO_DECLINED
     }
-    game.log.push({type: LogType.VETO_REPLY, date: getFormattedDate(), payload: {pres: game.currentPres, vetoAccepted}})
   }
 
   inspect3Claim(game: Game, claim: PRES3){
