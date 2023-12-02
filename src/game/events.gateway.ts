@@ -54,7 +54,7 @@ export class EventsGateway{
   sendUpdate(game: Game){
     for (const player of game.players) {
       const socket = this.socketMap.get(player.socketId)
-      socket?.emit(UPDATE, game);
+      socket?.emit(UPDATE, game, {test: '123'});
     }
   }
 

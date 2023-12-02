@@ -3,7 +3,7 @@ import { LogType, CHAN2, Color, Conf, GameType, PRES3, Policy, RRR, Role, Status
 import { Game } from "../models/game.model";
 import { Card } from "src/models/card.model";
 import { Deck } from "src/models/deck.model";
-import { getFormattedDate } from "src/helperFunctions";
+import { getFormattedDate } from "../helperFunctions";
 
 @Injectable()
 export class LogicService{
@@ -17,8 +17,8 @@ export class LogicService{
     this.initDeck(game)
     if(game.settings.redDown){
       this.removeRed(game.deck)
-      game.FascPoliciesEnacted = 2
-      game.LibPoliciesEnacted = 4
+      game.FascPoliciesEnacted = 5
+      game.LibPoliciesEnacted = 3
     }
 
     //in this lib spy version, hitler doesn't know fasc by default
@@ -39,11 +39,7 @@ export class LogicService{
     if(game.settings.redDown){
       game.log.push({type: LogType.INTRO_RED_DOWN, date: getFormattedDate()})
     }
-    game.log.push({type: LogType.INDIVIDUAL_SEAT, date: getFormattedDate()})
-    if(game.settings.type !== GameType.BLIND){
-      game.log.push({type: LogType.HITLER_SEAT, date: getFormattedDate()})
-      game.log.push({type: LogType.OTHER_FASCIST_SEATS, date: getFormattedDate()})
-    }
+    //individual seta and fascists logs are set in game service after timeout
   }
 
   initPlayers(game: Game){
@@ -83,12 +79,12 @@ export class LogicService{
 
   chooseChan(game: Game, chanName: string){
     game.currentChan = chanName
-    this.resetVotes(game)
+    // this.resetVotes(game)
     game.log.push({type: LogType.CHOOSE_CHAN, date: getFormattedDate(), payload: {pres: game.currentPres, chan: chanName}})
     game.status = Status.VOTE
   }
 
-  vote(game: Game, name: string, vote: Vote){
+  vote(game: Game, name: string, vote: Vote): number{
     const player = this.findPlayerIngame(game, name)
     if(player.vote !== vote){
       player.vote = vote
@@ -96,17 +92,23 @@ export class LogicService{
     else{
       player.vote = null
     }
-    this.countVotes(game)
+    return this.countVotes(game)
   }
 
-  countVotes(game: Game){
+  countVotes(game: Game): number{
     const numVotes = game.players.reduce((acc, player) => player.vote ? acc+1 : acc, 0)
 
     // if(this.numAlivePlayers(game) === numVotes){
-    //   game.status = Status.VOTE_RESULT
+    //   game.status = Status.SHOW_VOTE_RESULT
+    //   const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
+    //   return Math.min(jas, numVotes - jas)
+    // }
+    // else{
+    //   return null
     // }
     if(numVotes > 0){
       game.status = Status.SHOW_VOTE_RESULT
+      return 0
     }
   }
 
@@ -126,7 +128,7 @@ export class LogicService{
 
   determineResultofVote(game: Game){
     const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
-
+    this.resetVotes(game)
     // if(jas > this.numAlivePlayers(game) / 2){
     if(jas > 0){
       if(this.checkHitler(game)){
@@ -158,7 +160,7 @@ export class LogicService{
       setPrevLocks = false
     }
     //topdecking may have led to gameover
-    if(!this.gameOver(game)){
+    if(!(this.gameOver(game) || game.status === Status.LIB_SPY_GUESS)){
       this.nextPres(game, setPrevLocks)
     }
   }
@@ -218,6 +220,7 @@ export class LogicService{
           }
           else{
             game.status = Status.LIB_SPY_GUESS
+            game.log.push({type: LogType.HITLER_TO_GUESS_LIB_SPY, date: getFormattedDate(),})
             return
           }
         }
@@ -240,7 +243,8 @@ export class LogicService{
     //!this.gameOver(game) &&
     if(!topDeck){
       // this.setPrevLocks(game) //was settting in after pres claim
-      game.status = Status.CHAN_CLAIM
+      this.determinePower(game)
+      // game.status = Status.CHAN_CLAIM
     }
     this.resetTracker(game)
     if(game.deck.drawPile.length < 3){
@@ -344,14 +348,13 @@ export class LogicService{
     const invPlayer = this.findPlayerIngame(game, invName)
     invPlayer.investigated = true
     this.getCurrentPres(game).investigations.push(invName)
-    game.status = Status.SHOW_INV_CHOICE
-  }
-
-  setInv(game: Game, invName: string){
-    game.log.push({type: LogType.INV, date: getFormattedDate(), payload: {pres: game.currentPres, investigatee: invName}})
     game.status = Status.INV_CLAIM
-
+    game.log.push({type: LogType.INV, date: getFormattedDate(), payload: {pres: game.currentPres, investigatee: invName}})
   }
+
+  // setInv(game: Game, invName: string){
+    // game.status = Status.INV_CLAIM
+  // }
 
   invClaim(game: Game, claim: Team){
     const investigatee = this.getCurrentPres(game).investigations.slice(-1)[0]
@@ -493,11 +496,11 @@ export class LogicService{
 
 
   buildDeck(deck: Deck){
-    for(let i = 0; i < 6; i++){
+    for(let i = 0; i < 5; i++){
       deck.drawPile.push({policy: Policy.LIB, color: Color.BLUE })
     }
     for(let i = 0; i < 11; i++){
-      deck.drawPile.push({policy: Policy.FASC, color: Color.RED })
+      deck.discardPile.push({policy: Policy.FASC, color: Color.RED })
     }
   }
 

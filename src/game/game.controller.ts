@@ -54,6 +54,11 @@ export class GameController {
   async startGame(@Param("id") id: string) {
     return this.gameService.startGame(id);
   }
+  @Post("/remake/:id")
+  async remakeGame(@Param("id") id: string, @Body() body: {name: string}) {
+    const newId = this.gameService.remakeGame(id, body.name);
+    return newId
+  }
 
   @Post("/chooseChan/:id")
   async chooseChan(@Param("id") id: string, @Body() body: {chanName: string}){

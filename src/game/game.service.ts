@@ -4,13 +4,13 @@ import {
   Injectable,} from "@nestjs/common";
 import { Game } from "../models/game.model";
 import { Deck } from "../models/deck.model";
-import { Status, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings } from "../consts";
+import { Status, LogType, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings } from "../consts";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
 import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
 import { DefaultActionService } from "./defaultAction.service";
-import { getFormattedDate } from "src/helperFunctions";
+import { getFormattedDate } from "../helperFunctions";
 
 @Injectable()
 export class GameService{
@@ -64,7 +64,8 @@ export class GameService{
       chat: [],
       govs: [],
       invClaims: [],
-      confs: []
+      confs: [],
+      remakeId: ''
     }
 
     await this.gameRespository.set(id, game)
@@ -113,12 +114,68 @@ export class GameService{
           omniFasc: false,
           guessedToBeLibSpy: false,
         })
-     }
+      }
     }
     await this.handleUpdate(id, game)
     this.eventEmitter.emit(JOIN_GAME, {socketId, id} )
     return game
   }
+
+  async remakeGame(id: string, name: string){
+    const game = await this.findById(id)
+
+    let newId: string
+    let existingGame: Game
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    do{
+      newId = [1,2,3,4].map(() => letters.charAt(Math.floor(Math.random() * 26))).join('')
+      existingGame = await this.gameRespository.get(newId)
+    }
+    while(existingGame)
+
+    game.remakeId = newId
+
+    const newGame: Game = {
+      id: newId,
+      host: name,
+      settings: {
+        type: GameType.BLIND,
+        redDown: false,
+        simpleBlind: false,
+        hitlerKnowsFasc: false,
+      },
+      status: Status.CREATED,
+      players: [],
+      deck: {drawPile: [], discardPile: [], deckNum: 1},
+      LibPoliciesEnacted: 0,
+      FascPoliciesEnacted: 0,
+      tracker: 0,
+      presIdx: 0,
+      SE: null,
+      currentPres: null,
+      currentChan: null,
+      prevPres: null,
+      prevChan: null,
+      presCards: null,
+      chanCards: null,
+      presDiscard: null,
+      chanPlay: null,
+      presClaim: null,
+      chanClaim: null,
+      top3: null,
+      log: [],
+      chat: [],
+      govs: [],
+      invClaims: [],
+      confs: [],
+      remakeId: ''
+    }
+    await this.gameRespository.set(newId, newGame)
+    await this.handleUpdate(id, game)
+    return newId
+  }
+
+
 
   async leaveGame(id: string, socketId: string){
     // console.log(`player leaving has socketId ${socketId}`)
@@ -151,7 +208,7 @@ export class GameService{
       // console.log('player disconnected - removing socketId')
       playerLeaving.socketId = null
 
-      //if everybody disconnects - thenn delete game
+      //if everybody disconnects - then delete game after 5 minute (in case everyone crashes out it doesn't automatically delete)
       if(game.players.every(player => player.socketId === null)){
         // console.log('deleting game')
         setTimeout(async ()=> {
@@ -161,6 +218,7 @@ export class GameService{
             this.deleteGame(id)
           }
         }, 1000*5*60)
+
 
         //maybe try adding something like settimeout for a while, then if still all null, then delete game in case everyone gets kicked or something
       }
@@ -182,12 +240,24 @@ export class GameService{
       throw new BadRequestException(`Can't start a game with fewer than 5 players`)
     }
     this.logicService.startGame(game)
-    const timeout = game.settings.type === GameType.BLIND ? 2000 : 9000
+
+    const logTimeout = game.settings.type === GameType.BLIND ? 2000 : 5000 //1500
+    setTimeout(async () => {
+      const game = await this.findById(id)
+      game.log.push({type: LogType.INDIVIDUAL_SEAT, date: getFormattedDate()})
+      if(game.settings.type !== GameType.BLIND){
+        game.log.push({type: LogType.HITLER_SEAT, date: getFormattedDate()})
+        game.log.push({type: LogType.OTHER_FASCIST_SEATS, date: getFormattedDate()})
+      }
+      await this.handleUpdate(id, game)
+    }, logTimeout)
+
+    const changeStatusTimeout = game.settings.type === GameType.BLIND ? 4000 : 9000
     setTimeout(async () => {
       const game = await this.findById(id)
       game.status = Status.CHOOSE_CHAN
       await this.handleUpdate(id, game)
-    }, timeout)
+    }, changeStatusTimeout)
     await this.handleUpdate(id, game)
     return
   }
@@ -238,13 +308,14 @@ export class GameService{
 
   async vote(id: string, name: string, vote: Vote){
     const game = await this.findById(id)
-    this.logicService.vote(game, name, vote)
+    const voteSplit = this.logicService.vote(game, name, vote)
     if(game.status === Status.SHOW_VOTE_RESULT){
+      const timeout = voteSplit <= 1 ? 4000 : voteSplit <= 3 ? 5000 : 6000 //this syncs with frontend animation
       setTimeout(async ()=> {
         const game = await this.findById(id)
         this.logicService.determineResultofVote(game)
         await this.handleUpdate(id, game)
-      }, 3000)
+      }, timeout)
     }
     await this.handleUpdate(id, game)
   }
@@ -281,11 +352,11 @@ export class GameService{
     }
     this.logicService.chooseInv(game, invName)
     await this.handleUpdate(id, game)
-     setTimeout(async ()=> {
-      const game = await this.findById(id)
-      this.logicService.setInv(game, invName)
-      await this.handleUpdate(id, game)
-      }, 3000)
+    //  setTimeout(async ()=> {
+    //   const game = await this.findById(id)
+    //   this.logicService.setInv(game, invName)
+    //   await this.handleUpdate(id, game)
+    //   }, 3000)
   }
 
   async invClaim(id: string, claim: Team){
@@ -325,7 +396,7 @@ export class GameService{
       const game = await this.findById(id)
       this.logicService.determineResultOfLibSpyGuess(game, spyName)
       await this.handleUpdate(id, game)
-    }, 2000)
+    }, 3000) //3s animation on frontend to show the pick
     await this.handleUpdate(id, game)
   }
 

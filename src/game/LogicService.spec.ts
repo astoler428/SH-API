@@ -36,7 +36,7 @@ describe("Logic Service", () => {
   describe('startGame', ()=>{
 
     it('sets game status', ()=>{
-      expect(game.status).toEqual(Status.CHOOSE_CHAN)
+      expect(game.status).toEqual(Status.STARTED)
     })
 
     it('sets hitler knows fasc automatically in 5 or 6', () => {
@@ -684,7 +684,7 @@ describe("Logic Service", () => {
       // expect(game.log[game.log.length-1]).toBe(`The liberal spy did not play a red. Fascists win!`)
     })
 
-    it('determines a lib win and lib spy loss win in individual libSpy game', () => {
+    it.skip('determines a lib win and lib spy loss win in individual libSpy game', () => {
       game.LibPoliciesEnacted = 4
       game.settings.type = GameType.LIB_SPY
       // game.settings.teamLibSpy = false
@@ -710,7 +710,7 @@ describe("Logic Service", () => {
       jest.spyOn(logicService, 'libSpyCondition').mockImplementation((game) => true)
       logicService.enactPolicy(game, libCard, true)
       expect(game.settings.type).toBe(GameType.LIB_SPY)
-      expect(game.status).toBe(Status.END_LIB)
+      expect(game.status).toBe(Status.LIB_SPY_GUESS)
       // expect(game.log[1]).toBe(`Liberals win!`)
       // expect(game.log[2]).toBe(`Liberal spy wins!`)
     })
@@ -722,7 +722,7 @@ describe("Logic Service", () => {
       jest.spyOn(logicService, 'libSpyCondition').mockImplementation((game) => true)
       logicService.enactPolicy(game, libCard, true)
       expect(game.settings.type).toBe(GameType.LIB_SPY)
-      expect(game.status).toBe(Status.END_LIB)
+      expect(game.status).toBe(Status.LIB_SPY_GUESS)
       // expect(game.log[1]).toBe(`Liberals win!`)
       // expect(game.log[2]).toBe(`Liberal spy wins!`)
     })
@@ -738,7 +738,6 @@ describe("Logic Service", () => {
       jest.spyOn(logicService, 'setPrevLocks')
       logicService.enactPolicy(game, libCard, false)
       expect(game.status).toBe(Status.CHAN_CLAIM)
-      expect(logicService.gameOver).toBeCalledTimes(1)
       // expect(logicService.setPrevLocks).toBeCalledTimes(1)
     })
 

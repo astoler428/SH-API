@@ -37,6 +37,7 @@ export class GameMockFactory{
       chat: [],
       invClaims: [],
       confs: [],
+      remakeId: '',
       ...params
     }
 
