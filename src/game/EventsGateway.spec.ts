@@ -9,12 +9,10 @@ import { Game } from "../models/game.model";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE_GAME } from "../consts/socketEventNames";
 import { GameService } from "./game.service";
 import { io } from "socket.io-client";
-import MockedSocket from 'socket.io-mock';
 import { Player } from "src/models/player.model";
 import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
 import { DefaultActionService } from "./defaultAction.service";
-import { ProbabilityService } from "./probability.service";
 import { CacheModule } from "@nestjs/cache-manager";
 import * as redisStore from 'cache-manager-redis-store';
 
@@ -36,7 +34,7 @@ describe("EventsGateway", () => {
         host: 'localhost',
         port: 6379
       })],
-      providers: [EventsGateway, EventEmitter2, GameService, LogicService, GameRepository, DefaultActionService, ProbabilityService],
+      providers: [EventsGateway, EventEmitter2, GameService, LogicService, GameRepository, DefaultActionService],
     }).compile();
 
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);

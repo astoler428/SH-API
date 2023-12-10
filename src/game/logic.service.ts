@@ -17,8 +17,8 @@ export class LogicService{
     this.initDeck(game)
     if(game.settings.redDown){
       this.removeRed(game.deck)
-      game.FascPoliciesEnacted = 5
-      game.LibPoliciesEnacted = 3
+      game.FascPoliciesEnacted = 1
+      // game.LibPoliciesEnacted = 0
     }
 
     //in this lib spy version, hitler doesn't know fasc by default
@@ -82,6 +82,7 @@ export class LogicService{
     // this.resetVotes(game)
     game.log.push({type: LogType.CHOOSE_CHAN, date: getFormattedDate(), payload: {pres: game.currentPres, chan: chanName}})
     game.status = Status.VOTE
+    game.topDecked = false
   }
 
   vote(game: Game, name: string, vote: Vote): number{
@@ -98,18 +99,18 @@ export class LogicService{
   countVotes(game: Game): number{
     const numVotes = game.players.reduce((acc, player) => player.vote ? acc+1 : acc, 0)
 
-    // if(this.numAlivePlayers(game) === numVotes){
-    //   game.status = Status.SHOW_VOTE_RESULT
-    //   const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
-    //   return Math.min(jas, numVotes - jas)
-    // }
-    // else{
-    //   return null
-    // }
-    if(numVotes > 0){
+    if(this.numAlivePlayers(game) === numVotes){
       game.status = Status.SHOW_VOTE_RESULT
-      return 0
+      const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
+      return Math.min(jas, numVotes - jas)
     }
+    else{
+      return null
+    }
+    // if(numVotes > 0){
+    //   game.status = Status.SHOW_VOTE_RESULT
+    //   return 0
+    // }
   }
 
   presDiscard(game: Game, cardColor: string){
@@ -129,8 +130,8 @@ export class LogicService{
   determineResultofVote(game: Game){
     const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
     this.resetVotes(game)
-    // if(jas > this.numAlivePlayers(game) / 2){
-    if(jas > 0){
+    if(jas > this.numAlivePlayers(game) / 2){
+    // if(jas > 0){
       if(this.checkHitler(game)){
         game.log.push({type: LogType.HITLER_ELECTED, date: getFormattedDate(),})
         game.status = Status.END_FASC
@@ -196,6 +197,7 @@ export class LogicService{
     //enacting policy always resets tracker
     this.enactPolicy(game, card, true)
     this.removePrevLocks(game)
+    game.topDecked = true
   }
 
   enactPolicy(game: Game, card: Card, topDeck: boolean){
@@ -243,8 +245,8 @@ export class LogicService{
     //!this.gameOver(game) &&
     if(!topDeck){
       // this.setPrevLocks(game) //was settting in after pres claim
-      this.determinePower(game)
-      // game.status = Status.CHAN_CLAIM
+      // this.determinePower(game) for testing
+      game.status = Status.CHAN_CLAIM
     }
     this.resetTracker(game)
     if(game.deck.drawPile.length < 3){
@@ -496,11 +498,11 @@ export class LogicService{
 
 
   buildDeck(deck: Deck){
-    for(let i = 0; i < 5; i++){
+    for(let i = 0; i < 6; i++){
       deck.drawPile.push({policy: Policy.LIB, color: Color.BLUE })
     }
     for(let i = 0; i < 11; i++){
-      deck.discardPile.push({policy: Policy.FASC, color: Color.RED })
+      deck.drawPile.push({policy: Policy.FASC, color: Color.RED })
     }
   }
 

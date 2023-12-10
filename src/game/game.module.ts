@@ -7,7 +7,6 @@ import { EventsGateway } from "src/game/events.gateway";
 import { CacheModule } from '@nestjs/cache-manager';
 import { GameRepository } from './game.repository';
 import { DefaultActionService } from './defaultAction.service';
-import { ProbabilityService } from './probability.service';
 import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
@@ -21,7 +20,7 @@ import * as redisStore from 'cache-manager-redis-store';
       })
   ],
   controllers: [GameController],
-  providers: [GameService, EventsGateway, LogicService, GameRepository, DefaultActionService, ProbabilityService]
+  providers: [GameService, EventsGateway, LogicService, GameRepository, DefaultActionService]
 })
 export class GameModule {}
 

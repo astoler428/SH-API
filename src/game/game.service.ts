@@ -65,7 +65,8 @@ export class GameService{
       govs: [],
       invClaims: [],
       confs: [],
-      remakeId: ''
+      remakeId: '',
+      topDecked: false
     }
 
     await this.gameRespository.set(id, game)
@@ -168,7 +169,8 @@ export class GameService{
       govs: [],
       invClaims: [],
       confs: [],
-      remakeId: ''
+      remakeId: '',
+      topDecked: false
     }
     await this.gameRespository.set(newId, newGame)
     await this.handleUpdate(id, game)

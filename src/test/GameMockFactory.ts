@@ -38,6 +38,7 @@ export class GameMockFactory{
       invClaims: [],
       confs: [],
       remakeId: '',
+      topDecked: false,
       ...params
     }
 

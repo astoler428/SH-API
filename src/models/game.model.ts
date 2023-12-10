@@ -35,6 +35,7 @@ export type Game = {
   chat: chatMessage[],
   invClaims: {investigator: string, investigatee: string, claim: Team}[],
   confs: {confer: string, confee: string, type: Conf }[],
-  remakeId: string
+  remakeId: string,
+  topDecked: boolean
 }
 //Figure out how they work with game logic: veto, topdecked

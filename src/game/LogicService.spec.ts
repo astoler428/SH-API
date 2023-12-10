@@ -305,18 +305,12 @@ describe("Logic Service", () => {
   describe('choose chan', ()=> {
 
     beforeEach(()=>{
-      jest.spyOn(logicService, 'resetVotes')
       logicService.chooseChan(game, 'player-2')
     })
 
     it('sets the current chan', () => {
       expect(game.currentChan).toBeDefined()
       expect(game.currentChan).toEqual('player-2')
-    })
-
-
-    it('calls to reset votes', () => {
-      expect(logicService.resetVotes).toBeCalled()
     })
 
     it('adds to the log', () => {
@@ -450,6 +444,12 @@ describe("Logic Service", () => {
       logicService.vote(game, 'player-5', Vote.JA)
       jest.spyOn(logicService, 'presDraw3')
       jest.spyOn(logicService, 'advanceTracker').mockImplementation(() => {})
+      jest.spyOn(logicService, 'resetVotes')
+    })
+
+    it('calls to reset votes', () => {
+      logicService.determineResultofVote(game)
+      expect(logicService.resetVotes).toBeCalled()
     })
 
     it('passes the vote in an odd number of players', ()=> {
