@@ -218,7 +218,7 @@ describe("Logic Service", () => {
     expect(libSpy).toBeDefined()
   })
 
-  it('assigns omniFasc in blindGame', ()=>{
+  it.skip('assigns omniFasc in blindGame', ()=>{
     const players = [0,1,2,3,4].map(i => new PlayerMockFactory().create({name: `player-${i}}`}))
     gameSettings = {type: GameType.BLIND, redDown: false, simpleBlind: false, hitlerKnowsFasc: false}
     game = new GameMockFactory().create({settings: gameSettings, players} )

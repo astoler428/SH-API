@@ -78,7 +78,14 @@ export class DefaultActionService{
         return chan2
       }
       //chan is vanilla fasc with a fasc pres (could be hitler) and you played a blue - advanced feature to change claim based on blue count and who had drawn 3R
-      return game.settings.simpleBlind ? this.getSimpleFascFascBlueChanClaim(game, chan2) : this.getFascFascBlueChanClaim(game, chan2)
+      const [BBUnderclaimProb, RBOverclaimProb] = game.settings.simpleBlind ? this.getSimpleFascFascBlueChanClaim(game, chan2) : this.getFascFascBlueChanClaim(game, chan2)
+
+      if(chan2 === CHAN2.BB){
+        return this.testProb(BBUnderclaimProb) ? CHAN2.RB : CHAN2.BB
+      }
+      else{ //chan2 === CHAN2.RB
+        return this.testProb(RBOverclaimProb) ? CHAN2.BB : CHAN2.RB
+      }
   }
 
 
@@ -246,8 +253,14 @@ export class DefaultActionService{
     if(this.lib3RedOnThisDeck(game)){
       vanillaFascPresRBBDropProb = .9
     }
+    //edited from just fasc
     if(currentChanPlayer.team === Team.FASC){
-      vanillaFascPresRBBDropProb = 1
+      if(!this.isPower(game) && game.LibPoliciesEnacted <= 1){
+        vanillaFascPresRBBDropProb = .25
+      }
+      else{
+        vanillaFascPresRBBDropProb = 1
+      }
     }
 
     hitlerPresRBBDropProb = game.LibPoliciesEnacted === 2 ? .9 : game.LibPoliciesEnacted === 3 ? 1 : .6
@@ -293,7 +306,7 @@ export class DefaultActionService{
 
     if(game.FascPoliciesEnacted >= 3){
       //auto win or take gun
-      vanillaFascPresRRBDropProb = 1
+      //vanillaFascPresRRBDropProb = 1 already prob 1 unless it's fasc fasc anyway and the chancellor drops with prob 1 in this scenario
       hitlerPresRRBDropProb = 1
     }
     const RBBDropProb = currentPresPlayer.role === Role.HITLER ? hitlerPresRBBDropProb : vanillaFascPresRBBDropProb
@@ -320,7 +333,7 @@ export class DefaultActionService{
     const hilterChanDropProbs = [[.2, null, null, null, null],
                                  [.3, .15, null, null, null],
                                  [.7, .4, .3, null, null],
-                                 [.85, .75, .5, .1, null],
+                                 [.85, .75, .5, .25, null], //used to be .1
                                  [1, 1, 1, 1, 1]]
 
     const vanillaFascChanDropProbs = [[.75, null, null, null, null],
@@ -394,17 +407,33 @@ export class DefaultActionService{
   getFascFascBlueChanClaim(game: Game, chan2: CHAN2){
     const underclaimTotal = this.underclaimTotal(game)
 
+    let RBOverclaimProb: number, BBUnderclaimProb: number
     if(chan2 === CHAN2.BB){
-      return underclaimTotal === 0 || (underclaimTotal >= 1 && this.lib3RedOnThisDeck(game)) ? CHAN2.RB : CHAN2.BB
+      if(underclaimTotal <= -1){
+        BBUnderclaimProb = 1
+      }
+      else if(underclaimTotal <= 1 && this.lib3RedOnThisDeck(game) && !this.fasc3RedOnThisDeck(game)){
+        BBUnderclaimProb = .9
+      }
+      else{
+        BBUnderclaimProb = 0
+      }
     }
-    else if(chan2 === CHAN2.RB){
-      return underclaimTotal >= 2 || (underclaimTotal === 1 && !this.lib3RedOnThisDeck(game)) ? CHAN2.BB : CHAN2.RB
+    else{// if(chan2 === CHAN2.RB){
+      if(underclaimTotal === 0 && this.blueCount(game) <= 2){
+        RBOverclaimProb = .75
+      }
+      else if(underclaimTotal === 1 && !this.lib3RedOnThisDeck(game)){
+        RBOverclaimProb = .9
+      }
+      else if(underclaimTotal >= 2){
+        RBOverclaimProb = 1
+      }
+      else{
+        RBOverclaimProb = 0
+      }
     }
-    else{
-      //chan2 === CHAN2.RR
-      //THIS SHOULD NEVER HAPPEN
-      return CHAN2.RR
-    }
+    return [BBUnderclaimProb, RBOverclaimProb]
   }
 
   /**
@@ -412,17 +441,20 @@ export class DefaultActionService{
    * Always change the count to signal
    */
   getSimpleFascFascBlueChanClaim(game: Game, chan2: CHAN2){
-    if(chan2 === CHAN2.BB){
-      return CHAN2.RB
-    }
-    else if(chan2 === CHAN2.RB){
-      return CHAN2.BB
-    }
-    else{
-      //chan2 === CHAN2.RR
-      //THIS SHOULD NEVER HAPPEN
-      return CHAN2.RR
-    }
+    const BBUnderclaimProb = 1
+    const RBOverclaimProb = 1
+    return [BBUnderclaimProb, RBOverclaimProb]
+    // if(chan2 === CHAN2.BB){
+    //   return CHAN2.RB
+    // }
+    // else if(chan2 === CHAN2.RB){
+    //   return CHAN2.BB
+    // }
+    // else{
+    //   //chan2 === CHAN2.RR
+    //   //THIS SHOULD NEVER HAPPEN
+    //   return CHAN2.RR
+    // }
   }
 
 
@@ -670,6 +702,13 @@ export class DefaultActionService{
     })
   }
 
+  fasc3RedOnThisDeck(game: Game){
+    return game.govs.some(gov => {
+      const presPlayer = this.logicService.findPlayerIngame(game, gov.pres)
+      return gov.deckNum === game.deck.deckNum && presPlayer.team === Team.FASC && gov.presClaim === PRES3.RRR
+    })
+  }
+
   //checks if they have been a 3 red president
   is3Red(game: Game, playerName: string){
     return game.govs.some(gov => gov.pres === playerName && gov.presClaim === PRES3.RRR)
@@ -679,6 +718,9 @@ export class DefaultActionService{
     return game.govs.reduce((acc, gov) => gov.deckNum === game.deck.deckNum ? acc + gov.underclaim : acc, 0)
   }
 
+  blueCount(game: Game){
+    return game.govs.reduce((acc, gov) => gov.deckNum === game.deck.deckNum ? acc + draws3.indexOf(gov.presClaim) : acc, 0)
+  }
 
   isCucu(game: Game){
     return game.invClaims.some(inv => inv.investigator === game.currentChan && inv.investigatee === game.currentPres && inv.claim === Team.LIB)

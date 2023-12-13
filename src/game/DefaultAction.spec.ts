@@ -76,7 +76,7 @@ describe("DefaultActionService", () => {
     })
   })
 
-  describe('lib3Red', () => {
+  describe('lib3RedOnThisDeck', () => {
 
     it('properly determines that a lib pres drew 3 red on this deck', () => {
       player1.team = Team.LIB
@@ -95,6 +95,28 @@ describe("DefaultActionService", () => {
       player1.team = Team.FASC
       game.govs.push(new GovMockFactory().create())
       expect(defaultActionService.lib3RedOnThisDeck(game)).toBe(false)
+    })
+  })
+
+  describe('fasc3RedOnThisDeck', () => {
+
+    it('properly determines that a fasc pres drew 3 red on this deck', () => {
+      player1.team = Team.FASC
+      game.govs.push(new GovMockFactory().create())
+      expect(defaultActionService.fasc3RedOnThisDeck(game)).toBe(true)
+    })
+
+    it('properly determines that a fasc pres drew 3 red on a different deck', () => {
+      player1.team = Team.FASC
+      game.govs.push(new GovMockFactory().create())
+      game.deck.deckNum = 2
+      expect(defaultActionService.fasc3RedOnThisDeck(game)).toBe(false)
+    })
+
+    it('returns false if a lib pres draws RRR', () => {
+      player1.team = Team.LIB
+      game.govs.push(new GovMockFactory().create())
+      expect(defaultActionService.fasc3RedOnThisDeck(game)).toBe(false)
     })
   })
 
@@ -147,6 +169,24 @@ describe("DefaultActionService", () => {
       expect(defaultActionService.underclaimTotal(game)).toEqual(5)
       game.deck.deckNum = 2
       expect(defaultActionService.underclaimTotal(game)).toEqual(-1)
+    })
+  })
+
+  describe('blueCount', () => {
+    it('properly counts the blue count', ()=> {
+      game.govs.push(new GovMockFactory().create({presClaim: PRES3.RRB}))
+      game.govs.push(new GovMockFactory().create({presClaim: PRES3.RBB}))
+      game.govs.push(new GovMockFactory().create({presClaim: PRES3.BBB}))
+      game.govs.push(new GovMockFactory().create({presClaim: PRES3.RRR}))
+      game.govs.push(new GovMockFactory().create({deckNum: 2, presClaim: PRES3.RBB}))
+      game.govs.push(new GovMockFactory().create({deckNum: 2, presClaim: PRES3.RBB}))
+      game.govs.push(new GovMockFactory().create({deckNum: 2, presClaim: PRES3.BBB}))
+      expect(defaultActionService.blueCount(game)).toEqual(6)
+      game.deck.deckNum = 2
+      expect(defaultActionService.blueCount(game)).toEqual(7)
+      game.deck.deckNum = 3
+      game.govs.push(new GovMockFactory().create({deckNum: 3, presClaim: PRES3.RRR}))
+      expect(defaultActionService.blueCount(game)).toEqual(0)
     })
   })
 
@@ -562,6 +602,24 @@ describe('defaultPresDiscard', () => {
     jest.spyOn(defaultActionService, 'getSimplePresDropProbs')
   })
 
+  it('does and does not vanilla fasc to pass a B in RRB with 3 more reds down', ()=> {
+    game.currentPres = player2.name
+    expect(logicService.getCurrentPres(game).role).toBe(Role.FASC)
+    game.FascPoliciesEnacted = 3
+
+    game.currentChan = player2.name
+    expect(logicService.getCurrentChan(game).role).toBe(Role.FASC)
+    game.presCards = [R, R, B]
+    expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED)
+
+    game.currentChan = player1.name
+    expect(logicService.getCurrentChan(game).role).toBe(Role.LIB)
+    game.presCards = [R, R, B]
+    expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE)
+
+
+  })
+
   it('discards red whenever possible for a lib', ()=> {
     game.currentPres = player1.name
     expect(logicService.getCurrentPres(game).role).toBe(Role.LIB)
@@ -787,8 +845,8 @@ describe('defaultChanPlay', () => {
 describe('defaultChanClaim', () => {
 
   beforeEach( () => {
-    jest.spyOn(defaultActionService, 'getFascFascBlueChanClaim').mockImplementation(() => CHAN2.BB)
-    jest.spyOn(defaultActionService, 'getSimpleFascFascBlueChanClaim').mockImplementation(() => CHAN2.BB)
+    jest.spyOn(defaultActionService, 'getFascFascBlueChanClaim').mockImplementation(() => [.5, .5])
+    jest.spyOn(defaultActionService, 'getSimpleFascFascBlueChanClaim')
   })
 
   it('tells the truth when lib', ()=> {
@@ -861,9 +919,10 @@ describe('defaultChanClaim', () => {
     expect(logicService.getCurrentChan(game).role).toBe(Role.FASC)
     expect(logicService.getCurrentPres(game).team).toBe(Team.FASC)
     game.chanCards = [R, B]
+    defaultActionService.testProb = (threshold) => .4 < threshold
     expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.BB) //mockImplementation
     game.chanCards = [B, B]
-    expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.BB) //mockImplementation
+    expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.RB) //mockImplementation
    expect(defaultActionService.getFascFascBlueChanClaim).toBeCalledTimes(2)
    expect(defaultActionService.getSimpleFascFascBlueChanClaim).toBeCalledTimes(0)
   })
@@ -1150,14 +1209,19 @@ describe('getPresDropProbs', () => {
     })
 
 
-    it('returns 1 for fasc pres with fasc chand', () => {
+    it('returns 1 or .25 for fasc pres with fasc chan when no power and no more than 1 blue down', () => {
       game.currentChan = player3.name
+      game.LibPoliciesEnacted = 1
+      defaultActionService.isPower = () => false
       let [RBBDropProb] = defaultActionService.getPresDropProbs(game)
-      expect(RBBDropProb).toEqual(1)
       defaultActionService.lib3RedOnThisDeck = () => true;
       [RBBDropProb] = defaultActionService.getPresDropProbs(game)
+      expect(RBBDropProb).toEqual(.25)
+      defaultActionService.isPower = () => true;
+      [RBBDropProb] = defaultActionService.getPresDropProbs(game)
       expect(RBBDropProb).toEqual(1)
-      game.LibPoliciesEnacted = 4;
+      defaultActionService.isPower = () => false;
+      game.LibPoliciesEnacted = 3;
       [RBBDropProb] = defaultActionService.getPresDropProbs(game)
       expect(RBBDropProb).toEqual(1)
     })
@@ -1407,7 +1471,7 @@ describe('getChanDropProbs', () => {
        let hitlerProbs = [[.2, null, null, null, null],
                                  [.3, .15, null, null, null],
                                  [.7, .4, .3, null, null],
-                                 [.85, .75, .5, .1, null],
+                                 [.85, .75, .5, .25, null],
                                  [1, 1, 1, 1, 1]]
 
       for(let bluesDown = 0; bluesDown <= 4; bluesDown++){
@@ -1518,45 +1582,78 @@ describe('getfascfascbluechanclaim', () => {
   beforeEach( () => {
     game.currentPres = 'player-2'
     game.currentChan = 'player-2'
-    defaultActionService.lib3RedOnThisDeck = () => false
+    // defaultActionService.lib3RedOnThisDeck = () => false
     defaultActionService.underclaimTotal = () => underclaimTotal
   })
 
-  it('returns RR if chan cards are RR', () => {
-    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RR)).toBe(CHAN2.RR)
+  it('underclaims BB prob 1 if overclaims are high ', () => {
+    underclaimTotal = -2
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0]).toBe(1)
   })
 
-  it('returns RB if chan cards are BB and low underclaim ', () => {
+  it('underclaims BB prob .9 if lib3Red and no underclaim ', () => {
     underclaimTotal = 0
-    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)).toBe(CHAN2.RB)
-  })
-
-  it('returns RB if chan cards are BB and lib3Red ', () => {
     defaultActionService.lib3RedOnThisDeck = () => true
-    underclaimTotal = 3
-    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)).toBe(CHAN2.RB)
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0]).toBe(.9)
+    defaultActionService.lib3RedOnThisDeck = () => false
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0]).not.toBe(.9)
   })
 
-  it('returns BB if chan cards are BB and underclaim and no lib 3red ', () => {
-    underclaimTotal = 1
-    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)).toBe(CHAN2.BB)
+  it('underclaims BB prob .9 if <= 1 underclaim and lib3red and no fasc3Red', () => {
+    underclaimTotal = 0
+    defaultActionService.lib3RedOnThisDeck = () => true
+    defaultActionService.fasc3RedOnThisDeck = () => false
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0]).toBe(.9)
+    defaultActionService.fasc3RedOnThisDeck = () => true
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0]).not.toBe(.9)
+    defaultActionService.fasc3RedOnThisDeck = () => false
+    defaultActionService.lib3RedOnThisDeck = () => false
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0]).not.toBe(.9)
   })
 
-  it('returns BB if chan cards are RB and underclaim is high', () => {
+  it('underclaims BB prob 0 if >= 2 underclaim or other', () => {
     underclaimTotal = 2
-    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)).toBe(CHAN2.BB)
-  })
-
-  it('returns BB if chan cards are RB and underclaim is 1 and no lib3red', () => {
-    underclaimTotal = 1
-    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)).toBe(CHAN2.BB)
-  })
-
-  it('returns RB if chan cards are RB and underclaim is 1 and lib3red', () => {
     defaultActionService.lib3RedOnThisDeck = () => true
+    defaultActionService.fasc3RedOnThisDeck = () => false
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0]).toBe(0)
     underclaimTotal = 1
-    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)).toBe(CHAN2.RB)
+    defaultActionService.lib3RedOnThisDeck = () => false
+    defaultActionService.fasc3RedOnThisDeck = () => false
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0]).toBe(0)
   })
+
+  it('overclaims RB prob .75 if no underclaims/overclaims and blue count <= 2', () => {
+    underclaimTotal = 0
+    defaultActionService.blueCount = () => 2
+    //not if overclaim
+    underclaimTotal = -1
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1]).not.toBe(.75)
+    // not if bluecount too high
+    underclaimTotal = 0
+    defaultActionService.blueCount = () => 3
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1]).not.toBe(.75)
+  })
+
+  it('overclaims RB prob .9 if underclaim is 1 and no lib3red (cover for fasc)', () => {
+    underclaimTotal = 1
+    defaultActionService.lib3RedOnThisDeck = () => false
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1]).toBe(.9)
+    // not if a lib3Red
+    defaultActionService.lib3RedOnThisDeck = () => true
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1]).not.toBe(.9)
+  })
+
+  it('overclaims RB prob 1 if underclaim is at least 2', () => {
+    underclaimTotal = 2
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1]).toBe(1)
+  })
+
+  it('overclaims RB prob 0 otherwise', () => {
+    underclaimTotal = -1
+    defaultActionService.lib3RedOnThisDeck = () => true
+    expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1]).toBe(0)
+  })
+
 })
 
 

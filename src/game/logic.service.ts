@@ -64,9 +64,9 @@ export class LogicService{
       player.role = roles[idx]
     })
 
-    if(game.settings.type === GameType.BLIND){
-      nonHitlerPlayers[0].omniFasc = true
-    }
+    // if(game.settings.type === GameType.BLIND){
+    //   nonHitlerPlayers[0].omniFasc = true
+    // }
     game.players.sort(() => Math.random() - .5)
     game.players.forEach((player,idx) => player.color = playerColors[idx%5])
     game.players.sort(() => Math.random() - .5)
