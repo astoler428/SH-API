@@ -6,6 +6,7 @@ import {Gov} from './gov.model'
 import {Socket} from 'socket.io'
 import { chatMessage } from './chatMessage.model'
 import { LogChatMessage } from './logChatMessage.model'
+import { DefaultProbabilityLogItem } from './defaultProbabilityLogItem.model'
 
 export type Game = {
   id: string,
@@ -36,6 +37,7 @@ export type Game = {
   invClaims: {investigator: string, investigatee: string, claim: Team}[],
   confs: {confer: string, confee: string, type: Conf }[],
   remakeId: string,
-  topDecked: boolean
+  topDecked: boolean,
+  defaultProbabilityLog: DefaultProbabilityLogItem[]
 }
 //Figure out how they work with game logic: veto, topdecked

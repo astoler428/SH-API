@@ -1,3 +1,4 @@
+<!-- shift command V to preview -->
 # Blind Secret Hitler
 
 In blind Secret Hitler, players do not know their own role to start the game. Every action besides choosing players and voting has the option to make a default decision. Liberal roles default to always telling the truth, playing B and discarding R when possible. Hitler and fascists decisions are strategically determined considering a variety of factors intended to mimic real play. An explanation of how decisions are made can be found HERE (put link).
@@ -67,17 +68,16 @@ Liberals always force on RBB by default. If you drop a B any time besides BBB, y
 - **RRB:** Hitler's RRB drop probobability is based on the number of B down, the number of B Hitler has played as well as if there is any power. The matrix row is the number of B down and the column is the number of B played by Hitler
 
 
-`|   | 0 | 1 | 2 | 3 | 4 |`
-`|---|---|---|---|---|---|`
-`| 0 | .25  |   |   |   |   |`
-`|---|---|---|---|---|---|`
-`| 1 |  .4 | .3  |   |   |   |`
-`|---|---|---|---|---|---|`
-`| 2 | .9 or 1 if power | .5 or .8 if power | .7 or 1 if power |   |   |`
-`|---|---|---|---|---|---|`
-`| 3 | 1 | 1 | 1 | 1 |   |`
-`|---|---|---|---|---|---|`
-`| 4 | 1 | 1 | 1 | 1 | 1 |`
+|   | 0 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| 0 | .25  |   |   |   |   |
+| 1 |  .4 | .3  |   |   |   |
+| 2 | .9 | .5 | .7 |   |   |
+| 3 | 1 | 1 | 1 | 1 |   |
+| 4 | 1 | 1 | 1 | 1 | 1 |
+
+If 2B are down, the probabilities increase by 30%.
+
 
 If Hitler knows the chancellor is fascist through antiDD then 0% and passes the B.
 If there are at least R down, then Hitler drops 100%.
@@ -91,17 +91,13 @@ Liberals of course always play B when given a choice.
 Vanilla fascists base probability of playing a red is given by the matrix where the row is the number of B down and the column is the number of B played by the fascist.
 
 
-`|   | 0 | 1 | 2 | 3 | 4 |`
-`|---|---|---|---|---|---|`
-`| 0 | .75  |   |   |   |   |`
-`|---|---|---|---|---|---|`
-`| 1 |  .85 | .85  |   |   |   |`
-`|---|---|---|---|---|---|`
-`| 2 | .9 | .9 | .9 |   |   |`
-`|---|---|---|---|---|---|`
-`| 3 | .95 | .95 | .95 | .95 |   |`
-`|---|---|---|---|---|---|`
-`| 4 | 1 | 1 | 1 | 1 | 1 |`
+|   | 0 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| 0 | .75  |   |   |   |   |
+| 1 |  .85 | .85  |   |   |   |
+| 2 | .9 | .9 | .9 |   |   |
+| 3 | .95 | .95 | .95 | .95 |   |
+| 4 | 1 | 1 | 1 | 1 | 1 |
 
 The following circumstances change it:
 - The president is fascist and has a power, play R 100%.

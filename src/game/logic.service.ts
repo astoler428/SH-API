@@ -99,18 +99,18 @@ export class LogicService{
   countVotes(game: Game): number{
     const numVotes = game.players.reduce((acc, player) => player.vote ? acc+1 : acc, 0)
 
-    if(this.numAlivePlayers(game) === numVotes){
-      game.status = Status.SHOW_VOTE_RESULT
-      const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
-      return Math.min(jas, numVotes - jas)
-    }
-    else{
-      return null
-    }
-    // if(numVotes > 0){
+    // if(this.numAlivePlayers(game) === numVotes){
     //   game.status = Status.SHOW_VOTE_RESULT
-    //   return 0
+    //   const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
+    //   return Math.min(jas, numVotes - jas)
     // }
+    // else{
+    //   return null
+    // }
+    if(numVotes > 0){
+      game.status = Status.SHOW_VOTE_RESULT
+      return 0
+    }
   }
 
   presDiscard(game: Game, cardColor: string){
@@ -130,8 +130,8 @@ export class LogicService{
   determineResultofVote(game: Game){
     const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
     this.resetVotes(game)
-    if(jas > this.numAlivePlayers(game) / 2){
-    // if(jas > 0){
+    // if(jas > this.numAlivePlayers(game) / 2){
+    if(jas > 0){
       if(this.checkHitler(game)){
         game.log.push({type: LogType.HITLER_ELECTED, date: getFormattedDate(),})
         game.status = Status.END_FASC

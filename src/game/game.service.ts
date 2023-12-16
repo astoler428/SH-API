@@ -4,7 +4,7 @@ import {
   Injectable,} from "@nestjs/common";
 import { Game } from "../models/game.model";
 import { Deck } from "../models/deck.model";
-import { Status, LogType, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings } from "../consts";
+import { Status, LogType, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings, DefaultAction } from "../consts";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
 import { LogicService } from "./logic.service";
@@ -66,7 +66,8 @@ export class GameService{
       invClaims: [],
       confs: [],
       remakeId: '',
-      topDecked: false
+      topDecked: false,
+      defaultProbabilityLog: []
     }
 
     await this.gameRespository.set(id, game)
@@ -170,7 +171,8 @@ export class GameService{
       invClaims: [],
       confs: [],
       remakeId: '',
-      topDecked: false
+      topDecked: false,
+      defaultProbabilityLog: []
     }
     await this.gameRespository.set(newId, newGame)
     await this.handleUpdate(id, game)
@@ -430,12 +432,14 @@ export class GameService{
   async defaultPresDiscard(id: string){
     const game = await this.findById(id)
     const cardColor = this.defaultActionService.defaultPresDiscard(game)
+    await this.gameRespository.update(id, game) //defaultProbabilityLog needs to be updated so presDiscard can access it when it gets the game
     await this.presDiscard(id, cardColor)
   }
 
   async defaultChanPlay(id: string){
     const game = await this.findById(id)
     const cardColor = this.defaultActionService.defaultChanPlay(game);
+    await this.gameRespository.update(id, game)
     if(!cardColor){
       //means veto
       await this.vetoRequest(id)
@@ -448,30 +452,35 @@ export class GameService{
   async defaultChanClaim(id: string){
     const game = await this.findById(id)
     const claim = this.defaultActionService.defaultChanClaim(game);
+    await this.gameRespository.update(id, game)
     await this.chanClaim(id, claim)
   }
 
   async defaultPresClaim(id: string){
     const game = await this.findById(id)
     const claim = this.defaultActionService.defaultPresClaim(game);
+    await this.gameRespository.update(id, game)
     await this.presClaim(id, claim)
   }
 
   async defaultInvClaim(id: string){
     const game = await this.findById(id)
     const claim = this.defaultActionService.defaultInvClaim(game);
+    await this.gameRespository.update(id, game)
     await this.invClaim(id, claim)
   }
 
   async defaultInspect3Claim(id: string){
     const game = await this.findById(id)
     const claim = this.defaultActionService.defaultInspect3Claim(game);
+    await this.gameRespository.update(id, game)
     await this.inspect3Claim(id, claim)
   }
 
   async defaultVetoReply(id: string){
     const game = await this.findById(id)
     const vetoReply = this.defaultActionService.defaultVetoReply(game);
+    await this.gameRespository.update(id, game)
     await this.vetoReply(id, vetoReply)
   }
 

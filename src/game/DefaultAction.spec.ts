@@ -7,20 +7,23 @@ import { Player } from "../models/player.model";
 import { PlayerMockFactory } from "../test/PlayerMockFactory";
 import { GameMockFactory } from "../test/GameMockFactory";
 import { GovMockFactory } from "../test/GovMockFactory";
-import { CHAN2, Color, Conf, GameType, PRES3, Role, Status, Team } from "../consts";
+import { CHAN2, Color, Conf, DefaultAction, GameType, PRES3, Role, Status, Team } from "../consts";
 import { Card } from "src/models/card.model";
-
+import { GameRepository } from "./game.repository";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
 
 
 describe("DefaultActionService", () => {
   let defaultActionService: DefaultActionService
   let logicService: LogicService
+  let gameRepository: GameRepository
   let players: Player[]
   let game: Game
   let id: string
   let player1: Player, player2: Player, player3: Player
   let R: Card
   let B: Card
+
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -172,7 +175,7 @@ describe("DefaultActionService", () => {
     })
   })
 
-  describe('blueCount', () => {
+  describe('deck1BlueCount', () => {
     it('properly counts the blue count', ()=> {
       game.govs.push(new GovMockFactory().create({presClaim: PRES3.RRB}))
       game.govs.push(new GovMockFactory().create({presClaim: PRES3.RBB}))
@@ -181,12 +184,9 @@ describe("DefaultActionService", () => {
       game.govs.push(new GovMockFactory().create({deckNum: 2, presClaim: PRES3.RBB}))
       game.govs.push(new GovMockFactory().create({deckNum: 2, presClaim: PRES3.RBB}))
       game.govs.push(new GovMockFactory().create({deckNum: 2, presClaim: PRES3.BBB}))
-      expect(defaultActionService.blueCount(game)).toEqual(6)
+      expect(defaultActionService.deck1BlueCount(game)).toEqual(6)
       game.deck.deckNum = 2
-      expect(defaultActionService.blueCount(game)).toEqual(7)
-      game.deck.deckNum = 3
-      game.govs.push(new GovMockFactory().create({deckNum: 3, presClaim: PRES3.RRR}))
-      expect(defaultActionService.blueCount(game)).toEqual(0)
+      expect(defaultActionService.deck1BlueCount(game)).toEqual(6)
     })
   })
 
@@ -397,12 +397,12 @@ describe('testProb', () => {
 
   it('returns true when value is less', ()=> {
     Math.random = () => .7
-    expect(defaultActionService.testProb(.71)).toBe(true)
+    expect(defaultActionService.testProb(.71, game, 'testName', DefaultAction.CHAN_CLAIM, 'test')).toBe(true)
   })
 
   it('returns true when value is less', ()=> {
     Math.random = () => .7
-    expect(defaultActionService.testProb(.69)).toBe(false)
+    expect(defaultActionService.testProb(.69, game, 'testName', DefaultAction.CHAN_CLAIM, 'test')).toBe(false)
   })
 })
 
@@ -1624,13 +1624,13 @@ describe('getfascfascbluechanclaim', () => {
 
   it('overclaims RB prob .75 if no underclaims/overclaims and blue count <= 2', () => {
     underclaimTotal = 0
-    defaultActionService.blueCount = () => 2
+    defaultActionService.deck1BlueCount = () => 2
     //not if overclaim
     underclaimTotal = -1
     expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1]).not.toBe(.75)
-    // not if bluecount too high
+    // not if deck1BlueCount too high
     underclaimTotal = 0
-    defaultActionService.blueCount = () => 3
+    defaultActionService.deck1BlueCount = () => 3
     expect(defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1]).not.toBe(.75)
   })
 

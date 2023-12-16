@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Game } from "../models/game.model";
-import { CHAN2, Color, Conf, PRES3, Policy, Role, Status, Team, draws2, draws3 } from "../consts";
+import { CHAN2, Color, Conf, DefaultAction, PRES3, Policy, Role, Status, Team, draws2, draws3 } from "../consts";
 import { Card } from "../models/card.model";
 import { LogicService } from "./logic.service";
 import { Player } from "../models/player.model";
@@ -9,7 +9,9 @@ import { Player } from "../models/player.model";
 @Injectable()
 export class DefaultActionService{
 
-  constructor(private logicService: LogicService){}
+  constructor(
+    private logicService: LogicService,
+    ){}
 
   defaultPresDiscard(game: Game): Color{
     const currentPresPlayer = this.logicService.getCurrentPres(game)
@@ -22,10 +24,10 @@ export class DefaultActionService{
       return Color.BLUE
     }
     else if(pres3 === PRES3.RBB){
-      return this.testProb(fascPresRBBDropProb) ? Color.BLUE : Color.RED
+      return this.testProb(fascPresRBBDropProb, game, currentPresPlayer.name, DefaultAction.PRES_DISCARD, 'fascPresRBBDropProb') ? Color.BLUE : Color.RED
     }
     else if(pres3 === PRES3.RRB){
-      return this.testProb(fascPresRRBDropProb) ? Color.BLUE : Color.RED
+      return this.testProb(fascPresRRBDropProb, game, currentPresPlayer.name, DefaultAction.PRES_DISCARD, 'fascPresRRBDropProb') ? Color.BLUE : Color.RED
     }
     else{ //RRR
       return Color.RED
@@ -54,7 +56,7 @@ export class DefaultActionService{
       return Color.BLUE
     }
     else if(chan2 === CHAN2.RB){
-      return this.testProb(fascChanDropProb) ? Color.RED : Color.BLUE
+      return this.testProb(fascChanDropProb, game, currentChanPlayer.name, DefaultAction.CHAN_PLAY, 'fascChanDropProb') ? Color.RED : Color.BLUE
     }
     else{ //RR
       return Color.RED
@@ -81,10 +83,10 @@ export class DefaultActionService{
       const [BBUnderclaimProb, RBOverclaimProb] = game.settings.simpleBlind ? this.getSimpleFascFascBlueChanClaim(game, chan2) : this.getFascFascBlueChanClaim(game, chan2)
 
       if(chan2 === CHAN2.BB){
-        return this.testProb(BBUnderclaimProb) ? CHAN2.RB : CHAN2.BB
+        return this.testProb(BBUnderclaimProb, game, currentChanPlayer.name, DefaultAction.CHAN_CLAIM, 'BBUnderclaimProb') ? CHAN2.RB : CHAN2.BB
       }
       else{ //chan2 === CHAN2.RB
-        return this.testProb(RBOverclaimProb) ? CHAN2.BB : CHAN2.RB
+        return this.testProb(RBOverclaimProb, game, currentChanPlayer.name, DefaultAction.CHAN_CLAIM, 'RBOverclaimProb') ? CHAN2.BB : CHAN2.RB
       }
   }
 
@@ -104,28 +106,28 @@ export class DefaultActionService{
       //discarding a B
       if(game.presDiscard.policy === Policy.LIB){
         if(pres3 === PRES3.RRB){
-          return this.testProb(fascRRBconfProb) ? PRES3.RRB : PRES3.RRR
+          return this.testProb(fascRRBconfProb, game, currentPresPlayer.name, DefaultAction.PRES_CLAIM, 'fascRRBconfProb') ? PRES3.RRB : PRES3.RRR
         }
         else if(pres3 === PRES3.RBB){
           return PRES3.RRB
         }
         else{ //BBB
-          return this.testProb(fascBBBunderclaimProb) ? PRES3.RBB : PRES3.BBB
+          return this.testProb(fascBBBunderclaimProb, game, currentPresPlayer.name, DefaultAction.PRES_CLAIM, 'fascBBBunderclaimProb') ? PRES3.RBB : PRES3.BBB
         }
       }
 
       //discarding a R
       if(game.presDiscard.policy === Policy.FASC){
         if(pres3 === PRES3.RRR){
-          return this.testProb(fascRRRconfProb) ? PRES3.RRB : PRES3.RRR
+          return this.testProb(fascRRRconfProb, game, currentPresPlayer.name, DefaultAction.PRES_CLAIM, 'fascRRRconfProb') ? PRES3.RRB : PRES3.RRR
         }
         else if(pres3 === PRES3.RRB){
           //this case has a risk of failing a hitler / fasc test - you pass the blue, they claim 2, and you decide to claim two to overclaim, you think you are agreeing with them
           //but player hitler testing would have to know they are lib or else they think they got lucky as a fasc...
-          return this.testProb(fascRRBoverclaimProb) ? PRES3.RBB : PRES3.RRB
+          return this.testProb(fascRRBoverclaimProb, game, currentPresPlayer.name, DefaultAction.PRES_CLAIM, 'fascRRBoverclaimProb') ? PRES3.RBB : PRES3.RRB
         }
         else{ //RBB
-          return this.testProb(fascRBBoverclaimProb) ? PRES3.BBB : PRES3.RBB
+          return this.testProb(fascRBBoverclaimProb, game, currentPresPlayer.name, DefaultAction.PRES_CLAIM, 'fascRBBoverclaimProb') ? PRES3.BBB : PRES3.RBB
         }
       }
     }
@@ -135,13 +137,13 @@ export class DefaultActionService{
     if(currentChanPlayer.team === Team.FASC){
       const [fascFascConfProb, RBBoverclaimProb] = game.settings.simpleBlind ? this.getSimplePresClaimWithFascProbs(game) : this.getPresClaimWithFascProbs(game)
       if(game.chanClaim === CHAN2.RR){
-        return this.testProb(fascFascConfProb) ? PRES3.RRB : PRES3.RRR
+        return this.testProb(fascFascConfProb, game, currentPresPlayer.name, DefaultAction.PRES_CLAIM, 'fascFascConfProb') ? PRES3.RRB : PRES3.RRR
       }
       else if(game.chanClaim === CHAN2.RB){
         return PRES3.RRB
       }
       else{ //BB
-        return this.testProb(RBBoverclaimProb) ? PRES3.BBB : PRES3.RBB
+        return this.testProb(RBBoverclaimProb, game, currentPresPlayer.name, DefaultAction.PRES_CLAIM, 'RBBoverclaimProb') ? PRES3.BBB : PRES3.RBB
       }
     }
   }
@@ -152,7 +154,7 @@ export class DefaultActionService{
     const investigatedPlayer = this.logicService.findPlayerIngame(game, investigatedName)
     const fascLieOnInvProb = game.settings.simpleBlind ? this.getSimpleFascLieOnInvProb(game, currentPresPlayer, investigatedPlayer) : this.getFascLieOnInvProb(game, currentPresPlayer, investigatedPlayer)
 
-    if(currentPresPlayer.team === Team.FASC && this.testProb(fascLieOnInvProb)){
+    if(currentPresPlayer.team === Team.FASC && this.testProb(fascLieOnInvProb, game, currentPresPlayer.name, DefaultAction.INV_CLAIM, 'fascLieOnInvProb')){
       return investigatedPlayer.team === Team.FASC ? Team.LIB : Team.FASC
     }
     else{
@@ -172,7 +174,7 @@ export class DefaultActionService{
     const currentPresPlayer = this.logicService.getCurrentPres(game)
     if(currentPresPlayer.team === Team.FASC){
       if(top3 === PRES3.RRR && this.underclaimTotal(game) >= 2 || top3 === PRES3.RRB && this.underclaimTotal(game) >= 1){
-        return this.testProb(BBoverclaimInspect3Prob) ? PRES3.RBB : top3
+        return this.testProb(BBoverclaimInspect3Prob, game, currentPresPlayer.name, DefaultAction.INSPECT_TOP3_CLAIM, 'BBoverclaimInspect3Prob') ? PRES3.RBB : top3
       }
       else if(top3 === PRES3.BBB){
         return PRES3.RBB
@@ -390,8 +392,15 @@ export class DefaultActionService{
     return currentChanPlayer.role === Role.HITLER ? hitlerChanDropProb : vanillaFascChanDropProb
   }
 
-  testProb(threshold: number){
+  testProb(threshold: number, game: Game, playerName: string, actionName: DefaultAction, probabilityName: string){
     const randomProb = Math.random()
+    game.defaultProbabilityLog.push({
+      randomProb,
+      threshold,
+      playerName,
+      actionName,
+      probabilityName
+    })
     return randomProb < threshold
   }
 
@@ -420,7 +429,7 @@ export class DefaultActionService{
       }
     }
     else{// if(chan2 === CHAN2.RB){
-      if(underclaimTotal === 0 && this.blueCount(game) <= 2){
+      if(underclaimTotal === 0 && game.deck.deckNum === 1 && this.deck1BlueCount(game) <= 2){
         RBOverclaimProb = .75
       }
       else if(underclaimTotal === 1 && !this.lib3RedOnThisDeck(game)){
@@ -589,13 +598,13 @@ export class DefaultActionService{
 
     const fascBBBunderclaimProb = this.lib3RedOnThisDeck(game) ? 1 : .75            //make this 100% in simple
     const fascRRBoverclaimProb = this.lib3RedOnThisDeck(game) ? 0 : underclaimTotal >= 2 ? .9 : underclaimTotal === 1 ? .25 : 0
-    const fascRBBoverclaimProb = this.lib3RedOnThisDeck(game) ? 0 : underclaimTotal >= 2 ? .9 : underclaimTotal === 1 ? .6 : 0
+    const fascRBBoverclaimProb = this.lib3RedOnThisDeck(game) ? 0 : underclaimTotal >= 2 ? 1 : underclaimTotal === 1 ? .75 : 0
 
-    const fascRRRconfProbs = [.4, .6, .8, 1, 1]  //100% in simple
+    const fascRRRconfProbs = [.4, .6, .8, .9, 1]  //100% in simple
     let fascRRRconfProb = fascRRRconfProbs[game.LibPoliciesEnacted]                 // make this 100% in simple too
 
     if(underclaimTotal >= 1 && !this.lib3RedOnThisDeck(game)){
-      fascRRRconfProb += .5
+      fascRRRconfProb += .25*underclaimTotal
     }
 
     const fascRRBconfProbs = [.75, .85, .95, 1, 1]  //100% in simple
@@ -718,8 +727,8 @@ export class DefaultActionService{
     return game.govs.reduce((acc, gov) => gov.deckNum === game.deck.deckNum ? acc + gov.underclaim : acc, 0)
   }
 
-  blueCount(game: Game){
-    return game.govs.reduce((acc, gov) => gov.deckNum === game.deck.deckNum ? acc + draws3.indexOf(gov.presClaim) : acc, 0)
+  deck1BlueCount(game: Game){ //keep in mind this is really only relevant for first deck. Can't make decisions based on blue count of other decks without knowing how many blues are remaining
+    return game.govs.reduce((acc, gov) => gov.deckNum === 1 ? acc + draws3.indexOf(gov.presClaim) : acc, 0)
   }
 
   isCucu(game: Game){

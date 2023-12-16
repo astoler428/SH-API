@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { CacheModule } from '@nestjs/cache-manager';
+import { CACHE_MANAGER, CacheModule } from '@nestjs/cache-manager';
 import { GameModule } from './game/game.module';
 import { RepositoryModule } from './repository/repository.module';
 import { EventsModule } from './events/events.module';

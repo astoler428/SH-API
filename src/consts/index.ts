@@ -72,6 +72,15 @@ export type GameSettings = {
   // teamLibSpy: boolean
 }
 
+export enum DefaultAction {
+  PRES_DISCARD = 'PRES_DISCARD',
+  CHAN_PLAY = 'CHAN_PLAY',
+  CHAN_CLAIM = 'CHAN_CLAIM',
+  PRES_CLAIM = 'PRES_CLAIM',
+  INV_CLAIM = 'INV_CLAIM',
+  INSPECT_TOP3_CLAIM = 'INSPECT_TOP3_CLAIM',
+}
+
 export enum Status {
   CREATED = 'CREATED',
   STARTED = 'STARTED',
