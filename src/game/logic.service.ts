@@ -3,7 +3,7 @@ import { LogType, CHAN2, Color, Conf, GameType, PRES3, Policy, RRR, Role, Status
 import { Game } from "../models/game.model";
 import { Card } from "src/models/card.model";
 import { Deck } from "src/models/deck.model";
-import { getFormattedDate } from "../helperFunctions";
+import { getFormattedDate, isBlindSetting } from "../helperFunctions";
 
 @Injectable()
 export class LogicService{
@@ -33,7 +33,7 @@ export class LogicService{
     if(game.settings.type === GameType.MIXED_ROLES){
       game.log.push({type: LogType.INTRO_MIXED, date: getFormattedDate()})
     }
-    if(game.settings.type !== GameType.BLIND && game.settings.hitlerKnowsFasc){
+    if(!isBlindSetting(game.settings.type) && game.settings.hitlerKnowsFasc){
       game.log.push({type: LogType.INTRO_HITLER_KNOWS_FASC, date: getFormattedDate()})
     }
     if(game.settings.redDown){
@@ -65,7 +65,7 @@ export class LogicService{
       player.role = roles[idx]
     })
 
-    if(game.settings.completeBlind){
+    if(game.settings.type === GameType.TOTALLY_BLIND){
       const identities = gameIdentities.slice(0, game.players.length).sort(randomSort)
       game.players.forEach((player, idx) => player.identity = identities[idx])
     }

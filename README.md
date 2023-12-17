@@ -1,4 +1,5 @@
 <!-- shift command V to preview -->
+<!-- consistent capilaziing on fasc nad lib -->
 # Blind Secret Hitler
 
 In blind Secret Hitler, players do not know their own role to start the game. Every action besides choosing players and voting has the option to make a default decision. Liberal roles default to always telling the truth, playing B and discarding R when possible. Hitler and fascists decisions are strategically determined considering a variety of factors intended to mimic real play. An explanation of how decisions are made can be found HERE (put link).
@@ -38,7 +39,7 @@ Factors that are considered in decision making:
 
 All decisions are based on a random probability, so even if for example there is only a 10% chance of blind conflicting as Hitler, it may happen.
 
-**Note:** Meta pairings and seating position is not considered. There are no situations where a fascist will default to playing a B to get the gun or play a B to keep the most number of fascists in government.
+**Note:** Meta pairings and seating position are not considered. Decisions are not based on trying to keep the most number of fascists in government or getting liberals skipped.
 
 ### President Discard
 

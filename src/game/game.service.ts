@@ -10,7 +10,7 @@ import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE, UPDATE_GAME, UPDATE_PLAYERS 
 import { LogicService } from "./logic.service";
 import { GameRepository } from "./game.repository";
 import { DefaultActionService } from "./defaultAction.service";
-import { getFormattedDate } from "../helperFunctions";
+import { getFormattedDate, isBlindSetting } from "../helperFunctions";
 
 @Injectable()
 export class GameService{
@@ -39,8 +39,6 @@ export class GameService{
         type: GameType.BLIND,
         redDown: false,
         simpleBlind: false,
-        cooperativeBlind: false,
-        completeBlind: false,
         hitlerKnowsFasc: false,
       },
       status: Status.CREATED,
@@ -147,8 +145,6 @@ export class GameService{
         type: GameType.BLIND,
         redDown: false,
         simpleBlind: false,
-        cooperativeBlind: false,
-        completeBlind: false,
         hitlerKnowsFasc: false,
       },
       status: Status.CREATED,
@@ -250,7 +246,7 @@ export class GameService{
     }
     this.logicService.startGame(game)
 
-    const logTimeout = game.settings.type === GameType.BLIND && !game.settings.completeBlind ? 2000 : 5000 //1500
+    const logTimeout = isBlindSetting(game.settings.type) ? 2000 : 5000 //1500
     setTimeout(async () => {
       const game = await this.findById(id)
       game.log.push({type: LogType.INDIVIDUAL_SEAT, date: getFormattedDate()})
@@ -261,10 +257,13 @@ export class GameService{
       await this.handleUpdate(id, game)
     }, logTimeout)
 
-    const changeStatusTimeout = game.settings.type === GameType.BLIND && !game.settings.completeBlind ? 4000 : 9000
+    const changeStatusTimeout = game.settings.type === GameType.BLIND || game.settings.type === GameType.COOPERATIVE_BLIND ? 4000 : 9000
     setTimeout(async () => {
       const game = await this.findById(id)
-      game.status = Status.CHOOSE_CHAN
+      if(game.status === Status.STARTED){
+        //in blind, it's possible someone changed it to end_fasc for trying to confirm immediately
+        game.status = Status.CHOOSE_CHAN
+      }
       await this.handleUpdate(id, game)
     }, changeStatusTimeout)
     await this.handleUpdate(id, game)
@@ -288,19 +287,19 @@ export class GameService{
     if(game.status !== Status.CREATED){
       throw new BadRequestException('Cannot change the game settings after the game has started')
     }
-    if(gameSettings.simpleBlind && !game.settings.simpleBlind){
-      gameSettings.cooperativeBlind = false
-      gameSettings.completeBlind = false
-    }
-    else if(gameSettings.cooperativeBlind && !game.settings.cooperativeBlind){
-      gameSettings.simpleBlind = false
-      gameSettings.completeBlind = false
-    }
-    else if(gameSettings.completeBlind && !game.settings.completeBlind){
-      gameSettings.simpleBlind = false
-      gameSettings.cooperativeBlind = false
-    }
-    if(gameSettings.type === GameType.BLIND){
+    // if(gameSettings.simpleBlind && !game.settings.simpleBlind){
+    //   gameSettings.cooperativeBlind = false
+    //   gameSettings.completeBlind = false
+    // }
+    // else if(gameSettings.cooperativeBlind && !game.settings.cooperativeBlind){
+    //   gameSettings.simpleBlind = false
+    //   gameSettings.completeBlind = false
+    // }
+    // else if(gameSettings.completeBlind && !game.settings.completeBlind){
+    //   gameSettings.simpleBlind = false
+    //   gameSettings.cooperativeBlind = false
+    // }
+    if(isBlindSetting(gameSettings.type)){
       game.settings = {
         ...gameSettings,
         hitlerKnowsFasc: false,
@@ -310,8 +309,6 @@ export class GameService{
       game.settings = {
         ...gameSettings,
         simpleBlind: false,
-        cooperativeBlind: false,
-        completeBlind: false
       }
     }
 
@@ -337,7 +334,10 @@ export class GameService{
       const timeout = voteSplit <= 1 ? 4000 : voteSplit <= 3 ? 5000 : 6000 //this syncs with frontend animation
       setTimeout(async ()=> {
         const game = await this.findById(id)
-        this.logicService.determineResultofVote(game)
+        if(game.status === Status.SHOW_VOTE_RESULT){
+          //in blind, it's possible someone changed it to end_fasc for trying to confirm immediately
+          this.logicService.determineResultofVote(game)
+        }
         await this.handleUpdate(id, game)
       }, timeout)
     }

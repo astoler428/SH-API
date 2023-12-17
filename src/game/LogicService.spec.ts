@@ -202,7 +202,7 @@ describe("Logic Service", () => {
     })
 
     it('does not assign lib spy in nonlibspy game', ()=>{
-      gameSettings = {type: GameType.NORMAL, redDown: false, simpleBlind: false, cooperativeBlind: false, completeBlind: false, hitlerKnowsFasc: false}
+      gameSettings = {type: GameType.NORMAL, redDown: false, simpleBlind: false, hitlerKnowsFasc: false}
       game = new GameMockFactory().create({settings: gameSettings, players} )
       logicService.startGame(game)
       const libSpy = game.players.find(player => player.role === Role.LIB_SPY)
@@ -211,7 +211,7 @@ describe("Logic Service", () => {
   })
 
   it('does does assign lib spy in libspy game', ()=>{
-    gameSettings = {type: GameType.LIB_SPY, redDown: false, simpleBlind: false, cooperativeBlind: false, completeBlind: false, hitlerKnowsFasc: false}
+    gameSettings = {type: GameType.LIB_SPY, redDown: false, simpleBlind: false, hitlerKnowsFasc: false}
     game = new GameMockFactory().create({settings: gameSettings, players} )
     logicService.startGame(game)
     const libSpy = game.players.find(player => player.role === Role.LIB_SPY)
@@ -220,7 +220,7 @@ describe("Logic Service", () => {
 
   it.skip('assigns omniFasc in blindGame', ()=>{
     const players = [0,1,2,3,4].map(i => new PlayerMockFactory().create({name: `player-${i}}`}))
-    gameSettings = {type: GameType.BLIND, redDown: false, simpleBlind: false, cooperativeBlind: false, completeBlind: false, hitlerKnowsFasc: false}
+    gameSettings = {type: GameType.BLIND, redDown: false, simpleBlind: false, hitlerKnowsFasc: false}
     game = new GameMockFactory().create({settings: gameSettings, players} )
     logicService.startGame(game)
     const omniFasc = game.players.filter(player => player.omniFasc)

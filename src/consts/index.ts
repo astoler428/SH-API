@@ -36,20 +36,20 @@ export enum Vote {
 }
 
 export enum Team {
-  LIB = 'Liberal',
-  FASC = 'Fascist'
+  LIB = 'liberal',
+  FASC = 'fascist'
 }
 
 export enum Role {
-  LIB = 'Liberal',
-  FASC = 'Fascist',
+  LIB = 'liberal',
+  FASC = 'fascist',
   HITLER = 'Hitler',
-  LIB_SPY = 'Liberal Spy'
+  LIB_SPY = 'liberal spy'
 }
 
 export enum Identity {
-  LIB = 'Liberal',
-  FASC = 'Fascist',
+  LIB = 'liberal',
+  FASC = 'fascist',
   HITLER = 'Hitler',
 }
 
@@ -59,12 +59,14 @@ export enum Conf {
 }
 
 export enum Policy {
-  LIB = 'Liberal',
-  FASC = 'Fascist'
+  LIB = 'liberal',
+  FASC = 'fascist'
 }
 
 export enum GameType {
   BLIND = 'Blind',
+  COOPERATIVE_BLIND = 'Cooperative Blind',
+  TOTALLY_BLIND = 'Totally Blind',
   NORMAL = 'Normal',
   MIXED_ROLES = 'Mixed Roles',
   LIB_SPY = 'Liberal Spy'
@@ -74,8 +76,8 @@ export type GameSettings = {
   type: GameType,
   redDown: boolean,
   simpleBlind: boolean,
-  cooperativeBlind: boolean,
-  completeBlind: boolean,
+  // cooperativeBlind: boolean,
+  // completeBlind: boolean,
   hitlerKnowsFasc: boolean,
   // teamLibSpy: boolean
 }
