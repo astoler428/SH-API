@@ -18,6 +18,7 @@ import { Player } from '../models/player.model'
       confirmedFasc: false,
       omniFasc: false,
       guessedToBeLibSpy: false,
+      identity: undefined,
       ...params
     }
   }

@@ -1,4 +1,4 @@
-import {Role, Vote, Team} from '../consts'
+import {Role, Vote, Team, Identity} from '../consts'
 
  export type Player = {
   name: string,
@@ -14,4 +14,5 @@ import {Role, Vote, Team} from '../consts'
   confirmedFasc: boolean,
   omniFasc: boolean,
   guessedToBeLibSpy: boolean,
+  identity: Identity //used in a complete blind version
 }

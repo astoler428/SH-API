@@ -4,7 +4,7 @@ import {
   Injectable,} from "@nestjs/common";
 import { Game } from "../models/game.model";
 import { Deck } from "../models/deck.model";
-import { Status, LogType, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings, DefaultAction } from "../consts";
+import { Status, LogType, Role, GameType, Vote, PRES3, CHAN2, Team, GameSettings, Identity } from "../consts";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JOIN_GAME, LEAVE_GAME, START_GAME, UPDATE, UPDATE_GAME, UPDATE_PLAYERS } from "../consts/socketEventNames";
 import { LogicService } from "./logic.service";
@@ -39,6 +39,8 @@ export class GameService{
         type: GameType.BLIND,
         redDown: false,
         simpleBlind: false,
+        cooperativeBlind: false,
+        completeBlind: false,
         hitlerKnowsFasc: false,
       },
       status: Status.CREATED,
@@ -115,6 +117,7 @@ export class GameService{
           confirmedFasc: false,
           omniFasc: false,
           guessedToBeLibSpy: false,
+          identity: Identity.LIB
         })
       }
     }
@@ -144,6 +147,8 @@ export class GameService{
         type: GameType.BLIND,
         redDown: false,
         simpleBlind: false,
+        cooperativeBlind: false,
+        completeBlind: false,
         hitlerKnowsFasc: false,
       },
       status: Status.CREATED,
@@ -245,7 +250,7 @@ export class GameService{
     }
     this.logicService.startGame(game)
 
-    const logTimeout = game.settings.type === GameType.BLIND ? 2000 : 5000 //1500
+    const logTimeout = game.settings.type === GameType.BLIND && !game.settings.completeBlind ? 2000 : 5000 //1500
     setTimeout(async () => {
       const game = await this.findById(id)
       game.log.push({type: LogType.INDIVIDUAL_SEAT, date: getFormattedDate()})
@@ -256,7 +261,7 @@ export class GameService{
       await this.handleUpdate(id, game)
     }, logTimeout)
 
-    const changeStatusTimeout = game.settings.type === GameType.BLIND ? 4000 : 9000
+    const changeStatusTimeout = game.settings.type === GameType.BLIND && !game.settings.completeBlind ? 4000 : 9000
     setTimeout(async () => {
       const game = await this.findById(id)
       game.status = Status.CHOOSE_CHAN
@@ -283,6 +288,18 @@ export class GameService{
     if(game.status !== Status.CREATED){
       throw new BadRequestException('Cannot change the game settings after the game has started')
     }
+    if(gameSettings.simpleBlind && !game.settings.simpleBlind){
+      gameSettings.cooperativeBlind = false
+      gameSettings.completeBlind = false
+    }
+    else if(gameSettings.cooperativeBlind && !game.settings.cooperativeBlind){
+      gameSettings.simpleBlind = false
+      gameSettings.completeBlind = false
+    }
+    else if(gameSettings.completeBlind && !game.settings.completeBlind){
+      gameSettings.simpleBlind = false
+      gameSettings.cooperativeBlind = false
+    }
     if(gameSettings.type === GameType.BLIND){
       game.settings = {
         ...gameSettings,
@@ -292,9 +309,12 @@ export class GameService{
     else{
       game.settings = {
         ...gameSettings,
-        simpleBlind: false
+        simpleBlind: false,
+        cooperativeBlind: false,
+        completeBlind: false
       }
     }
+
     // if(gameSettings.type !== GameType.LIB_SPY){
     //   game.settings.teamLibSpy = false
     // }

@@ -47,6 +47,12 @@ export enum Role {
   LIB_SPY = 'Liberal Spy'
 }
 
+export enum Identity {
+  LIB = 'Liberal',
+  FASC = 'Fascist',
+  HITLER = 'Hitler',
+}
+
 export enum Conf {
   POLICY = 'Policy',
   INV = 'Investigation'
@@ -68,6 +74,8 @@ export type GameSettings = {
   type: GameType,
   redDown: boolean,
   simpleBlind: boolean,
+  cooperativeBlind: boolean,
+  completeBlind: boolean,
   hitlerKnowsFasc: boolean,
   // teamLibSpy: boolean
 }
@@ -154,3 +162,4 @@ export enum DisplayType {
 
 export const gameTeams = [Team.FASC, Team.FASC, Team.LIB, Team.LIB, Team.LIB, Team.LIB, Team.FASC, Team.LIB, Team.FASC, Team.LIB]
 export const gameRoles = [Role.HITLER, Role.FASC, Role.LIB, Role.LIB, Role.LIB, Role.LIB, Role.FASC, Role.LIB, Role.FASC, Role.LIB]
+export const gameIdentities = [Identity.HITLER, Identity.FASC, Identity.LIB, Identity.LIB, Identity.LIB, Identity.LIB, Identity.FASC, Identity.LIB, Identity.FASC, Identity.LIB]

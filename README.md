@@ -193,8 +193,16 @@ COMMENT ON DIFFERENCES
 
 There could be the option for a player to investigate themself.
 In a 7+ player game, one of the non-Hitler fascists can be an all knowing fascist, who learns all other fascists upon confirming themself. This would increase the chance of helping other fascists confirm themselves if they can't get into government and helping out to topdeck at the end of the game.
+Going into Hitler zone, either the current pres or chancellor can pick one nontoucher (if there is one) to allow them to learn their role.
 
+# Cooperative Blind
+Can be played in one of two ways. Every player works together to help the liberals win. Or it can be regular secret hitler and the entire thing is just a blind mess.
+Talk about strategy and thought process
 
+# Complete Blind
+This is intended to be a twist on cooperative. It's essentially the same cooperative game except some players have an agenda for the fascists to win and know where the fascists are. They ahve to steer the game.
+Talk about strategy and thought process
+REALLY INTERESTING - aim to shoot people with poor logic. It doesn't matter if htey are lib role and 3v3 because you have 4 vs 2 voting majority to make the fascist vote forw hat you want. If fasc gets hitler, have to be extra cautious.
 
 
 

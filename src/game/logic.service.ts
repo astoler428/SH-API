@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { LogType, CHAN2, Color, Conf, GameType, PRES3, Policy, RRR, Role, Status, Team, Vote, draws2, draws3, gameRoles, gameTeams } from "../consts";
+import { LogType, CHAN2, Color, Conf, GameType, PRES3, Policy, RRR, Role, Status, Team, Vote, draws2, draws3, gameRoles, gameTeams, gameIdentities } from "../consts";
 import { Game } from "../models/game.model";
 import { Card } from "src/models/card.model";
 import { Deck } from "src/models/deck.model";
@@ -43,11 +43,12 @@ export class LogicService{
   }
 
   initPlayers(game: Game){
+    const randomSort = () => Math.random() - .5
     const playerColors = ['blueViolet','yellowGreen', 'orange', 'darkGreen', 'magenta']
     const teams = gameTeams.slice(1, game.players.length)
     const roles = gameRoles.slice(1, game.players.length)
 
-    game.players.sort(() => Math.random() - .5)
+    game.players.sort(randomSort)
     game.players[0].role = Role.HITLER
     game.players[0].team = Team.FASC
     const nonHitlerPlayers = game.players.slice(1)
@@ -56,20 +57,26 @@ export class LogicService{
       roles[1] = Role.LIB_SPY
     }
     else if(game.settings.type === GameType.MIXED_ROLES){
-      roles.sort(() => Math.random() - .5)
+      roles.sort(randomSort)
     }
-    nonHitlerPlayers.sort(() => Math.random() - .5)
+    // nonHitlerPlayers.sort(randomSort) <- don't think i need this. Make sure still random
     nonHitlerPlayers.forEach((player, idx) => {
       player.team = teams[idx]
       player.role = roles[idx]
     })
 
+    if(game.settings.completeBlind){
+      const identities = gameIdentities.slice(0, game.players.length).sort(randomSort)
+      game.players.forEach((player, idx) => player.identity = identities[idx])
+    }
+
+
     // if(game.settings.type === GameType.BLIND){
     //   nonHitlerPlayers[0].omniFasc = true
     // }
-    game.players.sort(() => Math.random() - .5)
+    game.players.sort(randomSort)
     game.players.forEach((player,idx) => player.color = playerColors[idx%5])
-    game.players.sort(() => Math.random() - .5)
+    game.players.sort(randomSort)
   }
 
   initDeck(game: Game){
