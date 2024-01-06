@@ -287,18 +287,6 @@ export class GameService{
     if(game.status !== Status.CREATED){
       throw new BadRequestException('Cannot change the game settings after the game has started')
     }
-    // if(gameSettings.simpleBlind && !game.settings.simpleBlind){
-    //   gameSettings.cooperativeBlind = false
-    //   gameSettings.completeBlind = false
-    // }
-    // else if(gameSettings.cooperativeBlind && !game.settings.cooperativeBlind){
-    //   gameSettings.simpleBlind = false
-    //   gameSettings.completeBlind = false
-    // }
-    // else if(gameSettings.completeBlind && !game.settings.completeBlind){
-    //   gameSettings.simpleBlind = false
-    //   gameSettings.cooperativeBlind = false
-    // }
     if(isBlindSetting(gameSettings.type)){
       game.settings = {
         ...gameSettings,

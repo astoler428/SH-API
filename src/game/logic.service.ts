@@ -18,7 +18,7 @@ export class LogicService{
     if(game.settings.redDown){
       this.removeRed(game.deck)
       game.FascPoliciesEnacted = 1
-      // game.LibPoliciesEnacted = 0
+      game.LibPoliciesEnacted = 4
     }
 
     //in this lib spy version, hitler doesn't know fasc by default
@@ -109,7 +109,8 @@ export class LogicService{
     // if(this.numAlivePlayers(game) === numVotes){
     //   game.status = Status.SHOW_VOTE_RESULT
     //   const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
-    //   return Math.min(jas, numVotes - jas)
+    //   const voteSplit = Math.min(jas, numVotes - jas)
+    //   return voteSplit
     // }
     // else{
     //   return null

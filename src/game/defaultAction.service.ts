@@ -283,7 +283,7 @@ export class DefaultActionService{
       //if chan is not hitler or they are hitler but it's an early blue for no power, always pass blue
       //don't pass in cucu because you were inved lib, think you are lib, you need to drop to show you are fasc
       if((currentChanPlayer.role !== Role.HITLER && !this.isCucu(game)) || (game.LibPoliciesEnacted <= 1 && !this.isPower(game))){
-        vanillaFascPresRRBDropProb = 0
+            vanillaFascPresRRBDropProb = 0
       }
       else if(game.LibPoliciesEnacted <= 3 && !this.isPower(game)){
         //chan is hitler and 2 or 3 blues down, .6 pass the blue because hitler dropping allows them to confirm they are hitler and you are their fasc
@@ -596,6 +596,7 @@ export class DefaultActionService{
     const currentPresPlayer = this.logicService.getCurrentPres(game)
     const underclaimTotal = this.underclaimTotal(game)
 
+    //these names are very confusing - used with libs and assume certainDrops... RBB will be a force claiming BBB
     const fascBBBunderclaimProb = this.lib3RedOnThisDeck(game) ? 1 : .75            //make this 100% in simple
     const fascRRBoverclaimProb = this.lib3RedOnThisDeck(game) ? 0 : underclaimTotal >= 2 ? .9 : underclaimTotal === 1 ? .25 : 0
     const fascRBBoverclaimProb = this.lib3RedOnThisDeck(game) ? 0 : underclaimTotal >= 2 ? 1 : underclaimTotal === 1 ? .75 : 0

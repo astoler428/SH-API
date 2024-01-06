@@ -1681,7 +1681,7 @@ describe('getPresClaimWithLibProbs', () => {
   })
 
   it('returns RRRConfProb according to blues blues down', () => {
-    const fascRRRconfProbs = [.4, .6, .8, 1, 1]
+    const fascRRRconfProbs = [.4, .6, .8, .9, 1]
     for(let bluesDown = 0; bluesDown <=4; bluesDown++){
       game.LibPoliciesEnacted = bluesDown
       let [, ,fascRRRconfProb] = defaultActionService.getPresClaimWithLibProbs(game)
@@ -1776,10 +1776,10 @@ describe('getPresClaimWithLibProbs', () => {
     expect(fascRBBoverclaimProb).toEqual(0)
     underclaimTotal = 2;
     [, , , ,fascRBBoverclaimProb] = defaultActionService.getPresClaimWithLibProbs(game)
-    expect(fascRBBoverclaimProb).toEqual(.9)
+    expect(fascRBBoverclaimProb).toEqual(1)
     underclaimTotal = 1;
     [, , , ,fascRBBoverclaimProb] = defaultActionService.getPresClaimWithLibProbs(game)
-    expect(fascRBBoverclaimProb).toEqual(.6)
+    expect(fascRBBoverclaimProb).toEqual(.75)
   })
 })
 

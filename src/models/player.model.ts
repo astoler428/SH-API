@@ -14,5 +14,5 @@ import {Role, Vote, Team, Identity} from '../consts'
   confirmedFasc: boolean,
   omniFasc: boolean,
   guessedToBeLibSpy: boolean,
-  identity: Identity //used in a complete blind version
+  identity: Identity //used in a totally blind version that doesn't exist yet
 }
