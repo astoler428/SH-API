@@ -4,10 +4,11 @@ import { GameModule } from './game/game.module';
 import { RepositoryModule } from './repository/repository.module';
 import { EventsModule } from './events/events.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import * as redisStore from 'cache-manager-redis-store'
+import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
-  imports: [GameModule,
+  imports: [
+    GameModule,
     RepositoryModule,
     EventsModule,
     EventEmitterModule.forRoot(),
@@ -17,7 +18,7 @@ import * as redisStore from 'cache-manager-redis-store'
     //   host: 'localhost',
     //   port: 6379
     // })
-   ],
+  ],
   controllers: [],
   providers: [],
 })

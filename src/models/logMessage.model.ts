@@ -1,7 +1,7 @@
-import { LogType } from "src/consts"
+import { LogType } from 'src/consts';
 
 export type LogMessage = {
-  type: LogType,
-  date: string,
-  payload?: object
-}
+  type: LogType;
+  date: string;
+  payload?: object;
+};

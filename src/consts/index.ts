@@ -1,10 +1,10 @@
-export const BBB = 'BBB'
-export const RBB = 'RBB'
-export const RRB = 'RRB'
-export const RRR = 'RRR'
-export const BB = 'BB'
-export const RB = 'RB'
-export const RR = 'RR'
+export const BBB = 'BBB';
+export const RBB = 'RBB';
+export const RRB = 'RRB';
+export const RRR = 'RRR';
+export const BB = 'BB';
+export const RB = 'RB';
+export const RR = 'RR';
 
 // export const CHAN2 = [RR, RB, BB]
 // export const PRES3 = [RRR, RRB, RBB, BBB]
@@ -19,15 +19,15 @@ export enum PRES3 {
   RRR = 'RRR',
   RRB = 'RRB',
   RBB = 'RBB',
-  BBB = 'BBB'
+  BBB = 'BBB',
 }
 
-export const draws3 = [PRES3.RRR, PRES3.RRB, PRES3.RBB, PRES3.BBB]
-export const draws2 = [CHAN2.RR, CHAN2.RB, CHAN2.BB]
+export const draws3 = [PRES3.RRR, PRES3.RRB, PRES3.RBB, PRES3.BBB];
+export const draws2 = [CHAN2.RR, CHAN2.RB, CHAN2.BB];
 
 export enum Color {
   RED = 'R',
-  BLUE = 'B'
+  BLUE = 'B',
 }
 
 export enum Vote {
@@ -37,14 +37,14 @@ export enum Vote {
 
 export enum Team {
   LIB = 'liberal',
-  FASC = 'fascist'
+  FASC = 'fascist',
 }
 
 export enum Role {
   LIB = 'liberal',
   FASC = 'fascist',
   HITLER = 'Hitler',
-  LIB_SPY = 'liberal spy'
+  LIB_SPY = 'liberal spy',
 }
 
 export enum Identity {
@@ -55,12 +55,12 @@ export enum Identity {
 
 export enum Conf {
   POLICY = 'Policy',
-  INV = 'Investigation'
+  INV = 'Investigation',
 }
 
 export enum Policy {
   LIB = 'liberal',
-  FASC = 'fascist'
+  FASC = 'fascist',
 }
 
 export enum GameType {
@@ -69,18 +69,18 @@ export enum GameType {
   TOTALLY_BLIND = 'Totally Blind',
   NORMAL = 'Normal',
   MIXED_ROLES = 'Mixed Roles',
-  LIB_SPY = 'Liberal Spy'
+  LIB_SPY = 'Liberal Spy',
 }
 
 export type GameSettings = {
-  type: GameType,
-  redDown: boolean,
-  simpleBlind: boolean,
+  type: GameType;
+  redDown: boolean;
+  simpleBlind: boolean;
   // cooperativeBlind: boolean,
   // completeBlind: boolean,
-  hitlerKnowsFasc: boolean,
+  hitlerKnowsFasc: boolean;
   // teamLibSpy: boolean
-}
+};
 
 export enum DefaultAction {
   PRES_DISCARD = 'PRES_DISCARD',
@@ -150,8 +150,7 @@ export enum LogType {
   INTRO_MIXED = 'INTRO_MIXED',
   INTRO_HITLER_KNOWS_FASC = 'INTRO_HITLER_KNOWS_FASC',
   INTRO_RED_DOWN = 'INTRO_RED_DOWN',
-  HITLER_TO_GUESS_LIB_SPY = 'HITLER_TO_GUESS_LIB_SPY'
-
+  HITLER_TO_GUESS_LIB_SPY = 'HITLER_TO_GUESS_LIB_SPY',
 }
 
 export enum DisplayType {
@@ -159,9 +158,42 @@ export enum DisplayType {
   INV = 'INV',
   LIB_SPY_GUESS = 'LIB_SPY_GUESS',
   ENACT_LIB_POLICY = 'ENACT_LIB_POLICY',
-  ENACT_FASC_POLICY = 'ENACT_FASC_POLICY'
+  ENACT_FASC_POLICY = 'ENACT_FASC_POLICY',
 }
 
-export const gameTeams = [Team.FASC, Team.FASC, Team.LIB, Team.LIB, Team.LIB, Team.LIB, Team.FASC, Team.LIB, Team.FASC, Team.LIB]
-export const gameRoles = [Role.HITLER, Role.FASC, Role.LIB, Role.LIB, Role.LIB, Role.LIB, Role.FASC, Role.LIB, Role.FASC, Role.LIB]
-export const gameIdentities = [Identity.HITLER, Identity.FASC, Identity.LIB, Identity.LIB, Identity.LIB, Identity.LIB, Identity.FASC, Identity.LIB, Identity.FASC, Identity.LIB]
+export const gameTeams = [
+  Team.FASC,
+  Team.FASC,
+  Team.LIB,
+  Team.LIB,
+  Team.LIB,
+  Team.LIB,
+  Team.FASC,
+  Team.LIB,
+  Team.FASC,
+  Team.LIB,
+];
+export const gameRoles = [
+  Role.HITLER,
+  Role.FASC,
+  Role.LIB,
+  Role.LIB,
+  Role.LIB,
+  Role.LIB,
+  Role.FASC,
+  Role.LIB,
+  Role.FASC,
+  Role.LIB,
+];
+export const gameIdentities = [
+  Identity.HITLER,
+  Identity.FASC,
+  Identity.LIB,
+  Identity.LIB,
+  Identity.LIB,
+  Identity.LIB,
+  Identity.FASC,
+  Identity.LIB,
+  Identity.FASC,
+  Identity.LIB,
+];

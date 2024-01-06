@@ -1,11 +1,10 @@
-import {Role, Vote} from '../consts'
-import { Player } from '../models/player.model'
+import { Role, Vote } from '../consts';
+import { Player } from '../models/player.model';
 
- export class PlayerMockFactory {
-
+export class PlayerMockFactory {
   create(params?: object): Player {
     return {
-      name: "player",
+      name: 'player',
       socketId: '1',
       color: 'black',
       team: undefined,
@@ -19,7 +18,7 @@ import { Player } from '../models/player.model'
       omniFasc: false,
       guessedToBeLibSpy: false,
       identity: undefined,
-      ...params
-    }
+      ...params,
+    };
   }
 }

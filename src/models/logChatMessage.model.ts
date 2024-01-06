@@ -1,4 +1,4 @@
-import { chatMessage } from "./chatMessage.model"
-import { LogMessage } from "./logMessage.model"
+import { chatMessage } from './chatMessage.model';
+import { LogMessage } from './logMessage.model';
 
-export type LogChatMessage = chatMessage | LogMessage
+export type LogChatMessage = chatMessage | LogMessage;

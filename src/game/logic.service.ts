@@ -1,110 +1,146 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
-import { LogType, CHAN2, Color, Conf, GameType, PRES3, Policy, RRR, Role, Status, Team, Vote, draws2, draws3, gameRoles, gameTeams, gameIdentities } from "../consts";
-import { Game } from "../models/game.model";
-import { Card } from "src/models/card.model";
-import { Deck } from "src/models/deck.model";
-import { getFormattedDate, isBlindSetting } from "../helperFunctions";
+import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  LogType,
+  CHAN2,
+  Color,
+  Conf,
+  GameType,
+  PRES3,
+  Policy,
+  RRR,
+  Role,
+  Status,
+  Team,
+  Vote,
+  draws2,
+  draws3,
+  gameRoles,
+  gameTeams,
+  gameIdentities,
+} from '../consts';
+import { Game } from '../models/game.model';
+import { Card } from 'src/models/card.model';
+import { Deck } from 'src/models/deck.model';
+import { getFormattedDate, isBlindSetting } from '../helperFunctions';
 
 @Injectable()
-export class LogicService{
-
+export class LogicService {
   //initialize the deck here
-  startGame(game: Game){
-    game.status = Status.STARTED
+  startGame(game: Game) {
+    game.status = Status.STARTED;
     // game.status = Status.CHOOSE_CHAN
-    this.initPlayers(game)
-    game.currentPres = game.players[game.presIdx].name
-    this.initDeck(game)
-    if(game.settings.redDown){
-      this.removeRed(game.deck)
-      game.FascPoliciesEnacted = 1
-      game.LibPoliciesEnacted = 4
+    this.initPlayers(game);
+    game.currentPres = game.players[game.presIdx].name;
+    this.initDeck(game);
+    if (game.settings.redDown) {
+      this.removeRed(game.deck);
+      game.FascPoliciesEnacted = 1;
+      game.LibPoliciesEnacted = 4;
     }
 
     //in this lib spy version, hitler doesn't know fasc by default
-    if(game.players.length < 7 && game.settings.type !== GameType.LIB_SPY){
-      game.settings.hitlerKnowsFasc = true
+    if (game.players.length < 7 && game.settings.type !== GameType.LIB_SPY) {
+      game.settings.hitlerKnowsFasc = true;
     }
-    game.log.push({type: LogType.INTRO_DECK, date: getFormattedDate()})
-    game.log.push({type: LogType.INTRO_ROLES, date: getFormattedDate()})
-    if(game.settings.type === GameType.LIB_SPY){
-      game.log.push({type: LogType.INTRO_LIB_SPY, date: getFormattedDate()})
+    game.log.push({ type: LogType.INTRO_DECK, date: getFormattedDate() });
+    game.log.push({ type: LogType.INTRO_ROLES, date: getFormattedDate() });
+    if (game.settings.type === GameType.LIB_SPY) {
+      game.log.push({ type: LogType.INTRO_LIB_SPY, date: getFormattedDate() });
     }
-    if(game.settings.type === GameType.MIXED_ROLES){
-      game.log.push({type: LogType.INTRO_MIXED, date: getFormattedDate()})
+    if (game.settings.type === GameType.MIXED_ROLES) {
+      game.log.push({ type: LogType.INTRO_MIXED, date: getFormattedDate() });
     }
-    if(!isBlindSetting(game.settings.type) && game.settings.hitlerKnowsFasc){
-      game.log.push({type: LogType.INTRO_HITLER_KNOWS_FASC, date: getFormattedDate()})
+    if (!isBlindSetting(game.settings.type) && game.settings.hitlerKnowsFasc) {
+      game.log.push({
+        type: LogType.INTRO_HITLER_KNOWS_FASC,
+        date: getFormattedDate(),
+      });
     }
-    if(game.settings.redDown){
-      game.log.push({type: LogType.INTRO_RED_DOWN, date: getFormattedDate()})
+    if (game.settings.redDown) {
+      game.log.push({ type: LogType.INTRO_RED_DOWN, date: getFormattedDate() });
     }
     //individual seta and fascists logs are set in game service after timeout
   }
 
-  initPlayers(game: Game){
-    const randomSort = () => Math.random() - .5
-    const playerColors = ['blueViolet','yellowGreen', 'orange', 'darkGreen', 'magenta']
-    const teams = gameTeams.slice(1, game.players.length)
-    const roles = gameRoles.slice(1, game.players.length)
+  initPlayers(game: Game) {
+    const randomSort = () => Math.random() - 0.5;
+    const playerColors = [
+      'blueViolet',
+      'yellowGreen',
+      'orange',
+      'darkGreen',
+      'magenta',
+    ];
+    const teams = gameTeams.slice(1, game.players.length);
+    const roles = gameRoles.slice(1, game.players.length);
 
-    game.players.sort(randomSort)
-    game.players[0].role = Role.HITLER
-    game.players[0].team = Team.FASC
-    const nonHitlerPlayers = game.players.slice(1)
+    game.players.sort(randomSort);
+    game.players[0].role = Role.HITLER;
+    game.players[0].team = Team.FASC;
+    const nonHitlerPlayers = game.players.slice(1);
 
-    if(game.settings.type === GameType.LIB_SPY){
-      roles[1] = Role.LIB_SPY
-    }
-    else if(game.settings.type === GameType.MIXED_ROLES){
-      roles.sort(randomSort)
+    if (game.settings.type === GameType.LIB_SPY) {
+      roles[1] = Role.LIB_SPY;
+    } else if (game.settings.type === GameType.MIXED_ROLES) {
+      roles.sort(randomSort);
     }
     // nonHitlerPlayers.sort(randomSort) <- don't think i need this. Make sure still random
     nonHitlerPlayers.forEach((player, idx) => {
-      player.team = teams[idx]
-      player.role = roles[idx]
-    })
+      player.team = teams[idx];
+      player.role = roles[idx];
+    });
 
-    if(game.settings.type === GameType.TOTALLY_BLIND){
-      const identities = gameIdentities.slice(0, game.players.length).sort(randomSort)
-      game.players.forEach((player, idx) => player.identity = identities[idx])
+    if (game.settings.type === GameType.TOTALLY_BLIND) {
+      const identities = gameIdentities
+        .slice(0, game.players.length)
+        .sort(randomSort);
+      game.players.forEach(
+        (player, idx) => (player.identity = identities[idx]),
+      );
     }
-
 
     // if(game.settings.type === GameType.BLIND){
     //   nonHitlerPlayers[0].omniFasc = true
     // }
-    game.players.sort(randomSort)
-    game.players.forEach((player,idx) => player.color = playerColors[idx%5])
-    game.players.sort(randomSort)
+    game.players.sort(randomSort);
+    game.players.forEach(
+      (player, idx) => (player.color = playerColors[idx % 5]),
+    );
+    game.players.sort(randomSort);
   }
 
-  initDeck(game: Game){
-    this.buildDeck(game.deck)
-    this.shuffleDeck(game.deck)
+  initDeck(game: Game) {
+    this.buildDeck(game.deck);
+    this.shuffleDeck(game.deck);
   }
 
-  chooseChan(game: Game, chanName: string){
-    game.currentChan = chanName
+  chooseChan(game: Game, chanName: string) {
+    game.currentChan = chanName;
     // this.resetVotes(game)
-    game.log.push({type: LogType.CHOOSE_CHAN, date: getFormattedDate(), payload: {pres: game.currentPres, chan: chanName}})
-    game.status = Status.VOTE
-    game.topDecked = false
+    game.log.push({
+      type: LogType.CHOOSE_CHAN,
+      date: getFormattedDate(),
+      payload: { pres: game.currentPres, chan: chanName },
+    });
+    game.status = Status.VOTE;
+    game.topDecked = false;
   }
 
-  vote(game: Game, name: string, vote: Vote): number{
-    const player = this.findPlayerIngame(game, name)
-    if(player.vote !== vote){
-      player.vote = vote
+  vote(game: Game, name: string, vote: Vote): number {
+    const player = this.findPlayerIngame(game, name);
+    if (player.vote !== vote) {
+      player.vote = vote;
+    } else {
+      player.vote = null;
     }
-    else{
-      player.vote = null
-    }
-    return this.countVotes(game)
+    return this.countVotes(game);
   }
 
-  countVotes(game: Game): number{
-    const numVotes = game.players.reduce((acc, player) => player.vote ? acc+1 : acc, 0)
+  countVotes(game: Game): number {
+    const numVotes = game.players.reduce(
+      (acc, player) => (player.vote ? acc + 1 : acc),
+      0,
+    );
 
     // if(this.numAlivePlayers(game) === numVotes){
     //   game.status = Status.SHOW_VOTE_RESULT
@@ -115,151 +151,167 @@ export class LogicService{
     // else{
     //   return null
     // }
-    if(numVotes > 0){
-      game.status = Status.SHOW_VOTE_RESULT
-      return 0
+    if (numVotes > 0) {
+      game.status = Status.SHOW_VOTE_RESULT;
+      return 0;
     }
   }
 
-  presDiscard(game: Game, cardColor: string){
-    game.presDiscard = game.presCards.find(card => card.color === cardColor)
-    game.chanCards = game.presCards.filter(card => card !== game.presDiscard)
-    this.discard(game.presDiscard, game.deck)
-    game.status = Status.CHAN_PLAY
+  presDiscard(game: Game, cardColor: string) {
+    game.presDiscard = game.presCards.find((card) => card.color === cardColor);
+    game.chanCards = game.presCards.filter((card) => card !== game.presDiscard);
+    this.discard(game.presDiscard, game.deck);
+    game.status = Status.CHAN_PLAY;
   }
 
-  chanPlay(game: Game, cardColor: string){
-    game.chanPlay = game.chanCards.find(card => card.color === cardColor)
-    const chanDiscard = game.chanCards.find(card => card !== game.chanPlay)
-    this.discard(chanDiscard, game.deck)
-    this.enactPolicy(game, game.chanPlay, false)
+  chanPlay(game: Game, cardColor: string) {
+    game.chanPlay = game.chanCards.find((card) => card.color === cardColor);
+    const chanDiscard = game.chanCards.find((card) => card !== game.chanPlay);
+    this.discard(chanDiscard, game.deck);
+    this.enactPolicy(game, game.chanPlay, false);
   }
 
-  determineResultofVote(game: Game){
-    const jas = game.players.reduce((acc, player) => player.vote === Vote.JA ? acc+1 : acc, 0)
-    this.resetVotes(game)
+  determineResultofVote(game: Game) {
+    const jas = game.players.reduce(
+      (acc, player) => (player.vote === Vote.JA ? acc + 1 : acc),
+      0,
+    );
+    this.resetVotes(game);
     // if(jas > this.numAlivePlayers(game) / 2){
-    if(jas > 0){
-      if(this.checkHitler(game)){
-        game.log.push({type: LogType.HITLER_ELECTED, date: getFormattedDate(),})
-        game.status = Status.END_FASC
-        this.outroLogs(game)
+    if (jas > 0) {
+      if (this.checkHitler(game)) {
+        game.log.push({
+          type: LogType.HITLER_ELECTED,
+          date: getFormattedDate(),
+        });
+        game.status = Status.END_FASC;
+        this.outroLogs(game);
+      } else {
+        this.presDraw3(game);
       }
-      else{
-        this.presDraw3(game)
-      }
-    }
-    else{
+    } else {
       //vote didn't pass
-      game.log.push({type: LogType.ELECTION_FAIL, date: getFormattedDate()})
-      this.advanceTracker(game, false)
+      game.log.push({ type: LogType.ELECTION_FAIL, date: getFormattedDate() });
+      this.advanceTracker(game, false);
     }
   }
 
-  presDraw3(game: Game){
-    game.presCards = this.draw3(game.deck)
-    game.status = Status.PRES_DISCARD
+  presDraw3(game: Game) {
+    game.presCards = this.draw3(game.deck);
+    game.status = Status.PRES_DISCARD;
   }
 
   //setPrevLocks if it's a vetoAccepted
-  advanceTracker(game: Game, setPrevLocks: boolean){
-    game.tracker++
-    if(game.tracker === 3){
-      this.topDeck(game)
-      setPrevLocks = false
+  advanceTracker(game: Game, setPrevLocks: boolean) {
+    game.tracker++;
+    if (game.tracker === 3) {
+      this.topDeck(game);
+      setPrevLocks = false;
     }
     //topdecking may have led to gameover
-    if(!(this.gameOver(game) || game.status === Status.LIB_SPY_GUESS)){
-      this.nextPres(game, setPrevLocks)
+    if (!(this.gameOver(game) || game.status === Status.LIB_SPY_GUESS)) {
+      this.nextPres(game, setPrevLocks);
     }
   }
 
-  nextPres(game: Game, setPrevLocks: boolean){
-    if(setPrevLocks){
-      this.setPrevLocks(game)
+  nextPres(game: Game, setPrevLocks: boolean) {
+    if (setPrevLocks) {
+      this.setPrevLocks(game);
     }
 
-    do{
-      game.presIdx = (game.presIdx + 1) % game.players.length
+    do {
+      game.presIdx = (game.presIdx + 1) % game.players.length;
+    } while (!game.players[game.presIdx].alive);
+    game.currentPres = game.players[game.presIdx].name;
+    game.currentChan = null;
+    game.status = Status.CHOOSE_CHAN;
+  }
+
+  resetVotes(game: Game) {
+    for (const player of game.players) {
+      player.vote = null;
     }
-    while(!game.players[game.presIdx].alive)
-    game.currentPres = game.players[game.presIdx].name
-    game.currentChan = null
-    game.status = Status.CHOOSE_CHAN
   }
 
-  resetVotes(game: Game){
-    for(const player of game.players){
-      player.vote = null
-    }
+  gameOver(game: Game) {
+    return game.status === Status.END_FASC || game.status === Status.END_LIB;
   }
 
-
-  gameOver(game: Game){
-    return game.status === Status.END_FASC || game.status === Status.END_LIB
-  }
-
-  topDeck(game: Game){
-    const card = this.topDeckCard(game.deck)
+  topDeck(game: Game) {
+    const card = this.topDeckCard(game.deck);
 
     //enacting policy always resets tracker
-    this.enactPolicy(game, card, true)
-    this.removePrevLocks(game)
-    game.topDecked = true
+    this.enactPolicy(game, card, true);
+    this.removePrevLocks(game);
+    game.topDecked = true;
   }
 
-  enactPolicy(game: Game, card: Card, topDeck: boolean){
-    if(topDeck){
-      game.log.push({type: LogType.TOP_DECK, date: getFormattedDate(),})
+  enactPolicy(game: Game, card: Card, topDeck: boolean) {
+    if (topDeck) {
+      game.log.push({ type: LogType.TOP_DECK, date: getFormattedDate() });
     }
-    game.log.push({type: LogType.ENACT_POLICY, date: getFormattedDate(), payload: {policy: card.policy }})
+    game.log.push({
+      type: LogType.ENACT_POLICY,
+      date: getFormattedDate(),
+      payload: { policy: card.policy },
+    });
 
-    if(card.policy === Policy.LIB){
-      game.LibPoliciesEnacted++
-      if(!topDeck){
-        this.getCurrentPres(game).bluesPlayed++
-        this.getCurrentChan(game).bluesPlayed++
+    if (card.policy === Policy.LIB) {
+      game.LibPoliciesEnacted++;
+      if (!topDeck) {
+        this.getCurrentPres(game).bluesPlayed++;
+        this.getCurrentChan(game).bluesPlayed++;
       }
-      if(game.LibPoliciesEnacted === 5){
-        if(game.settings.type === GameType.LIB_SPY){
-          if(!this.libSpyCondition(game)){
-            game.log.push({type: LogType.LIB_SPY_FAIL, date: getFormattedDate(),})
-            game.status = Status.END_FASC
-            this.outroLogs(game)
-            return
+      if (game.LibPoliciesEnacted === 5) {
+        if (game.settings.type === GameType.LIB_SPY) {
+          if (!this.libSpyCondition(game)) {
+            game.log.push({
+              type: LogType.LIB_SPY_FAIL,
+              date: getFormattedDate(),
+            });
+            game.status = Status.END_FASC;
+            this.outroLogs(game);
+            return;
+          } else {
+            game.status = Status.LIB_SPY_GUESS;
+            game.log.push({
+              type: LogType.HITLER_TO_GUESS_LIB_SPY,
+              date: getFormattedDate(),
+            });
+            return;
           }
-          else{
-            game.status = Status.LIB_SPY_GUESS
-            game.log.push({type: LogType.HITLER_TO_GUESS_LIB_SPY, date: getFormattedDate(),})
-            return
-          }
-        }
-        else{
-          game.status = Status.END_LIB
-          this.outroLogs(game)
-          return
+        } else {
+          game.status = Status.END_LIB;
+          this.outroLogs(game);
+          return;
         }
       }
-    }
-    else{
-      game.FascPoliciesEnacted++
-      if(game.FascPoliciesEnacted === 6){
-        game.status = Status.END_FASC
-        this.outroLogs(game)
-        return
+    } else {
+      game.FascPoliciesEnacted++;
+      if (game.FascPoliciesEnacted === 6) {
+        game.status = Status.END_FASC;
+        this.outroLogs(game);
+        return;
       }
     }
 
     //!this.gameOver(game) &&
-    if(!topDeck){
+    if (!topDeck) {
       // this.setPrevLocks(game) //was settting in after pres claim
       // this.determinePower(game) for testing
-      game.status = Status.CHAN_CLAIM
+      game.status = Status.CHAN_CLAIM;
     }
-    this.resetTracker(game)
-    if(game.deck.drawPile.length < 3){
-      this.reshuffle(game.deck)
-      game.log.push({type: LogType.SHUFFLE_DECK, date: getFormattedDate(), payload: {libCount: 6 - game.LibPoliciesEnacted, fascCount: 11 - game.FascPoliciesEnacted}})
+    this.resetTracker(game);
+    if (game.deck.drawPile.length < 3) {
+      this.reshuffle(game.deck);
+      game.log.push({
+        type: LogType.SHUFFLE_DECK,
+        date: getFormattedDate(),
+        payload: {
+          libCount: 6 - game.LibPoliciesEnacted,
+          fascCount: 11 - game.FascPoliciesEnacted,
+        },
+      });
     }
   }
 
@@ -283,18 +335,20 @@ export class LogicService{
    *
    */
 
-
-
-  presClaim(game: Game, claim: PRES3){
-    game.presClaim = claim
-    game.log.push({type: LogType.PRES_CLAIM, date: getFormattedDate(), payload: {pres: game.currentPres, claim}})
-    this.addGov(game)
-    this.determinePolicyConf(game)
+  presClaim(game: Game, claim: PRES3) {
+    game.presClaim = claim;
+    game.log.push({
+      type: LogType.PRES_CLAIM,
+      date: getFormattedDate(),
+      payload: { pres: game.currentPres, claim },
+    });
+    this.addGov(game);
+    this.determinePolicyConf(game);
     // this.setPrevLocks(game) do this after power and do it inside of nextPres
-    this.determinePower(game)
+    this.determinePower(game);
   }
 
-  addGov(game: Game){
+  addGov(game: Game) {
     game.govs.push({
       deckNum: game.deck.deckNum,
       pres: game.currentPres,
@@ -304,275 +358,352 @@ export class LogicService{
       chanCards: game.chanCards,
       presClaim: game.presClaim,
       chanClaim: game.chanClaim,
-      underclaim: this.determineUnderClaim(game)
-    })
+      underclaim: this.determineUnderClaim(game),
+    });
   }
 
-  determinePolicyConf(game: Game){
+  determinePolicyConf(game: Game) {
     //chan claims 0 blues, pres claims at least 1 blue
-    if(draws2.indexOf(game.chanClaim) === 0 && draws3.indexOf(game.presClaim) > 0){
-      game.confs.push({confer: game.currentPres, confee: game.currentChan, type: Conf.POLICY})
+    if (
+      draws2.indexOf(game.chanClaim) === 0 &&
+      draws3.indexOf(game.presClaim) > 0
+    ) {
+      game.confs.push({
+        confer: game.currentPres,
+        confee: game.currentChan,
+        type: Conf.POLICY,
+      });
     }
   }
 
-  determineUnderClaim(game: Game): number{
-    const bluesDrawn = game.presCards.reduce((acc, card) => card.policy === Policy.LIB ? acc+1 : acc, 0)
-    return bluesDrawn - draws3.indexOf(game.presClaim)
+  determineUnderClaim(game: Game): number {
+    const bluesDrawn = game.presCards.reduce(
+      (acc, card) => (card.policy === Policy.LIB ? acc + 1 : acc),
+      0,
+    );
+    return bluesDrawn - draws3.indexOf(game.presClaim);
   }
 
-  determinePower(game: Game){
-    if(game.chanPlay.policy === Policy.FASC){
-      if(game.FascPoliciesEnacted === 1 && game.players.length >= 9){
-        return game.status = Status.INV
-      }
-      else if(game.FascPoliciesEnacted === 2 && game.players.length >= 7){
-        return game.status = Status.INV
-      }
-      else if(game.FascPoliciesEnacted === 3 && game.players.length >= 7){
-        return game.status = Status.SE
-      }
-      else if(game.FascPoliciesEnacted === 3 && game.players.length < 7){
-        game.top3 = this.inspect3(game.deck)
-        game.log.push({type: LogType.INSPECT_TOP3, date: getFormattedDate(), payload: {pres: game.currentPres}})
-        return game.status = Status.INSPECT_TOP3
-      }
-      else if(game.FascPoliciesEnacted === 4 || game.FascPoliciesEnacted === 5){
-        return game.status = Status.GUN
+  determinePower(game: Game) {
+    if (game.chanPlay.policy === Policy.FASC) {
+      if (game.FascPoliciesEnacted === 1 && game.players.length >= 9) {
+        return (game.status = Status.INV);
+      } else if (game.FascPoliciesEnacted === 2 && game.players.length >= 7) {
+        return (game.status = Status.INV);
+      } else if (game.FascPoliciesEnacted === 3 && game.players.length >= 7) {
+        return (game.status = Status.SE);
+      } else if (game.FascPoliciesEnacted === 3 && game.players.length < 7) {
+        game.top3 = this.inspect3(game.deck);
+        game.log.push({
+          type: LogType.INSPECT_TOP3,
+          date: getFormattedDate(),
+          payload: { pres: game.currentPres },
+        });
+        return (game.status = Status.INSPECT_TOP3);
+      } else if (
+        game.FascPoliciesEnacted === 4 ||
+        game.FascPoliciesEnacted === 5
+      ) {
+        return (game.status = Status.GUN);
       }
     }
-    this.nextPres(game, true)
+    this.nextPres(game, true);
   }
 
-  setPrevLocks(game: Game){
-    game.prevChan = game.currentChan
-    game.prevPres = this.numAlivePlayers(game) > 5 ? game.currentPres : null
+  setPrevLocks(game: Game) {
+    game.prevChan = game.currentChan;
+    game.prevPres = this.numAlivePlayers(game) > 5 ? game.currentPres : null;
   }
 
-  chanClaim(game: Game, claim: CHAN2){
-    game.chanClaim = claim
-    game.log.push({type: LogType.CHAN_CLAIM, date: getFormattedDate(), payload: {chan: game.currentChan, claim}})
-    game.status = Status.PRES_CLAIM
+  chanClaim(game: Game, claim: CHAN2) {
+    game.chanClaim = claim;
+    game.log.push({
+      type: LogType.CHAN_CLAIM,
+      date: getFormattedDate(),
+      payload: { chan: game.currentChan, claim },
+    });
+    game.status = Status.PRES_CLAIM;
   }
 
-  chooseInv(game: Game, invName: string){
-    const invPlayer = this.findPlayerIngame(game, invName)
-    invPlayer.investigated = true
-    this.getCurrentPres(game).investigations.push(invName)
-    game.status = Status.INV_CLAIM
-    game.log.push({type: LogType.INV, date: getFormattedDate(), payload: {pres: game.currentPres, investigatee: invName}})
+  chooseInv(game: Game, invName: string) {
+    const invPlayer = this.findPlayerIngame(game, invName);
+    invPlayer.investigated = true;
+    this.getCurrentPres(game).investigations.push(invName);
+    game.status = Status.INV_CLAIM;
+    game.log.push({
+      type: LogType.INV,
+      date: getFormattedDate(),
+      payload: { pres: game.currentPres, investigatee: invName },
+    });
   }
 
   // setInv(game: Game, invName: string){
-    // game.status = Status.INV_CLAIM
+  // game.status = Status.INV_CLAIM
   // }
 
-  invClaim(game: Game, claim: Team){
-    const investigatee = this.getCurrentPres(game).investigations.slice(-1)[0]
-    game.log.push({type: LogType.INV_CLAIM, date: getFormattedDate(), payload: {pres: game.currentPres, investigatee, claim}})
+  invClaim(game: Game, claim: Team) {
+    const investigatee = this.getCurrentPres(game).investigations.slice(-1)[0];
+    game.log.push({
+      type: LogType.INV_CLAIM,
+      date: getFormattedDate(),
+      payload: { pres: game.currentPres, investigatee, claim },
+    });
 
-    game.invClaims.push({investigator: game.currentPres, investigatee, claim })
-    if(claim === Team.FASC){
-      game.confs.push({confer: game.currentPres, confee: this.getCurrentPres(game).investigations.slice(-1)[0], type: Conf.INV})
+    game.invClaims.push({
+      investigator: game.currentPres,
+      investigatee,
+      claim,
+    });
+    if (claim === Team.FASC) {
+      game.confs.push({
+        confer: game.currentPres,
+        confee: this.getCurrentPres(game).investigations.slice(-1)[0],
+        type: Conf.INV,
+      });
     }
-    this.nextPres(game, true)
+    this.nextPres(game, true);
   }
-
 
   //here in testing
-  chooseSE(game: Game, seName: string){
-    game.log.push({type: LogType.SE, date: getFormattedDate(), payload: {pres: game.currentPres, seName}})
-    this.setPrevLocks(game)
-    game.currentPres = seName
-    game.currentChan = null
-    game.status = Status.CHOOSE_CHAN
+  chooseSE(game: Game, seName: string) {
+    game.log.push({
+      type: LogType.SE,
+      date: getFormattedDate(),
+      payload: { pres: game.currentPres, seName },
+    });
+    this.setPrevLocks(game);
+    game.currentPres = seName;
+    game.currentChan = null;
+    game.status = Status.CHOOSE_CHAN;
   }
 
-  shootPlayer(game: Game, shotName: string){
-    game.log.push({type: LogType.GUN, date: getFormattedDate(), payload: {pres: game.currentPres, shotName}})
-    const shotPlayer = this.findPlayerIngame(game, shotName)
-    shotPlayer.alive = false
-    if(this.numAlivePlayers(game) <= 5){
-      game.prevPres = null
+  shootPlayer(game: Game, shotName: string) {
+    game.log.push({
+      type: LogType.GUN,
+      date: getFormattedDate(),
+      payload: { pres: game.currentPres, shotName },
+    });
+    const shotPlayer = this.findPlayerIngame(game, shotName);
+    shotPlayer.alive = false;
+    if (this.numAlivePlayers(game) <= 5) {
+      game.prevPres = null;
     }
-    if(shotPlayer.role === Role.HITLER){
-      game.status = Status.END_LIB
-      game.log.push({type: LogType.HITLER_SHOT, date: getFormattedDate()} )
-      this.outroLogs(game)
-    }
-    else{
-      this.nextPres(game, true)
+    if (shotPlayer.role === Role.HITLER) {
+      game.status = Status.END_LIB;
+      game.log.push({ type: LogType.HITLER_SHOT, date: getFormattedDate() });
+      this.outroLogs(game);
+    } else {
+      this.nextPres(game, true);
     }
   }
 
-  guessLibSpy(game: Game, spyName: string){
-    const spyGuessPlayer = this.findPlayerIngame(game, spyName)
-    spyGuessPlayer.guessedToBeLibSpy = true
-    game.status = Status.SHOW_LIB_SPY_GUESS
+  guessLibSpy(game: Game, spyName: string) {
+    const spyGuessPlayer = this.findPlayerIngame(game, spyName);
+    spyGuessPlayer.guessedToBeLibSpy = true;
+    game.status = Status.SHOW_LIB_SPY_GUESS;
   }
 
-  determineResultOfLibSpyGuess(game: Game, spyName: string){
-    const spyGuessPlayer = this.findPlayerIngame(game, spyName)
-    if(spyGuessPlayer.role === Role.LIB_SPY){
-      game.status = Status.END_FASC
+  determineResultOfLibSpyGuess(game: Game, spyName: string) {
+    const spyGuessPlayer = this.findPlayerIngame(game, spyName);
+    if (spyGuessPlayer.role === Role.LIB_SPY) {
+      game.status = Status.END_FASC;
+    } else {
+      game.status = Status.END_LIB;
     }
-    else{
-      game.status = Status.END_LIB
-    }
-    game.log.push({type: LogType.LIB_SPY_GUESS, date: getFormattedDate(), payload: {spyName}})
-    this.outroLogs(game)
+    game.log.push({
+      type: LogType.LIB_SPY_GUESS,
+      date: getFormattedDate(),
+      payload: { spyName },
+    });
+    this.outroLogs(game);
   }
 
-  vetoRequest(game: Game){
-    game.log.push({type: LogType.VETO_REQUEST, date: getFormattedDate(), payload: {chan: game.currentChan}})
-    game.status = Status.VETO_REPLY
+  vetoRequest(game: Game) {
+    game.log.push({
+      type: LogType.VETO_REQUEST,
+      date: getFormattedDate(),
+      payload: { chan: game.currentChan },
+    });
+    game.status = Status.VETO_REPLY;
   }
 
-  vetoReply(game: Game, vetoAccepted: boolean){
-    game.log.push({type: LogType.VETO_REPLY, date: getFormattedDate(), payload: {pres: game.currentPres, vetoAccepted}})
-    if(vetoAccepted){
-      game.chanCards.forEach(card => this.discard(card, game.deck))
+  vetoReply(game: Game, vetoAccepted: boolean) {
+    game.log.push({
+      type: LogType.VETO_REPLY,
+      date: getFormattedDate(),
+      payload: { pres: game.currentPres, vetoAccepted },
+    });
+    if (vetoAccepted) {
+      game.chanCards.forEach((card) => this.discard(card, game.deck));
       // this.setPrevLocks(game)
-      if(game.deck.drawPile.length < 3){
-        this.reshuffle(game.deck)
-        game.log.push({type: LogType.SHUFFLE_DECK, date: getFormattedDate(), payload: {libCount: 6 - game.LibPoliciesEnacted, fascCount: 11 - game.FascPoliciesEnacted}})
+      if (game.deck.drawPile.length < 3) {
+        this.reshuffle(game.deck);
+        game.log.push({
+          type: LogType.SHUFFLE_DECK,
+          date: getFormattedDate(),
+          payload: {
+            libCount: 6 - game.LibPoliciesEnacted,
+            fascCount: 11 - game.FascPoliciesEnacted,
+          },
+        });
       }
-      this.advanceTracker(game, true)
+      this.advanceTracker(game, true);
+    } else {
+      game.status = Status.VETO_DECLINED;
     }
-    else{
-      game.status = Status.VETO_DECLINED
-    }
   }
 
-  inspect3Claim(game: Game, claim: PRES3){
-    game.log.push({type: LogType.INSPECT_TOP3_CLAIM, date: getFormattedDate(), payload: {pres: game.currentPres, claim}})
-    this.nextPres(game, true)
+  inspect3Claim(game: Game, claim: PRES3) {
+    game.log.push({
+      type: LogType.INSPECT_TOP3_CLAIM,
+      date: getFormattedDate(),
+      payload: { pres: game.currentPres, claim },
+    });
+    this.nextPres(game, true);
   }
 
-  removePrevLocks(game: Game){
-    game.prevChan = null
-    game.prevPres = null
+  removePrevLocks(game: Game) {
+    game.prevChan = null;
+    game.prevPres = null;
   }
 
-  resetTracker(game: Game){
-    game.tracker = 0
+  resetTracker(game: Game) {
+    game.tracker = 0;
   }
 
-  checkHitler(game: Game){
-    return game.FascPoliciesEnacted >= 3 && this.getCurrentChan(game).role === Role.HITLER
+  checkHitler(game: Game) {
+    return (
+      game.FascPoliciesEnacted >= 3 &&
+      this.getCurrentChan(game).role === Role.HITLER
+    );
   }
 
-  libSpyCondition(game: Game){
+  libSpyCondition(game: Game) {
     //return boolean
-    const libSpy = game.players.find(player => player.role === Role.LIB_SPY)
-    return game.govs.some(gov => gov.policyPlayed.policy === Policy.FASC && (libSpy.name === gov.pres || libSpy.name === gov.chan))
-
+    const libSpy = game.players.find((player) => player.role === Role.LIB_SPY);
+    return game.govs.some(
+      (gov) =>
+        gov.policyPlayed.policy === Policy.FASC &&
+        (libSpy.name === gov.pres || libSpy.name === gov.chan),
+    );
   }
 
-  findPlayerIngame(game: Game, name: string){
-    const player = game.players.find(player => player.name === name)
-    if(!player){
-      throw new BadRequestException(`${name} is not a player in this game`)
+  findPlayerIngame(game: Game, name: string) {
+    const player = game.players.find((player) => player.name === name);
+    if (!player) {
+      throw new BadRequestException(`${name} is not a player in this game`);
     }
-    return player
+    return player;
   }
 
-  numAlivePlayers(game: Game){
-    return game.players.reduce((n, player) => player.alive ? n + 1 : n, 0)
+  numAlivePlayers(game: Game) {
+    return game.players.reduce((n, player) => (player.alive ? n + 1 : n), 0);
   }
 
-  getCurrentPres(game: Game){
-    return this.findPlayerIngame(game, game.currentPres)
+  getCurrentPres(game: Game) {
+    return this.findPlayerIngame(game, game.currentPres);
   }
 
-
-  getCurrentChan(game: Game){
-    return this.findPlayerIngame(game, game.currentChan)
+  getCurrentChan(game: Game) {
+    return this.findPlayerIngame(game, game.currentChan);
   }
-
 
   //blind functions
 
-  confirmFasc(game: Game, name: string){
-    const playerTryingToConfirmFasc = this.findPlayerIngame(game, name)
-    if(playerTryingToConfirmFasc.team === Team.FASC){
-      playerTryingToConfirmFasc.confirmedFasc = true
-    }
-    else{
-      game.log.push({type: LogType.CONFIRM_FASC, date: getFormattedDate(), payload: {name}})
-      game.status = Status.END_FASC
-      this.outroLogs(game)
-    }
-  }
-
-
-  buildDeck(deck: Deck){
-    for(let i = 0; i < 6; i++){
-      deck.drawPile.push({policy: Policy.LIB, color: Color.BLUE })
-    }
-    for(let i = 0; i < 11; i++){
-      deck.drawPile.push({policy: Policy.FASC, color: Color.RED })
+  confirmFasc(game: Game, name: string) {
+    const playerTryingToConfirmFasc = this.findPlayerIngame(game, name);
+    if (playerTryingToConfirmFasc.team === Team.FASC) {
+      playerTryingToConfirmFasc.confirmedFasc = true;
+    } else {
+      game.log.push({
+        type: LogType.CONFIRM_FASC,
+        date: getFormattedDate(),
+        payload: { name },
+      });
+      game.status = Status.END_FASC;
+      this.outroLogs(game);
     }
   }
 
-  shuffleDeck(deck: Deck){
-    deck.drawPile.sort(()=> Math.random() - .5)
-    deck.drawPile.sort(()=> Math.random() - .5)
+  buildDeck(deck: Deck) {
+    for (let i = 0; i < 6; i++) {
+      deck.drawPile.push({ policy: Policy.LIB, color: Color.BLUE });
+    }
+    for (let i = 0; i < 11; i++) {
+      deck.drawPile.push({ policy: Policy.FASC, color: Color.RED });
+    }
   }
 
-  reshuffle(deck: Deck){
-    deck.deckNum++
-    deck.drawPile = [...deck.drawPile, ...deck.discardPile]
-    deck.discardPile = []
-    this.shuffleDeck(deck)
+  shuffleDeck(deck: Deck) {
+    deck.drawPile.sort(() => Math.random() - 0.5);
+    deck.drawPile.sort(() => Math.random() - 0.5);
   }
 
-  topDeckCard(deck: Deck){
+  reshuffle(deck: Deck) {
+    deck.deckNum++;
+    deck.drawPile = [...deck.drawPile, ...deck.discardPile];
+    deck.discardPile = [];
+    this.shuffleDeck(deck);
+  }
+
+  topDeckCard(deck: Deck) {
     // if(deck.drawPile.length < 3){
     //   this.reshuffle(deck)
     // }
-    return deck.drawPile.pop()
+    return deck.drawPile.pop();
   }
 
-  draw3(deck: Deck){
+  draw3(deck: Deck) {
     // if(deck.drawPile.length < 3){
     //   this.reshuffle(deck)
     // }
-    const card1 = deck.drawPile.pop()
-    const card2 = deck.drawPile.pop()
-    const card3 = deck.drawPile.pop()
-    const top3 = [card1, card2, card3]
-    return top3
+    const card1 = deck.drawPile.pop();
+    const card2 = deck.drawPile.pop();
+    const card3 = deck.drawPile.pop();
+    const top3 = [card1, card2, card3];
+    return top3;
   }
 
-  inspect3(deck: Deck){
+  inspect3(deck: Deck) {
     // if(deck.drawPile.length < 3){
     //   this.reshuffle(deck)
     // }
-    const n = deck.drawPile.length
-    const card1 = deck.drawPile[n-1]
-    const card2 = deck.drawPile[n-2]
-    const card3 = deck.drawPile[n-3]
-    const top3 = [card1, card2, card3].sort(()=> Math.random() - .5)
+    const n = deck.drawPile.length;
+    const card1 = deck.drawPile[n - 1];
+    const card2 = deck.drawPile[n - 2];
+    const card3 = deck.drawPile[n - 3];
+    const top3 = [card1, card2, card3].sort(() => Math.random() - 0.5);
     //says in log that the policies are shuffled
-    return top3
+    return top3;
   }
 
-  removeRed(deck: Deck){
-    const redCard = deck.drawPile.find(card => card.policy === Policy.FASC)
-    deck.drawPile = deck.drawPile.filter(card => card !== redCard)
-    this.shuffleDeck(deck)
+  removeRed(deck: Deck) {
+    const redCard = deck.drawPile.find((card) => card.policy === Policy.FASC);
+    deck.drawPile = deck.drawPile.filter((card) => card !== redCard);
+    this.shuffleDeck(deck);
   }
 
-  discard(card: Card, deck: Deck){
-    deck.discardPile.push(card)
+  discard(card: Card, deck: Deck) {
+    deck.discardPile.push(card);
   }
 
   //call this end messages - state winners and do this with deck
-  outroLogs(game: Game){
-    game.log.push({type: game.status === Status.END_FASC ? LogType.FASC_WIN : LogType.LIB_WIN, date: getFormattedDate()})
-    if(game.deck.drawPile.length > 0){
-      game.log.push({type: LogType.DECK, date: getFormattedDate(), payload: {remainingPolicies: game.deck.drawPile.map(card => card.color).join("")}})
+  outroLogs(game: Game) {
+    game.log.push({
+      type:
+        game.status === Status.END_FASC ? LogType.FASC_WIN : LogType.LIB_WIN,
+      date: getFormattedDate(),
+    });
+    if (game.deck.drawPile.length > 0) {
+      game.log.push({
+        type: LogType.DECK,
+        date: getFormattedDate(),
+        payload: {
+          remainingPolicies: game.deck.drawPile
+            .map((card) => card.color)
+            .join(''),
+        },
+      });
     }
   }
 }
-

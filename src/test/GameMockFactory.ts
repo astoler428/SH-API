@@ -1,12 +1,12 @@
-import { Game } from "../models/game.model";
-import { Status, GameType } from "../consts";
-import { DeckMockFactory } from "./DeckMockFactory";
+import { Game } from '../models/game.model';
+import { Status, GameType } from '../consts';
+import { DeckMockFactory } from './DeckMockFactory';
 
-export class GameMockFactory{
+export class GameMockFactory {
   create(params?: object): Game {
     return {
-      id: "MockID",
-      host: "player",
+      id: 'MockID',
+      host: 'player',
       settings: {
         type: GameType.BLIND,
         redDown: false,
@@ -40,8 +40,7 @@ export class GameMockFactory{
       remakeId: '',
       topDecked: false,
       defaultProbabilityLog: [],
-      ...params
-    }
-
+      ...params,
+    };
   }
 }

@@ -3,6 +3,6 @@ import { EventsGateway } from '../game/events.gateway';
 import { EventsService } from './events.service';
 
 @Module({
-  providers: []
+  providers: [],
 })
 export class EventsModule {}

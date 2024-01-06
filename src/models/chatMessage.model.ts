@@ -1,5 +1,5 @@
 export type chatMessage = {
-  name: string,
-  date: string,
-  message: string,
-}
+  name: string;
+  date: string;
+  message: string;
+};
