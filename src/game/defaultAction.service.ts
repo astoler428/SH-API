@@ -276,6 +276,11 @@ export class DefaultActionService {
       game,
       investigatedName,
     );
+
+    if (currentPresPlayer.team === Team.LIB) {
+      return investigatedPlayer.team;
+    }
+
     const fascLieOnInvProb = game.settings.simpleBlind
       ? this.getSimpleFascLieOnInvProb(
           game,
@@ -285,7 +290,6 @@ export class DefaultActionService {
       : this.getFascLieOnInvProb(game, currentPresPlayer, investigatedPlayer);
 
     if (
-      currentPresPlayer.team === Team.FASC &&
       this.testProb(
         fascLieOnInvProb,
         game,
@@ -355,23 +359,41 @@ export class DefaultActionService {
     let fascLieOnInvProb: number;
     let vanillaFascInvLibLieProbs = [0.85, 0.95, 1, 1, 1]; //based on number of blues down
     let hitlerInvLibLieProbs = [0.55, 0.65, 0.75, 0.85, 1]; //based on number of blues down
+    const currentChanPlayer = this.logicService.getCurrentChan(game);
 
-    if (investigatedPlayer.team === Team.FASC) {
-      //create a fasc fasc conf 40% of the time if you look super bad as a 3 red with underclaim
-      fascLieOnInvProb =
-        this.underclaimTotal(game) >= 2 && this.is3Red(game, game.currentPres)
-          ? 0.6
-          : 1;
-      return fascLieOnInvProb;
+    if (this.inConflict(game, currentPresPlayer, investigatedPlayer)) {
+      //if they are lib - have to lie and call fasc
+      //if they are fasc - have to tell the truth that they are fasc
+      return (fascLieOnInvProb = investigatedPlayer.team === Team.LIB ? 1 : 0);
+    }
+    if (this.doubleDipping(game)) {
+      //INV A LIB
+      //if confed a lib - you can tell the truth about a lib inv 50%
+      //if confed a fasc - definitley call the lib a fasc on inv
+      //INV A FASC
+      //if confed a lib - you can also conf a fasc 50%
+      //if confed a fasc - can't conf another fasc
+      return (fascLieOnInvProb = currentChanPlayer.team === Team.LIB ? 0.5 : 1);
     }
 
-    fascLieOnInvProb =
-      currentPresPlayer.role === Role.HITLER
-        ? hitlerInvLibLieProbs[game.LibPoliciesEnacted]
-        : vanillaFascInvLibLieProbs[game.LibPoliciesEnacted];
-
-    if (this.doubleDipping(game)) {
-      fascLieOnInvProb = 0.5;
+    if (investigatedPlayer.team === Team.LIB) {
+      fascLieOnInvProb =
+        currentPresPlayer.role === Role.HITLER
+          ? hitlerInvLibLieProbs[game.LibPoliciesEnacted]
+          : vanillaFascInvLibLieProbs[game.LibPoliciesEnacted];
+    } else {
+      //investigating a fellow fasc
+      const underclaimTotal = this.underclaimTotal(game);
+      fascLieOnInvProb = 1;
+      if (this.is3Red(game, game.currentPres)) {
+        //if 3 red and more than 2 underclaims - create fasc fasc conf
+        //if 3 red and 2 underclaims - create fasc fasc conf 60%
+        if (underclaimTotal > 2) {
+          fascLieOnInvProb = 0;
+        } else if (underclaimTotal === 2) {
+          fascLieOnInvProb = 0.4;
+        }
+      }
     }
     return fascLieOnInvProb;
   }
@@ -664,19 +686,23 @@ export class DefaultActionService {
     currentPresPlayer: Player,
     investigatedPlayer: Player,
   ) {
+    let fascLieOnInvProb: number;
     let hitlerInvLibLieProbs = [0.55, 0.8, 1, 1, 1]; //based on number of blues down
-    let fascLieOnInvProb =
-      currentPresPlayer.role === Role.HITLER
-        ? hitlerInvLibLieProbs[game.LibPoliciesEnacted]
-        : 1;
 
-    if (investigatedPlayer.team === Team.FASC) {
-      return 1;
+    if (this.inConflict(game, currentPresPlayer, investigatedPlayer)) {
+      //if they are lib - have to lie and call fasc
+      //if they are fasc - have to tell the truth that they are fasc
+      return (fascLieOnInvProb = investigatedPlayer.team === Team.LIB ? 1 : 0);
     }
 
-    // if(this.doubleDipping(game)){
-    //   fascLieOnInvProb = .5
-    // }
+    if (investigatedPlayer.team === Team.LIB) {
+      fascLieOnInvProb =
+        currentPresPlayer.role === Role.HITLER
+          ? hitlerInvLibLieProbs[game.LibPoliciesEnacted]
+          : 1;
+    } else {
+      fascLieOnInvProb = 1;
+    }
 
     return fascLieOnInvProb;
   }
@@ -1055,6 +1081,14 @@ export class DefaultActionService {
         conf.confer === game.currentPres &&
         conf.confee === game.currentChan &&
         conf.type === Conf.POLICY,
+    );
+  }
+
+  inConflict(game: Game, player1: Player, player2: Player) {
+    return game.confs.some(
+      (conf) =>
+        (conf.confer === player2.name && conf.confee === player1.name) ||
+        (conf.confer === player1.name && conf.confee === player2.name),
     );
   }
 }

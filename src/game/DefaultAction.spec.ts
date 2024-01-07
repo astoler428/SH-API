@@ -417,6 +417,22 @@ describe('DefaultActionService', () => {
     });
   });
 
+  describe('inConflict', () => {
+    it('properly determines if two players are on conflict', () => {
+      game.confs.push({
+        confer: 'player-1',
+        confee: 'player-2',
+        type: Conf.POLICY,
+      });
+      expect(defaultActionService.inConflict(game, player1, player2)).toBe(
+        true,
+      );
+      expect(defaultActionService.inConflict(game, player1, player3)).toBe(
+        false,
+      );
+    });
+  });
+
   describe('testProb', () => {
     it('returns true when value is less', () => {
       Math.random = () => 0.7;
@@ -1221,35 +1237,49 @@ describe('DefaultActionService', () => {
         .mockImplementation(() => isDoubleDipping);
     });
 
-    it('lies about a fasc role (says lib) 60% of time if underclaim and 3red conditions met', () => {
-      is3Red = true;
-      underclaimTotal = 2;
+    it('calls fasc fasc if already in conflict', () => {
+      game.confs.push({
+        confer: player2.name,
+        confee: player3.name,
+        type: Conf.INV,
+      });
       expect(
         defaultActionService.getFascLieOnInvProb(game, player2, player3),
-      ).toEqual(0.6);
+      ).toEqual(0);
     });
 
-    it('lies about a fasc role (says lib) 100% of time if conditions arent met of underclaim and lib3red', () => {
-      is3Red = false;
+    it('lies 50% or 100% of the time after double dipping ', () => {
+      isDoubleDipping = true;
+      game.currentChan = player1.name;
+      expect(
+        defaultActionService.getFascLieOnInvProb(game, player2, player1),
+      ).toEqual(0.5);
+      game.currentChan = player2.name;
+      expect(
+        defaultActionService.getFascLieOnInvProb(game, player2, player1),
+      ).toEqual(1);
+    });
+
+    it('lies about a fasc role (says lib) 60% of time if underclaim and 3red conditions met', () => {
+      isDoubleDipping = false;
+      is3Red = true;
       underclaimTotal = 3;
       expect(
         defaultActionService.getFascLieOnInvProb(game, player2, player3),
-      ).toEqual(1);
-      is3Red = true;
+      ).toEqual(0);
+      underclaimTotal = 2;
+      expect(
+        defaultActionService.getFascLieOnInvProb(game, player2, player3),
+      ).toEqual(0.4);
       underclaimTotal = 1;
       expect(
         defaultActionService.getFascLieOnInvProb(game, player2, player3),
       ).toEqual(1);
-    });
-
-    it('lies 50% of time double dipping inv a lib as hitler or vanilla', () => {
-      isDoubleDipping = true;
+      is3Red = false;
+      underclaimTotal = 4;
       expect(
-        defaultActionService.getFascLieOnInvProb(game, player2, player1),
-      ).toEqual(0.5);
-      expect(
-        defaultActionService.getFascLieOnInvProb(game, player3, player1),
-      ).toEqual(0.5);
+        defaultActionService.getFascLieOnInvProb(game, player2, player3),
+      ).toEqual(1);
     });
 
     it('returns the proper hitlerProb based on number of blues', () => {
@@ -1320,6 +1350,17 @@ describe('DefaultActionService', () => {
           ).toEqual(1);
         }
       });
+    });
+
+    it('calls fasc fasc if already in conflict', () => {
+      game.confs.push({
+        confer: player2.name,
+        confee: player3.name,
+        type: Conf.INV,
+      });
+      expect(
+        defaultActionService.getFascLieOnInvProb(game, player2, player3),
+      ).toEqual(0);
     });
   });
 
