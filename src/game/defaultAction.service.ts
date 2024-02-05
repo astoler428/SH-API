@@ -1322,47 +1322,28 @@ export class DefaultActionService {
     );
   }
 
-  confirmedLib(game: Game, player: Player) {
+  confirmedLib(game: Game, player: Player, fromHitlerPOV?: boolean) {
+    //adding the fromHitlerPOV flag checks if the player is confirmed lib to Hitler (since hitler knows they are fasc)
     if (player.team !== Team.LIB) {
       return false;
     } else if (this.inAnyConflict(game, player)) {
       return false;
     }
-    const minFascists = this.minimumNumberOfFascFromConfs(game);
-    const totalNumberOfFascists = Math.floor((game.players.length - 1) / 2);
-    let libInvChainLength = 0;
-    let investigatee = player.name;
-    while (true) {
-      const investigator = game.invClaims.find(
-        (invClaim) =>
-          invClaim.claim === Team.LIB && invClaim.investigatee === investigatee,
-      )?.investigator;
-      if (
-        investigator &&
-        !this.inAnyConflict(
-          game,
-          this.logicService.findPlayerIngame(game, investigator),
-        )
-      ) {
-        libInvChainLength++;
-        investigatee = investigator;
-      } else {
-        break;
-      }
+    const allPossibleLines = this.allPossibleLines(game, fromHitlerPOV);
+    if (allPossibleLines.every((line) => !line.includes(player.name))) {
+      return true;
     }
 
-    if (minFascists + libInvChainLength >= totalNumberOfFascists) {
-      return true;
-    } else if (
+    if (
       game.players.length <= 6 &&
       player.confirmedNotHitler &&
       // player.alive &&
       this.bothSidesOfAConflictShot(game)
     ) {
       return true;
-    } else {
-      return false;
     }
+
+    return false;
   }
 
   bothSidesOfAConflictShot(game: Game) {
@@ -1379,60 +1360,49 @@ export class DefaultActionService {
     });
   }
 
-  minimumNumberOfFascFromConfs(game: Game, knownFascists?: Player[]) {
-    const playersInConfSet = new Set<string>();
-    game.confs.forEach((conf) => {
-      playersInConfSet.add(conf.confee);
-      playersInConfSet.add(conf.confer);
-    });
-
-    const playersInConfArray = Array.from(playersInConfSet);
-
-    let minFascists = playersInConfArray.length;
-    for (let i = 0; i < Math.pow(2, playersInConfArray.length); i++) {
+  allPossibleLines(game: Game, fromHitlerPOV?: boolean) {
+    const possibleLines: string[][] = [];
+    for (let i = 0; i < Math.pow(2, game.players.length); i++) {
       let fascists = [];
       let liberals = [];
-      for (let j = 0; j < playersInConfArray.length; j++) {
+      for (let j = 0; j < game.players.length; j++) {
         if ((i & (1 << j)) > 0) {
-          liberals.push(playersInConfArray[j]);
+          liberals.push(game.players[j].name);
         } else {
-          fascists.push(playersInConfArray[j]);
+          fascists.push(game.players[j].name);
         }
       }
-      if (this.isPossibleLine(game, liberals, fascists, knownFascists)) {
-        minFascists = Math.min(minFascists, fascists.length);
+      if (this.isPossibleLine(game, liberals, fascists, fromHitlerPOV)) {
+        possibleLines.push(fascists);
       }
     }
-    return minFascists;
+    return possibleLines;
   }
 
   isPossibleLine(
     game: Game,
     liberals: string[],
     fascists: string[],
-    knownFascists?: Player[],
+    fromHitlerPOV?: boolean,
   ) {
+    const hitlerPlayer = this.logicService.getHitler(game);
     return !(
-      (
-        fascists.length > (game.players.length - 1) / 2 ||
-        game.confs.some(
-          (conf) =>
-            liberals.includes(conf.confer) && liberals.includes(conf.confee),
-        ) ||
-        game.invClaims.some(
-          (invClaim) =>
-            (invClaim.claim === Team.LIB &&
-              liberals.includes(invClaim.investigator) &&
-              fascists.includes(invClaim.investigatee)) ||
-            (invClaim.claim === Team.FASC &&
-              liberals.includes(invClaim.investigator) &&
-              liberals.includes(invClaim.investigatee)),
-        )
-      )
-      //all known fascists must be in the fascist list
-      // ||
-      // (knownFascists &&
-      //   knownFascists.some((fasc) => !fascists.includes(fasc.name)))
+      fascists.length > (game.players.length - 1) / 2 ||
+      game.confs.some(
+        (conf) =>
+          liberals.includes(conf.confer) && liberals.includes(conf.confee),
+      ) ||
+      game.invClaims.some(
+        (invClaim) =>
+          (invClaim.claim === Team.LIB &&
+            liberals.includes(invClaim.investigator) &&
+            fascists.includes(invClaim.investigatee)) ||
+          (invClaim.claim === Team.FASC &&
+            liberals.includes(invClaim.investigator) &&
+            liberals.includes(invClaim.investigatee)),
+      ) ||
+      // all known fascists must be in the fascist list
+      (fromHitlerPOV && !fascists.includes(hitlerPlayer.name))
     );
   }
 
@@ -1458,24 +1428,7 @@ export class DefaultActionService {
   }
 
   knownLibToHitler(game: Game, player: Player) {
-    //simple case where hitler is not in conf but enough confs to determine some confirmed libs
-    //excludes confirmed libs as this is to determine if hitler should blind conf
-    const hitlerPlayer = this.logicService.getHitler(game);
-    const totalNumberOfFascists = Math.floor((game.players.length - 1) / 2);
-    const minFascistsFromConfs = this.minimumNumberOfFascFromConfs(game, [
-      hitlerPlayer,
-    ]);
-    if (this.inAnyConflict(game, hitlerPlayer)) {
-      return false;
-    }
-    if (
-      !this.inAnyConflict(game, player) &&
-      minFascistsFromConfs === totalNumberOfFascists - 1
-    ) {
-      return true;
-    } else {
-      return false;
-    }
+    return this.confirmedLib(game, player, true);
   }
 
   knownFascistToHitler(game: Game, player: Player) {

@@ -2494,86 +2494,71 @@ describe('DefaultActionService', () => {
     });
   });
 
-  describe('minimumNumberOfFascFromConfs', () => {
-    beforeEach(() => {
-      game.players = [];
-      for (let i = 1; i < 10; i++) {
-        game.players.push(
-          new PlayerMockFactory().create({ name: `player-${i}` }),
-        );
-      }
-      game.confs = [];
-      game.invClaims = [];
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-2',
-        type: Conf.INV,
-      });
-    });
+  // describe('minimumNumberOfFascFromConfs', () => {
+  //   beforeEach(() => {
+  //     game.players = [];
+  //     for (let i = 1; i < 10; i++) {
+  //       game.players.push(
+  //         new PlayerMockFactory().create({ name: `player-${i}` }),
+  //       );
+  //     }
+  //     game.confs = [];
+  //     game.invClaims = [];
+  //     game.confs.push({
+  //       confer: 'player-1',
+  //       confee: 'player-2',
+  //       type: Conf.INV,
+  //     });
+  //   });
 
-    it('returns 2 in a 3 way conf', () => {
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      expect(defaultActionService.minimumNumberOfFascFromConfs(game)).toEqual(
-        2,
-      );
-    });
+  //   it('returns 2 in a 3 way conf', () => {
+  //     game.confs.push({
+  //       confer: 'player-2',
+  //       confee: 'player-3',
+  //       type: Conf.POLICY,
+  //     });
+  //     game.confs.push({
+  //       confer: 'player-1',
+  //       confee: 'player-3',
+  //       type: Conf.POLICY,
+  //     });
+  //     expect(defaultActionService.minimumNumberOfFascFromConfs(game)).toEqual(
+  //       2,
+  //     );
+  //   });
 
-    it('returns correct for distinct pairs', () => {
-      game.confs.push({
-        confer: 'player-3',
-        confee: 'player-4',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-5',
-        confee: 'player-6',
-        type: Conf.POLICY,
-      });
-      expect(defaultActionService.minimumNumberOfFascFromConfs(game)).toEqual(
-        3,
-      );
-    });
-    it('returns correct for nondistinct pairs', () => {
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-5',
-        confee: 'player-6',
-        type: Conf.POLICY,
-      });
+  //   it('returns correct for distinct pairs', () => {
+  //     game.confs.push({
+  //       confer: 'player-3',
+  //       confee: 'player-4',
+  //       type: Conf.POLICY,
+  //     });
+  //     game.confs.push({
+  //       confer: 'player-5',
+  //       confee: 'player-6',
+  //       type: Conf.POLICY,
+  //     });
+  //     expect(defaultActionService.minimumNumberOfFascFromConfs(game)).toEqual(
+  //       3,
+  //     );
+  //   });
+  //   it('returns correct for nondistinct pairs', () => {
+  //     game.confs.push({
+  //       confer: 'player-2',
+  //       confee: 'player-3',
+  //       type: Conf.POLICY,
+  //     });
+  //     game.confs.push({
+  //       confer: 'player-5',
+  //       confee: 'player-6',
+  //       type: Conf.POLICY,
+  //     });
 
-      expect(defaultActionService.minimumNumberOfFascFromConfs(game)).toEqual(
-        2,
-      );
-    });
-
-    //skipped
-    it.skip('returns correct for a known fascist', () => {
-      game.confs = [];
-      game.confs.push({
-        confer: 'player-5',
-        confee: 'player-6',
-        type: Conf.POLICY,
-      });
-      expect(
-        defaultActionService.minimumNumberOfFascFromConfs(game, [
-          logicService.findPlayerIngame(game, 'player-1'),
-        ]),
-      ).toEqual(2);
-    });
-  });
+  //     expect(defaultActionService.minimumNumberOfFascFromConfs(game)).toEqual(
+  //       2,
+  //     );
+  //   });
+  // });
 
   describe('confirmedLib', () => {
     let player1: Player;
@@ -2771,6 +2756,47 @@ describe('DefaultActionService', () => {
       });
 
       expect(defaultActionService.confirmedLib(game, player1)).toBe(true);
+    });
+
+    it('it determines confirmed lib FROM HITLER POV in 9-10 player game with 3 confs', () => {
+      player2.role = Role.HITLER;
+      game.confs.push({
+        confer: 'player-3',
+        confee: 'player-4',
+        type: Conf.POLICY,
+      });
+      game.confs.push({
+        confer: 'player-5',
+        confee: 'player-6',
+        type: Conf.POLICY,
+      });
+      game.invClaims.push({
+        investigator: 'player-7',
+        investigatee: 'player-8',
+        claim: Team.FASC,
+      });
+
+      expect(defaultActionService.confirmedLib(game, player1, true)).toBe(true);
+    });
+    it('it determines confirmed lib FROM HITLER POV in 9-10 player game with 2 confs and hitler inv lib', () => {
+      player2.role = Role.HITLER;
+      game.confs.push({
+        confer: 'player-3',
+        confee: 'player-4',
+        type: Conf.POLICY,
+      });
+      game.confs.push({
+        confer: 'player-5',
+        confee: 'player-6',
+        type: Conf.POLICY,
+      });
+      game.invClaims.push({
+        investigator: 'player-7',
+        investigatee: 'player-2',
+        claim: Team.LIB,
+      });
+
+      expect(defaultActionService.confirmedLib(game, player1, true)).toBe(true);
     });
   });
 
