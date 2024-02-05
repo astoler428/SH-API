@@ -132,6 +132,7 @@ export class GameService {
           confirmedFasc: false,
           omniFasc: false,
           guessedToBeLibSpy: false,
+          confirmedNotHitler: false,
           identity: Identity.LIB,
         });
       }

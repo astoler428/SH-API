@@ -22,6 +22,8 @@ import { Game } from '../models/game.model';
 import { Card } from 'src/models/card.model';
 import { Deck } from 'src/models/deck.model';
 import { getFormattedDate, isBlindSetting } from '../helperFunctions';
+import { delay } from 'rxjs';
+import { Player } from 'src/models/player.model';
 
 @Injectable()
 export class LogicService {
@@ -187,6 +189,9 @@ export class LogicService {
         game.status = Status.END_FASC;
         this.outroLogs(game);
       } else {
+        if (game.FascPoliciesEnacted >= 3) {
+          this.getCurrentChan(game).confirmedNotHitler = true;
+        }
         this.presDraw3(game);
       }
     } else {
@@ -303,7 +308,7 @@ export class LogicService {
     }
     this.resetTracker(game);
     if (game.deck.drawPile.length < 3) {
-      this.reshuffle(game.deck);
+      this.reshuffle(game.deck, !topDeck);
       game.log.push({
         type: LogType.SHUFFLE_DECK,
         date: getFormattedDate(),
@@ -342,10 +347,11 @@ export class LogicService {
       date: getFormattedDate(),
       payload: { pres: game.currentPres, claim },
     });
-    this.addGov(game);
+    this.addGov(game); //important that the gov is added after the claim since the claim is based on claim count gotten from the govs
     this.determinePolicyConf(game);
     // this.setPrevLocks(game) do this after power and do it inside of nextPres
     this.determinePower(game);
+    game.deck.deckNum++;
   }
 
   addGov(game: Game) {
@@ -373,6 +379,12 @@ export class LogicService {
         confee: game.currentChan,
         type: Conf.POLICY,
       });
+      this.addIndirectConfs(
+        game,
+        game.currentPres,
+        game.currentChan,
+        Conf.POLICY,
+      );
     }
   }
 
@@ -457,14 +469,17 @@ export class LogicService {
     if (claim === Team.FASC) {
       game.confs.push({
         confer: game.currentPres,
-        confee: this.getCurrentPres(game).investigations.slice(-1)[0],
+        confee: investigatee,
         type: Conf.INV,
       });
+      this.addIndirectConfs(game, game.currentPres, investigatee, Conf.INV);
+    } else {
+      this.addIndirectLibInvs(game, investigatee);
     }
+
     this.nextPres(game, true);
   }
 
-  //here in testing
   chooseSE(game: Game, seName: string) {
     game.log.push({
       type: LogType.SE,
@@ -537,7 +552,7 @@ export class LogicService {
       game.chanCards.forEach((card) => this.discard(card, game.deck));
       // this.setPrevLocks(game)
       if (game.deck.drawPile.length < 3) {
-        this.reshuffle(game.deck);
+        this.reshuffle(game.deck, false);
         game.log.push({
           type: LogType.SHUFFLE_DECK,
           date: getFormattedDate(),
@@ -588,6 +603,64 @@ export class LogicService {
     );
   }
 
+  addIndirectLibInvs(game: Game, investigatee: string) {
+    const presPlayer = this.getCurrentPres(game);
+
+    const investigateesInvestigations = game.invClaims
+      .filter(
+        (invClaim) =>
+          invClaim.investigator === investigatee && invClaim.claim === Team.LIB,
+      )
+      .map((invClaim) => invClaim.investigatee);
+    investigateesInvestigations.forEach((player) => {
+      // presPlayer.investigations.push(player);
+      game.invClaims.push({
+        investigator: game.currentPres,
+        investigatee: player,
+        claim: Team.LIB,
+      });
+      this.addIndirectLibInvs(game, player);
+    });
+  }
+
+  addIndirectConfs(
+    game: Game,
+    player1Name: string,
+    player2Name: string,
+    confType: Conf,
+  ) {
+    let player1LibChain = [player1Name];
+    let player2LibChain = [player2Name];
+
+    setLibChain(player1Name, player1LibChain);
+    setLibChain(player2Name, player2LibChain);
+
+    for (const firstPlayer of player1LibChain) {
+      for (const secondPlayer of player2LibChain) {
+        if (firstPlayer === player1Name && secondPlayer === player2Name) {
+          continue;
+        }
+        game.confs.push({
+          confer: firstPlayer,
+          confee: secondPlayer,
+          type: confType,
+        });
+      }
+    }
+
+    function setLibChain(currentPlayerName: string, libChain: string[]) {
+      let nextLib = game.invClaims.find(
+        (invClaim) =>
+          invClaim.investigatee === currentPlayerName &&
+          invClaim.claim === Team.LIB,
+      )?.investigator;
+      if (nextLib) {
+        libChain.push(nextLib);
+        setLibChain(nextLib, libChain);
+      }
+    }
+  }
+
   findPlayerIngame(game: Game, name: string) {
     const player = game.players.find((player) => player.name === name);
     if (!player) {
@@ -606,6 +679,9 @@ export class LogicService {
 
   getCurrentChan(game: Game) {
     return this.findPlayerIngame(game, game.currentChan);
+  }
+  getHitler(game: Game) {
+    return game.players.find((player) => player.role === Role.HITLER);
   }
 
   //blind functions
@@ -639,8 +715,10 @@ export class LogicService {
     deck.drawPile.sort(() => Math.random() - 0.5);
   }
 
-  reshuffle(deck: Deck) {
-    deck.deckNum++;
+  reshuffle(deck: Deck, delayIncrementDeckNum: boolean) {
+    if (!delayIncrementDeckNum) {
+      deck.deckNum++;
+    }
     deck.drawPile = [...deck.drawPile, ...deck.discardPile];
     deck.discardPile = [];
     this.shuffleDeck(deck);

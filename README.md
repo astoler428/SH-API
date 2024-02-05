@@ -159,8 +159,12 @@ Default fascist fascist conflicts are rare, but possible and occur in the follow
   - 60% if 2 underclaims
   - 100% if at least 3 underclaims
 
+Or you are double dipping and conflicted a lib on policy, you will conf another fasc 33% of the time and conf hitler 15% of the time.
+
 - Policy: There is a total of three underclaims, either from a double drop of RBB with an existing underclaim or a drop on RRB with two existing underclaims, then there's a 90% chance of conflicting.
+- If there are two underclaims, 33% chance of conflicting
 - A player will conflict and out the chancellor on cucu with probability 90% if there are at least two underclaims and 40% if there's one underclaim.
+- No conflict will occur if there is a gun
 
 Some cases are known to be fasc fasc by the president and others are not. The cucu conflict and the RRB conflict are unknown if it's fasc fasc at the time.
 

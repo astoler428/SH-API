@@ -907,6 +907,10 @@ describe('Logic Service', () => {
       expect(logicService.determinePolicyConf).toBeCalledTimes(1);
       expect(logicService.determinePower).toBeCalledTimes(1);
     });
+
+    it('increments deck count', () => {
+      expect(game.deck.deckNum).toEqual(2);
+    });
   });
 
   describe('addGov', () => {
@@ -1182,12 +1186,139 @@ describe('Logic Service', () => {
 
     it('does  conf on a fasc inv', () => {
       game.currentPres = player1.name;
+      game.invClaims = [];
       logicService.invClaim(game, Team.FASC);
       expect(game.confs).toHaveLength(1);
       const conf = game.confs[0];
       expect(conf.confer).toBe('player-1');
       expect(conf.confee).toBe('player-2');
       expect(conf.type).toBe(Conf.INV);
+    });
+  });
+
+  describe('addIndirectLibInvs', () => {
+    let player1: Player,
+      player2: Player,
+      player3: Player,
+      player4: Player,
+      player5: Player;
+    beforeEach(() => {
+      player1 = game.players.find((player) => player.name === 'player-1');
+      player2 = game.players.find((player) => player.name === 'player-2');
+      player3 = game.players.find((player) => player.name === 'player-3');
+      player4 = game.players.find((player) => player.name === 'player-4');
+      player5 = game.players.find((player) => player.name === 'player-5');
+      game.currentPres = player1.name;
+    });
+
+    it('includes the right number of invs', () => {
+      player3.investigations = [player4.name];
+      game.invClaims.push({
+        investigator: player3.name,
+        investigatee: player4.name,
+        claim: Team.LIB,
+      });
+      player2.investigations = [player3.name];
+      game.invClaims.push({
+        investigator: player2.name,
+        investigatee: player3.name,
+        claim: Team.LIB,
+      });
+      player1.investigations = [player2.name];
+      game.invClaims.push({
+        investigator: player1.name,
+        investigatee: player2.name,
+        claim: Team.LIB,
+      });
+      logicService.addIndirectLibInvs(game, player2.name);
+      expect(player1.investigations.length).toEqual(1);
+      [player3.name, player4.name].forEach((name) =>
+        expect(player1.investigations.includes(name)).toBe(false),
+      );
+    });
+  });
+  describe('addIndirectConfs', () => {
+    let player1: Player,
+      player2: Player,
+      player3: Player,
+      player4: Player,
+      player5: Player;
+    beforeEach(() => {
+      player1 = game.players.find((player) => player.name === 'player-1');
+      player2 = game.players.find((player) => player.name === 'player-2');
+      player3 = game.players.find((player) => player.name === 'player-3');
+      player4 = game.players.find((player) => player.name === 'player-4');
+      player5 = game.players.find((player) => player.name === 'player-5');
+    });
+
+    it('add the right number of confs', () => {
+      game.confs.push({
+        confer: player1.name,
+        confee: player2.name,
+        type: Conf.POLICY,
+      });
+      game.invClaims.push({
+        investigator: player5.name,
+        investigatee: player1.name,
+        claim: Team.LIB,
+      });
+      game.invClaims.push({
+        investigator: player3.name,
+        investigatee: player2.name,
+        claim: Team.LIB,
+      });
+      game.invClaims.push({
+        investigator: player4.name,
+        investigatee: player3.name,
+        claim: Team.LIB,
+      });
+      logicService.addIndirectConfs(
+        game,
+        player1.name,
+        player2.name,
+        Conf.POLICY,
+      );
+      expect(game.confs.length).toEqual(6);
+    });
+    it('includes the correct confs', () => {
+      game.confs.push({
+        confer: player1.name,
+        confee: player2.name,
+        type: Conf.POLICY,
+      });
+      game.invClaims.push({
+        investigator: player5.name,
+        investigatee: player1.name,
+        claim: Team.LIB,
+      });
+      game.invClaims.push({
+        investigator: player3.name,
+        investigatee: player2.name,
+        claim: Team.LIB,
+      });
+      game.invClaims.push({
+        investigator: player4.name,
+        investigatee: player3.name,
+        claim: Team.LIB,
+      });
+      logicService.addIndirectConfs(
+        game,
+        player1.name,
+        player2.name,
+        Conf.POLICY,
+      );
+      expect(
+        game.confs.some(
+          (conf) =>
+            conf.confer === player1.name && conf.confee === player3.name,
+        ),
+      ).toBe(true);
+      expect(
+        game.confs.some(
+          (conf) =>
+            conf.confer === player5.name && conf.confee === player4.name,
+        ),
+      ).toBe(true);
     });
   });
 
@@ -1496,7 +1627,7 @@ describe('Logic Service', () => {
     describe('reshuffle', () => {
       beforeEach(async () => {
         jest.spyOn(logicService, 'shuffleDeck');
-        logicService.reshuffle(deck);
+        logicService.reshuffle(deck, false);
       });
       it('increases the deckNum', () => {
         expect(deck.deckNum).toEqual(2);
@@ -1508,7 +1639,7 @@ describe('Logic Service', () => {
         }
         expect(deck.drawPile).toHaveLength(2);
         expect(deck.discardPile).toHaveLength(15);
-        logicService.reshuffle(deck);
+        logicService.reshuffle(deck, true);
         expect(deck.drawPile).toHaveLength(17);
         expect(deck.discardPile).toHaveLength(0);
       });

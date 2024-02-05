@@ -17,6 +17,7 @@ export class PlayerMockFactory {
       confirmedFasc: false,
       omniFasc: false,
       guessedToBeLibSpy: false,
+      confirmedNotHitler: false,
       identity: undefined,
       ...params,
     };

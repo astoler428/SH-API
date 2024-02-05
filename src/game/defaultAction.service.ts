@@ -16,6 +16,7 @@ import {
 import { Card } from '../models/card.model';
 import { LogicService } from './logic.service';
 import { Player } from '../models/player.model';
+import { log } from 'console';
 
 @Injectable()
 export class DefaultActionService {
@@ -238,6 +239,7 @@ export class DefaultActionService {
     }
 
     //fasc pres and fasc chan - hitler doesn't matter since chan is signalling
+    //except in case of giving RR, then whether to conf or not
     if (currentChanPlayer.team === Team.FASC) {
       const [fascFascConfProb, RBBoverclaimProb] = game.settings.simpleBlind
         ? this.getSimplePresClaimWithFascProbs(game)
@@ -281,26 +283,26 @@ export class DefaultActionService {
       return investigatedPlayer.team;
     }
 
-    const fascLieOnInvProb = game.settings.simpleBlind
-      ? this.getSimpleFascLieOnInvProb(
+    const fascConfProb = game.settings.simpleBlind
+      ? this.getSimpleFascInvConfProb(
           game,
           currentPresPlayer,
           investigatedPlayer,
         )
-      : this.getFascLieOnInvProb(game, currentPresPlayer, investigatedPlayer);
+      : this.getFascInvConfProb(game, currentPresPlayer, investigatedPlayer);
 
     if (
       this.testProb(
-        fascLieOnInvProb,
+        fascConfProb,
         game,
         currentPresPlayer.name,
         DefaultAction.INV_CLAIM,
-        'fascLieOnInvProb',
+        'fascInvConfProb',
       )
     ) {
-      return investigatedPlayer.team === Team.FASC ? Team.LIB : Team.FASC;
+      return Team.FASC;
     } else {
-      return investigatedPlayer.team;
+      return Team.LIB;
     }
   }
 
@@ -309,30 +311,47 @@ export class DefaultActionService {
    * also unlikely BBB should be RBB to avoid auto 3 topdecks
    */
 
+  /**
+   *
+   * @param game         (top3 === PRES3.RRR && this.underclaimTotal(game) >= 2) ||
+        (top3 === PRES3.RRB && this.underclaimTotal(game) >= 1)
+   * @returns
+   */
   defaultInspect3Claim(game: Game): PRES3 {
     const top3Cards = this.logicService.inspect3(game.deck);
     const top3 = this.determine3Cards(top3Cards);
-    const BBoverclaimInspect3Prob = this.getBBoverClaimInspect3Prob();
+
     const currentPresPlayer = this.logicService.getCurrentPres(game);
-    if (currentPresPlayer.team === Team.FASC) {
-      if (
-        (top3 === PRES3.RRR && this.underclaimTotal(game) >= 2) ||
-        (top3 === PRES3.RRB && this.underclaimTotal(game) >= 1)
-      ) {
-        return this.testProb(
-          BBoverclaimInspect3Prob,
-          game,
-          currentPresPlayer.name,
-          DefaultAction.INSPECT_TOP3_CLAIM,
-          'BBoverclaimInspect3Prob',
-        )
-          ? PRES3.RBB
-          : top3;
-      } else if (top3 === PRES3.BBB) {
-        return PRES3.RBB;
-      }
+    if (currentPresPlayer.team === Team.LIB) {
+      return top3;
     }
-    return top3;
+    const [overclaimToRBBInspect3Prob, underclaimBBBInspect3Prob] =
+      this.getInspect3ClaimProbs(game);
+
+    if (top3 === PRES3.RRR || top3 === PRES3.RRB) {
+      return this.testProb(
+        overclaimToRBBInspect3Prob,
+        game,
+        currentPresPlayer.name,
+        DefaultAction.INSPECT_TOP3_CLAIM,
+        'overclaimToRBBInspect3Prob',
+      )
+        ? PRES3.RBB
+        : top3;
+    } else if (top3 === PRES3.BBB) {
+      return this.testProb(
+        underclaimBBBInspect3Prob,
+        game,
+        currentPresPlayer.name,
+        DefaultAction.INSPECT_TOP3_CLAIM,
+        'underclaimBBBInspect3Prob',
+      )
+        ? PRES3.RBB
+        : top3;
+    } else {
+      //top3 === PRES3.RBB
+      return top3;
+    }
   }
 
   defaultVetoReply(game: Game): boolean {
@@ -351,55 +370,74 @@ export class DefaultActionService {
    * If double dipping and inv a lib - 50%
    * If inv a fasc and low blue count and you are 3 red - 40% conf to look bad
    */
-  getFascLieOnInvProb(
+  getFascInvConfProb(
     game: Game,
     currentPresPlayer: Player,
     investigatedPlayer: Player,
   ) {
-    let fascLieOnInvProb: number;
-    let vanillaFascInvLibLieProbs = [0.85, 0.95, 1, 1, 1]; //based on number of blues down
-    let hitlerInvLibLieProbs = [0.55, 0.65, 0.75, 0.85, 1]; //based on number of blues down
+    let fascInvConfProb: number;
+    let vanillaFascInvLibConfProbs = [0.85, 0.95, 1, 1, 1]; //based on number of blues down
+    let hitlerInvLibConfProbs = [0.55, 0.65, 0.75, 0.85, 1]; //based on number of blues down
     const currentChanPlayer = this.logicService.getCurrentChan(game);
 
     if (this.inConflict(game, currentPresPlayer, investigatedPlayer)) {
-      //if they are lib - have to lie and call fasc
-      //if they are fasc - have to tell the truth that they are fasc
-      return (fascLieOnInvProb = investigatedPlayer.team === Team.LIB ? 1 : 0);
+      return (fascInvConfProb = 1);
     }
     if (this.doubleDipping(game)) {
-      //INV A LIB
-      //if confed a lib - you can tell the truth about a lib inv 50%
-      //if confed a fasc - definitley call the lib a fasc on inv
-      //INV A FASC
-      //if confed a lib - you can also conf a fasc 50%
-      //if confed a fasc - can't conf another fasc
-      return (fascLieOnInvProb = currentChanPlayer.team === Team.LIB ? 0.5 : 1);
+      if (currentChanPlayer.team === Team.LIB) {
+        //conf another lib 60%, conf hitler 20%, conf vanilla 40%
+        fascInvConfProb =
+          investigatedPlayer.team === Team.LIB
+            ? 0.6
+            : investigatedPlayer.role === Role.HITLER
+            ? 0.15
+            : 0.33;
+      } else {
+        //if confed a fasc, 100% conf a lib, 0% conf another fasc
+        fascInvConfProb = investigatedPlayer.team === Team.LIB ? 1 : 0;
+      }
+      return fascInvConfProb;
     }
 
     if (investigatedPlayer.team === Team.LIB) {
-      fascLieOnInvProb =
+      fascInvConfProb =
         currentPresPlayer.role === Role.HITLER
-          ? hitlerInvLibLieProbs[game.LibPoliciesEnacted]
-          : vanillaFascInvLibLieProbs[game.LibPoliciesEnacted];
+          ? hitlerInvLibConfProbs[game.LibPoliciesEnacted]
+          : vanillaFascInvLibConfProbs[game.LibPoliciesEnacted];
     } else {
       //investigating a fellow fasc
       const underclaimTotal = this.underclaimTotal(game);
-      fascLieOnInvProb = 1;
+      fascInvConfProb = 0;
       if (this.is3Red(game, game.currentPres)) {
         //if 3 red and more than 2 underclaims - create fasc fasc conf
         //if 3 red and 2 underclaims - create fasc fasc conf 60%
         if (underclaimTotal > 2) {
-          fascLieOnInvProb = 0;
+          fascInvConfProb = 1;
         } else if (underclaimTotal === 2) {
-          fascLieOnInvProb = 0.4;
+          fascInvConfProb = 0.6;
         }
       }
     }
-    return fascLieOnInvProb;
+    return fascInvConfProb;
   }
 
-  getBBoverClaimInspect3Prob() {
-    return 0.9;
+  getInspect3ClaimProbs(game: Game) {
+    let overclaimToRBBInspect3Prob = 0;
+    let underclaimBBBInspect3Prob = 1;
+
+    const deck1OverclaimCondition =
+      game.deck.deckNum === 1 &&
+      game.deck.drawPile.length <= 5 &&
+      this.blueCountOnThisDeck(game) <= 4;
+    const deck2OverclaimCondition =
+      game.deck.deckNum === 2 &&
+      this.bluesToBeginTheDeck(game, 2) - this.blueCountOnThisDeck(game) >= 2;
+
+    if (deck1OverclaimCondition || deck2OverclaimCondition) {
+      overclaimToRBBInspect3Prob = 0.9;
+    }
+
+    return [overclaimToRBBInspect3Prob, underclaimBBBInspect3Prob];
   }
 
   /**
@@ -435,11 +473,13 @@ export class DefaultActionService {
       vanillaFascPresRRBDropProb: number,
       hitlerPresRRBDropProb: number;
 
+    //vanillaFasc RBB
+
     vanillaFascPresRBBDropProb = 0.5;
     if (this.lib3RedOnThisDeck(game)) {
       vanillaFascPresRBBDropProb = 0.9;
     }
-    //edited from just fasc
+
     if (currentChanPlayer.team === Team.FASC) {
       if (!this.isPower(game) && game.LibPoliciesEnacted <= 1) {
         vanillaFascPresRBBDropProb = 0.25;
@@ -447,6 +487,9 @@ export class DefaultActionService {
         vanillaFascPresRBBDropProb = 1;
       }
     }
+
+    //hitler RBB
+    //could make this depend on the to underclaim type of conditions (underclaims, blue count ,etc.)
 
     hitlerPresRBBDropProb =
       game.LibPoliciesEnacted === 2
@@ -456,11 +499,15 @@ export class DefaultActionService {
         : 0.6;
 
     //hitler knows the chan is fasc since the person that conflicted hitler also conflicted them, same with cucu
+
+    //RBB special cases
+
     if (
       (this.isAntiDD(game) && currentChanPlayer.team === Team.FASC) ||
       this.isCucu(game)
     ) {
       hitlerPresRBBDropProb = 1;
+      vanillaFascPresRBBDropProb = 1; //why not here before, just added
     }
 
     if (game.LibPoliciesEnacted === 4) {
@@ -468,20 +515,26 @@ export class DefaultActionService {
       hitlerPresRBBDropProb = 1;
     }
 
+    //vanillaFasc RRB
+
     vanillaFascPresRRBDropProb = 1;
     if (currentChanPlayer.team === Team.FASC) {
       //if chan is not hitler or they are hitler but it's an early blue for no power, always pass blue
       //don't pass in cucu because you were inved lib, think you are lib, you need to drop to show you are fasc
-      if (
-        (currentChanPlayer.role !== Role.HITLER && !this.isCucu(game)) ||
-        (game.LibPoliciesEnacted <= 1 && !this.isPower(game))
-      ) {
+      if (currentChanPlayer.role !== Role.HITLER) {
+        vanillaFascPresRRBDropProb = 0;
+      } else if (game.LibPoliciesEnacted <= 1 && !this.isPower(game)) {
         vanillaFascPresRRBDropProb = 0;
       } else if (game.LibPoliciesEnacted <= 3 && !this.isPower(game)) {
-        //chan is hitler and 2 or 3 blues down, .6 pass the blue because hitler dropping allows them to confirm they are hitler and you are their fasc
         vanillaFascPresRRBDropProb = 0.4;
       }
+
+      if (this.isAntiDD(game) || this.isCucu(game)) {
+        vanillaFascPresRRBDropProb = 1;
+      }
     }
+
+    //hilter RRB
 
     const ifPower = this.isPower(game) ? 0.3 : 0;
 
@@ -499,6 +552,9 @@ export class DefaultActionService {
     //pass the blue to your fasc chan
     if (this.isAntiDD(game) && currentChanPlayer.team === Team.FASC) {
       hitlerPresRRBDropProb = 0;
+    }
+    if (this.isCucu(game)) {
+      hitlerPresRRBDropProb = 1;
     }
 
     if (game.FascPoliciesEnacted >= 3) {
@@ -559,7 +615,7 @@ export class DefaultActionService {
       if (this.isPower(game)) {
         vanillaFascChanDropProb = 1;
       } else if (game.LibPoliciesEnacted <= 1) {
-        vanillaFascChanDropProb = 0.15;
+        vanillaFascChanDropProb = 0.1;
       }
     } else {
       //less likely to give inv
@@ -587,6 +643,53 @@ export class DefaultActionService {
 
     //antiDD
     //honestly nothing different - don't really pass it
+
+    //under the gun not in a 9/10 player game - just get shot there
+
+    if (
+      this.gunPower(game) &&
+      currentPresPlayer.team === Team.LIB &&
+      game.players.length <= 8
+    ) {
+      if (game.LibPoliciesEnacted === 3) {
+        vanillaFascChanDropProb = 0.8;
+      } else {
+        vanillaFascChanDropProb = 0.1 * game.FascPoliciesEnacted + 0.05;
+      }
+      //confirmed lib
+      if (this.confirmedLib(game, currentPresPlayer)) {
+        vanillaFascChanDropProb -= 0.2;
+      }
+
+      if (this.inAnyConflict(game, currentChanPlayer)) {
+        vanillaFascChanDropProb -= 0.2;
+      }
+
+      if (this.presAgainWithoutTopDeck(game) && game.LibPoliciesEnacted === 3) {
+        //depend on probabiilty of drawing a blue
+        vanillaFascChanDropProb += 0.3;
+      } else {
+        vanillaFascChanDropProb -= 0.3;
+      }
+
+      //super low blue count - really afford to play blue no matter what
+      if (game.LibPoliciesEnacted <= 1) {
+        vanillaFascChanDropProb = 0.05;
+      }
+
+      // goal is to make conf look good
+      if (this.inFascFascConflict(game, currentChanPlayer)) {
+        vanillaFascChanDropProb = 1;
+      }
+
+      //if no lib majority, play blue to keep it that way
+      if (
+        this.numAliveOnTeam(game, Team.FASC) >=
+        this.numAliveOnTeam(game, Team.LIB)
+      ) {
+        vanillaFascChanDropProb = 0;
+      }
+    }
 
     if (game.LibPoliciesEnacted === 4 || game.FascPoliciesEnacted === 5) {
       hitlerChanDropProb = 1;
@@ -681,30 +784,30 @@ export class DefaultActionService {
    * vanilla lie on everything, hitler lies for sure when 2 blues are down
    * If double dipping, 50%
    */
-  getSimpleFascLieOnInvProb(
+  getSimpleFascInvConfProb(
     game: Game,
     currentPresPlayer: Player,
     investigatedPlayer: Player,
   ) {
-    let fascLieOnInvProb: number;
-    let hitlerInvLibLieProbs = [0.55, 0.8, 1, 1, 1]; //based on number of blues down
+    let fascInvConfProb: number;
+    let hitlerInvLibConfProbs = [0.55, 0.8, 1, 1, 1]; //based on number of blues down
 
     if (this.inConflict(game, currentPresPlayer, investigatedPlayer)) {
       //if they are lib - have to lie and call fasc
       //if they are fasc - have to tell the truth that they are fasc
-      return (fascLieOnInvProb = investigatedPlayer.team === Team.LIB ? 1 : 0);
+      return (fascInvConfProb = 1);
     }
 
     if (investigatedPlayer.team === Team.LIB) {
-      fascLieOnInvProb =
+      fascInvConfProb =
         currentPresPlayer.role === Role.HITLER
-          ? hitlerInvLibLieProbs[game.LibPoliciesEnacted]
+          ? hitlerInvLibConfProbs[game.LibPoliciesEnacted]
           : 1;
     } else {
-      fascLieOnInvProb = 1;
+      fascInvConfProb = 0;
     }
 
-    return fascLieOnInvProb;
+    return fascInvConfProb;
   }
 
   /**
@@ -826,16 +929,17 @@ export class DefaultActionService {
   getPresClaimWithLibProbs(game: Game) {
     const currentPresPlayer = this.logicService.getCurrentPres(game);
     const underclaimTotal = this.underclaimTotal(game);
+    const blueCount = this.blueCountOnThisDeck(game);
 
-    //these names are very confusing - used with libs and assume certainDrops... RBB will be a force claiming BBB
-    const fascBBBunderclaimProb = this.lib3RedOnThisDeck(game) ? 1 : 0.75; //make this 100% in simple
-    const fascRRBoverclaimProb = this.lib3RedOnThisDeck(game)
-      ? 0
-      : underclaimTotal >= 2
-      ? 0.9
-      : underclaimTotal === 1
-      ? 0.25
-      : 0;
+    const fascBBBunderclaimProb = this.lib3RedOnThisDeck(game) ? 1 : 0.75;
+    const fascRRBoverclaimProb = 0; //this.lib3RedOnThisDeck(game)
+    // ? 0
+    // : underclaimTotal >= 2
+    // ? 0.9
+    // : underclaimTotal === 1
+    // ? 0.25
+    // : 0;
+
     const fascRBBoverclaimProb = this.lib3RedOnThisDeck(game)
       ? 0
       : underclaimTotal >= 2
@@ -845,10 +949,14 @@ export class DefaultActionService {
       : 0;
 
     const fascRRRconfProbs = [0.4, 0.6, 0.8, 0.9, 1]; //100% in simple
-    let fascRRRconfProb = fascRRRconfProbs[game.LibPoliciesEnacted]; // make this 100% in simple too
+    let fascRRRconfProb = fascRRRconfProbs[game.LibPoliciesEnacted];
 
     if (underclaimTotal >= 1 && !this.lib3RedOnThisDeck(game)) {
       fascRRRconfProb += 0.25 * underclaimTotal;
+    }
+
+    if (blueCount >= this.bluesToBeginTheDeck(game, game.deck.deckNum)) {
+      fascRRRconfProb = 0;
     }
 
     const fascRRBconfProbs = [0.75, 0.85, 0.95, 1, 1]; //100% in simple
@@ -864,6 +972,19 @@ export class DefaultActionService {
     }
 
     if (currentPresPlayer.role === Role.HITLER) {
+      fascRRBconfProb = 0;
+      fascRRRconfProb = 0;
+    }
+
+    //can't conf someone you investigated as lib
+    if (
+      game.invClaims.some(
+        (inv) =>
+          inv.investigator === game.currentPres &&
+          inv.investigatee === game.currentChan &&
+          inv.claim === Team.LIB,
+      )
+    ) {
       fascRRBconfProb = 0;
       fascRRRconfProb = 0;
     }
@@ -906,6 +1027,19 @@ export class DefaultActionService {
         underclaimTotal >= 2 ? 0.9 : underclaimTotal === 1 ? 0.5 : 0.1;
     }
 
+    //can't conf someone you investigated as lib
+    if (
+      game.invClaims.some(
+        (inv) =>
+          inv.investigator === game.currentPres &&
+          inv.investigatee === game.currentChan &&
+          inv.claim === Team.LIB,
+      )
+    ) {
+      fascRRBconfProb = 0;
+      fascRRRconfProb = 0;
+    }
+
     return [
       fascRRBconfProb,
       fascBBBunderclaimProb,
@@ -917,22 +1051,27 @@ export class DefaultActionService {
 
   getPresClaimWithFascProbs(game: Game) {
     const currentChanPlayer = this.logicService.getCurrentChan(game);
+    const currentPresPlayer = this.logicService.getCurrentPres(game);
     const pres3 = this.determine3Cards(game.presCards);
     const underclaimTotal = this.underclaimTotal(game);
-
+    const bluesDrawn = draws3.indexOf(pres3);
+    const BBBOverclaimAmount = 3 - bluesDrawn;
     const RBBoverclaimProb =
-      underclaimTotal >= 2 ||
-      (underclaimTotal === 1 && !this.lib3RedOnThisDeck(game))
+      underclaimTotal >= BBBOverclaimAmount + 1 ||
+      (underclaimTotal === BBBOverclaimAmount && !this.lib3RedOnThisDeck(game))
         ? 0.9
         : 0;
     let fascFascConfProb = 0;
 
     //need to conf if 3 blues underclaimed
-    if (
-      (pres3 === PRES3.RBB && underclaimTotal >= 1) ||
-      (PRES3.RRB && underclaimTotal >= 2)
-    ) {
+    // (pres3 === PRES3.RBB && underclaimTotal >= 1) ||
+    // (PRES3.RRB && underclaimTotal >= 2)
+    if (underclaimTotal + bluesDrawn >= 3) {
       fascFascConfProb = 0.9;
+    }
+
+    if (underclaimTotal + bluesDrawn === 2) {
+      fascFascConfProb = 0.33;
     }
 
     if (this.isCucu(game) && currentChanPlayer.role === Role.HITLER) {
@@ -941,15 +1080,35 @@ export class DefaultActionService {
 
     //when to conf the cucu
     if (this.isCucu(game) && currentChanPlayer.role !== Role.HITLER) {
-      if (underclaimTotal + draws3.indexOf(pres3) >= 2) {
-        //basically total underclaim including what's dropped in this deck
+      if (underclaimTotal + bluesDrawn >= 2) {
+        //basically total underclaim including what's dropped in this gov
         fascFascConfProb = 0.9;
-      } else if (underclaimTotal + draws3.indexOf(pres3) === 1) {
+      } else if (underclaimTotal + bluesDrawn === 1) {
         fascFascConfProb = 0.4;
       }
     }
 
     if (this.isAntiDD(game)) {
+      fascFascConfProb = 0;
+    }
+
+    if (game.FascPoliciesEnacted > 3) {
+      fascFascConfProb = 0;
+    }
+
+    if (currentPresPlayer.role === Role.HITLER) {
+      fascFascConfProb = 0;
+    }
+
+    //can't conf someone you investigated as lib
+    if (
+      game.invClaims.some(
+        (inv) =>
+          inv.investigator === game.currentPres &&
+          inv.investigatee === game.currentChan &&
+          inv.claim === Team.LIB,
+      )
+    ) {
       fascFascConfProb = 0;
     }
 
@@ -1022,11 +1181,41 @@ export class DefaultActionService {
   }
 
   deck1BlueCount(game: Game) {
-    //keep in mind this is really only relevant for first deck. Can't make decisions based on blue count of other decks without knowing how many blues are remaining
+    return this.deckNBlueCount(game, 1);
+  }
+
+  blueCountOnThisDeck(game: Game) {
+    return this.deckNBlueCount(game, game.deck.deckNum);
+  }
+
+  deckNBlueCount(game: Game, N: number) {
     return game.govs.reduce(
       (acc, gov) =>
-        gov.deckNum === 1 ? acc + draws3.indexOf(gov.presClaim) : acc,
+        gov.deckNum === N ? acc + draws3.indexOf(gov.presClaim) : acc,
       0,
+    );
+  }
+
+  bluesEnactedInDeck(game: Game, deckNum: number) {
+    return game.govs.reduce(
+      (acc, gov) =>
+        gov.deckNum === deckNum && gov.policyPlayed.policy === Policy.LIB
+          ? acc + 1
+          : acc,
+      0,
+    );
+  }
+
+  bluesToBeginTheDeck(game: Game, deckNum: number) {
+    return (
+      6 -
+      game.govs.reduce(
+        (acc, gov) =>
+          gov.deckNum < deckNum && gov.policyPlayed.policy === Policy.LIB
+            ? acc + 1
+            : acc,
+        0,
+      )
     );
   }
 
@@ -1090,5 +1279,244 @@ export class DefaultActionService {
         (conf.confer === player2.name && conf.confee === player1.name) ||
         (conf.confer === player1.name && conf.confee === player2.name),
     );
+  }
+
+  inAnyConflict(game: Game, player: Player) {
+    return game.players.some((otherPlayer) =>
+      this.inConflict(game, player, otherPlayer),
+    );
+  }
+
+  inFascFascConflict(game: Game, player: Player) {
+    return (
+      player.team === Team.FASC &&
+      game.players.some(
+        (otherPlayer) =>
+          this.inConflict(game, player, otherPlayer) &&
+          otherPlayer.team === Team.FASC,
+      )
+    );
+  }
+
+  numAliveOnTeam(game: Game, team: Team) {
+    return game.players.reduce(
+      (n, player) => (player.alive && player.team === team ? n + 1 : n),
+      0,
+    );
+  }
+
+  safeToOverClaimOnDeck1(game: Game, desiredBlueClaim: number) {
+    const underclaimTotal = this.underclaimTotal(game);
+    const blueCount = this.blueCountOnThisDeck(game);
+    return (
+      game.deck.deckNum === 1 &&
+      (underclaimTotal >= 1 || blueCount + desiredBlueClaim <= 5)
+    );
+  }
+
+  safeToDropOrUnderclaimOnDeck1(game: Game) {
+    return (
+      game.deck.deckNum === 1 &&
+      !this.fasc3RedOnThisDeck(game) &&
+      this.underclaimTotal(game) <= 1
+    );
+  }
+
+  confirmedLib(game: Game, player: Player) {
+    if (player.team !== Team.LIB) {
+      return false;
+    } else if (this.inAnyConflict(game, player)) {
+      return false;
+    }
+    const minFascists = this.minimumNumberOfFascFromConfs(game);
+    const totalNumberOfFascists = Math.floor((game.players.length - 1) / 2);
+    let libInvChainLength = 0;
+    let investigatee = player.name;
+    while (true) {
+      const investigator = game.invClaims.find(
+        (invClaim) =>
+          invClaim.claim === Team.LIB && invClaim.investigatee === investigatee,
+      )?.investigator;
+      if (
+        investigator &&
+        !this.inAnyConflict(
+          game,
+          this.logicService.findPlayerIngame(game, investigator),
+        )
+      ) {
+        libInvChainLength++;
+        investigatee = investigator;
+      } else {
+        break;
+      }
+    }
+
+    if (minFascists + libInvChainLength >= totalNumberOfFascists) {
+      return true;
+    } else if (
+      game.players.length <= 6 &&
+      player.confirmedNotHitler &&
+      // player.alive &&
+      this.bothSidesOfAConflictShot(game)
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bothSidesOfAConflictShot(game: Game) {
+    return game.confs.some((conf) => {
+      const conferPlayer = this.logicService.findPlayerIngame(
+        game,
+        conf.confer,
+      );
+      const confeePlayer = this.logicService.findPlayerIngame(
+        game,
+        conf.confee,
+      );
+      return !conferPlayer.alive && !confeePlayer.alive;
+    });
+  }
+
+  minimumNumberOfFascFromConfs(game: Game, knownFascists?: Player[]) {
+    const playersInConfSet = new Set<string>();
+    game.confs.forEach((conf) => {
+      playersInConfSet.add(conf.confee);
+      playersInConfSet.add(conf.confer);
+    });
+
+    const playersInConfArray = Array.from(playersInConfSet);
+
+    let minFascists = playersInConfArray.length;
+    for (let i = 0; i < Math.pow(2, playersInConfArray.length); i++) {
+      let fascists = [];
+      let liberals = [];
+      for (let j = 0; j < playersInConfArray.length; j++) {
+        if ((i & (1 << j)) > 0) {
+          liberals.push(playersInConfArray[j]);
+        } else {
+          fascists.push(playersInConfArray[j]);
+        }
+      }
+      if (this.isPossibleLine(game, liberals, fascists, knownFascists)) {
+        minFascists = Math.min(minFascists, fascists.length);
+      }
+    }
+    return minFascists;
+  }
+
+  isPossibleLine(
+    game: Game,
+    liberals: string[],
+    fascists: string[],
+    knownFascists?: Player[],
+  ) {
+    return !(
+      (
+        fascists.length > (game.players.length - 1) / 2 ||
+        game.confs.some(
+          (conf) =>
+            liberals.includes(conf.confer) && liberals.includes(conf.confee),
+        ) ||
+        game.invClaims.some(
+          (invClaim) =>
+            (invClaim.claim === Team.LIB &&
+              liberals.includes(invClaim.investigator) &&
+              fascists.includes(invClaim.investigatee)) ||
+            (invClaim.claim === Team.FASC &&
+              liberals.includes(invClaim.investigator) &&
+              liberals.includes(invClaim.investigatee)),
+        )
+      )
+      //all known fascists must be in the fascist list
+      // ||
+      // (knownFascists &&
+      //   knownFascists.some((fasc) => !fascists.includes(fasc.name)))
+    );
+  }
+
+  presAgainWithoutTopDeck(game: Game) {
+    const SEIndex = game.players.findIndex(
+      (player) => player.name === game.currentPres,
+    );
+
+    //not an SE choice
+
+    if (SEIndex === game.presIdx) {
+      return this.logicService.numAlivePlayers(game) <= 3;
+    }
+    let distanceBackToSE = 0;
+    let presIdx = game.presIdx;
+    while (game.players[presIdx].name !== game.currentPres) {
+      do {
+        presIdx = (presIdx + 1) % game.players.length;
+      } while (!game.players[presIdx].alive);
+      distanceBackToSE++;
+    }
+    return distanceBackToSE <= 3;
+  }
+
+  knownLibToHitler(game: Game, player: Player) {
+    //simple case where hitler is not in conf but enough confs to determine some confirmed libs
+    //excludes confirmed libs as this is to determine if hitler should blind conf
+    const hitlerPlayer = this.logicService.getHitler(game);
+    const totalNumberOfFascists = Math.floor((game.players.length - 1) / 2);
+    const minFascistsFromConfs = this.minimumNumberOfFascFromConfs(game, [
+      hitlerPlayer,
+    ]);
+    if (this.inAnyConflict(game, hitlerPlayer)) {
+      return false;
+    }
+    if (
+      !this.inAnyConflict(game, player) &&
+      minFascistsFromConfs === totalNumberOfFascists - 1
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  knownFascistToHitler(game: Game, player: Player) {
+    const hitlerPlayer = this.logicService.getHitler(game);
+    let knownFascist = false;
+
+    if (
+      game.invClaims.some(
+        (invClaim) =>
+          invClaim.investigator === hitlerPlayer.name &&
+          invClaim.investigatee === player.name,
+      )
+    ) {
+      //hitler investigated the player (saw role) regardless of claim
+      knownFascist = true;
+    } else if (
+      game.invClaims.some(
+        (invClaim) =>
+          invClaim.investigator === player.name &&
+          invClaim.investigatee === hitlerPlayer.name &&
+          invClaim.claim === Team.LIB,
+      )
+    ) {
+      //player investigated hitler as lib
+      knownFascist = true;
+    } else if (
+      game.govs.some((gov) => {
+        const bluesGivenToChan = gov.chanCards.reduce(
+          (acc, card) => (card.policy === Policy.LIB ? acc + 1 : acc),
+          0,
+        );
+        return (
+          gov.pres === hitlerPlayer.name &&
+          gov.chan === player.name &&
+          draws2.indexOf(gov.chanClaim) !== bluesGivenToChan
+        );
+      })
+    ) {
+      //hitler is pres and chancellor's claim does not match what they had RB -> BB or RR, BB to RB
+      knownFascist = true;
+    }
+    return knownFascist;
   }
 }

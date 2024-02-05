@@ -14,5 +14,6 @@ export type Player = {
   confirmedFasc: boolean;
   omniFasc: boolean;
   guessedToBeLibSpy: boolean;
+  confirmedNotHitler: boolean;
   identity: Identity; //used in a totally blind version that doesn't exist yet
 };
