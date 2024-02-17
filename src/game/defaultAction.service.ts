@@ -184,9 +184,11 @@ export class DefaultActionService {
             ? PRES3.RRB
             : PRES3.RRR;
         } else if (pres3 === PRES3.RBB) {
+          //passing RRB to a lib - no fasc will agree if they test with BB
           return PRES3.RRB;
         } else {
           //BBB
+          //passing RBB to a lib - no fasc will agree if they test with RB
           return this.testProb(
             fascBBBunderclaimProb,
             game,
@@ -212,6 +214,7 @@ export class DefaultActionService {
             ? PRES3.RRB
             : PRES3.RRR;
         } else if (pres3 === PRES3.RRB) {
+          //UPDATE: this prob is set to 0, so it will never happen
           //this case has a risk of failing a hitler / fasc test - you pass the blue, they claim 2, and you decide to claim two to overclaim, you think you are agreeing with them
           //but player hitler testing would have to know they are lib or else they think they got lucky as a fasc...
           return this.testProb(
@@ -928,6 +931,7 @@ export class DefaultActionService {
 
   getPresClaimWithLibProbs(game: Game) {
     const currentPresPlayer = this.logicService.getCurrentPres(game);
+    const currentChanPlayer = this.logicService.getCurrentChan(game);
     const underclaimTotal = this.underclaimTotal(game);
     const blueCount = this.blueCountOnThisDeck(game);
 
@@ -964,6 +968,7 @@ export class DefaultActionService {
 
     if (this.invPower(game)) {
       fascRRBconfProb = 0.5;
+      fascRRRconfProb = Math.min(fascRRRconfProb, 0.5);
     }
 
     if (game.players.length < 7 || game.players.length === 8) {
@@ -972,11 +977,14 @@ export class DefaultActionService {
     }
 
     if (currentPresPlayer.role === Role.HITLER) {
-      fascRRBconfProb = 0;
-      fascRRRconfProb = 0;
+      if (this.knownLibToHitler(game, currentChanPlayer)) {
+        //keep same as vanilla fasc
+      } else {
+        [fascRRBconfProb, fascRRRconfProb] = this.getHitlerBlindConfProbs(game);
+      }
     }
 
-    //can't conf someone you investigated as lib
+    //can't conf someone you investigated as lib or a confirmed lib
     if (
       game.invClaims.some(
         (inv) =>
@@ -985,6 +993,9 @@ export class DefaultActionService {
           inv.claim === Team.LIB,
       )
     ) {
+      fascRRBconfProb = 0;
+      fascRRRconfProb = 0;
+    } else if (this.confirmedLib(game, currentChanPlayer)) {
       fascRRBconfProb = 0;
       fascRRRconfProb = 0;
     }
@@ -1000,6 +1011,7 @@ export class DefaultActionService {
 
   getSimplePresClaimWithLibProbs(game: Game) {
     const currentPresPlayer = this.logicService.getCurrentPres(game);
+    const currentChanPlayer = this.logicService.getCurrentChan(game);
     const underclaimTotal = this.underclaimTotal(game);
 
     const fascBBBunderclaimProb = 1;
@@ -1036,6 +1048,9 @@ export class DefaultActionService {
           inv.claim === Team.LIB,
       )
     ) {
+      fascRRBconfProb = 0;
+      fascRRRconfProb = 0;
+    } else if (this.confirmedLib(game, currentChanPlayer)) {
       fascRRBconfProb = 0;
       fascRRRconfProb = 0;
     }
@@ -1096,8 +1111,19 @@ export class DefaultActionService {
       fascFascConfProb = 0;
     }
 
+    //this is missing a case in claiWithLibs about whether the blue count already equals or exceeds
+    //the count for the deck
+
     if (currentPresPlayer.role === Role.HITLER) {
-      fascFascConfProb = 0;
+      if (this.knownFascistToHitler(game, currentChanPlayer)) {
+        //keep same as vanilla fasc
+      } else {
+        const [fascRRBconfProb, fascRRRconfProb] =
+          this.getHitlerBlindConfProbs(game);
+        fascFascConfProb =
+          pres3 === PRES3.RRR ? fascRRRconfProb : fascRRBconfProb;
+        //this will be returning based on RRR and RRB...
+      }
     }
 
     //can't conf someone you investigated as lib
@@ -1121,6 +1147,42 @@ export class DefaultActionService {
     const fascFascConfProb = 0;
 
     return [fascFascConfProb, RBBoverclaimProb];
+  }
+
+  getHitlerBlindConfProbs(game: Game) {
+    //blind confing
+    const blueCount = this.blueCountOnThisDeck(game);
+    //adjust later to depend on deck
+    const RRRHitlerBlindConfProbs = [0.3, 0.3, 0.4, 0.6, 0.8];
+    let RRRHitlerBlindConfProb =
+      RRRHitlerBlindConfProbs[game.LibPoliciesEnacted];
+
+    //change this to be blue count low
+    const countTooLowOnDeck1 =
+      game.deck.deckNum === 1 &&
+      game.deck.drawPile.length <= 5 &&
+      this.blueCountOnThisDeck(game) <= 4;
+    if (countTooLowOnDeck1) {
+      RRRHitlerBlindConfProb = 0.8;
+    }
+    if (blueCount >= this.bluesToBeginTheDeck(game, game.deck.deckNum)) {
+      RRRHitlerBlindConfProb = 0;
+    }
+
+    const RRBHitlerBlindConfProbs = [0.1, 0.2, 0.5, 0.7, 0.8];
+    let RRBHitlerBlindConfProb =
+      RRBHitlerBlindConfProbs[game.LibPoliciesEnacted];
+
+    if (this.invPower(game)) {
+      RRRHitlerBlindConfProb = Math.min(RRRHitlerBlindConfProb, 0.5);
+      RRBHitlerBlindConfProb = Math.min(RRBHitlerBlindConfProb, 0.5);
+    }
+
+    if (game.players.length < 7 || game.players.length === 8) {
+      RRRHitlerBlindConfProb = 0.1;
+      RRBHitlerBlindConfProb = 0.1;
+    }
+    return [RRBHitlerBlindConfProb, RRRHitlerBlindConfProb];
   }
 
   /**
