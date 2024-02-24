@@ -40,6 +40,7 @@ export class GameMockFactory {
       remakeId: '',
       topDecked: false,
       defaultProbabilityLog: [],
+      drawPileState: [],
       ...params,
     };
   }

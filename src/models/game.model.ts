@@ -49,5 +49,6 @@ export type Game = {
   remakeId: string;
   topDecked: boolean;
   defaultProbabilityLog: DefaultProbabilityLogItem[];
+  drawPileState: Card[];
 };
 //Figure out how they work with game logic: veto, topdecked

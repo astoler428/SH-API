@@ -84,6 +84,7 @@ export class GameService {
       remakeId: '',
       topDecked: false,
       defaultProbabilityLog: [],
+      drawPileState: [],
     };
 
     await this.gameRespository.set(id, game);
@@ -193,6 +194,7 @@ export class GameService {
       remakeId: '',
       topDecked: false,
       defaultProbabilityLog: [],
+      drawPileState: [],
     };
     await this.gameRespository.set(newId, newGame);
     await this.handleUpdate(id, game);

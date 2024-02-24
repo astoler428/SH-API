@@ -202,6 +202,7 @@ export class LogicService {
   }
 
   presDraw3(game: Game) {
+    game.drawPileState = [...game.deck.drawPile];
     game.presCards = this.draw3(game.deck);
     game.status = Status.PRES_DISCARD;
   }

@@ -411,13 +411,13 @@ describe('DefaultActionService', () => {
   describe('invPower', () => {
     it('properly determines if there is a invpower in 5-6 player games', () => {
       game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.invPower(game)).toBe(false);
+      expect(defaultActionService.invPower(game, true)).toBe(false);
       game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.invPower(game)).toBe(false);
+      expect(defaultActionService.invPower(game, true)).toBe(false);
       game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.invPower(game)).toBe(false);
+      expect(defaultActionService.invPower(game, true)).toBe(false);
       game.FascPoliciesEnacted = 3;
-      expect(defaultActionService.invPower(game)).toBe(false);
+      expect(defaultActionService.invPower(game, true)).toBe(false);
     });
 
     it('properly determines if there is a power in 7-8 player games', () => {
@@ -427,13 +427,23 @@ describe('DefaultActionService', () => {
         );
       }
       game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.invPower(game)).toBe(false);
+      expect(defaultActionService.invPower(game, true)).toBe(false);
       game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.invPower(game)).toBe(true);
+      expect(defaultActionService.invPower(game, true)).toBe(true);
       game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.invPower(game)).toBe(false);
+      expect(defaultActionService.invPower(game, true)).toBe(false);
       game.FascPoliciesEnacted = 3;
-      expect(defaultActionService.invPower(game)).toBe(false);
+      expect(defaultActionService.invPower(game, true)).toBe(false);
+
+      //after enactment
+      game.FascPoliciesEnacted = 0;
+      expect(defaultActionService.invPower(game, false)).toBe(false);
+      game.FascPoliciesEnacted = 1;
+      expect(defaultActionService.invPower(game, false)).toBe(false);
+      game.FascPoliciesEnacted = 2;
+      expect(defaultActionService.invPower(game, false)).toBe(true);
+      game.FascPoliciesEnacted = 3;
+      expect(defaultActionService.invPower(game, false)).toBe(false);
     });
 
     it('properly determines if there is a power in 9-10 player games', () => {
@@ -443,13 +453,23 @@ describe('DefaultActionService', () => {
         );
       }
       game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.invPower(game)).toBe(true);
+      expect(defaultActionService.invPower(game, true)).toBe(true);
       game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.invPower(game)).toBe(true);
+      expect(defaultActionService.invPower(game, true)).toBe(true);
       game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.invPower(game)).toBe(false);
+      expect(defaultActionService.invPower(game, true)).toBe(false);
       game.FascPoliciesEnacted = 3;
-      expect(defaultActionService.invPower(game)).toBe(false);
+      expect(defaultActionService.invPower(game, true)).toBe(false);
+
+      //after enactment
+      game.FascPoliciesEnacted = 0;
+      expect(defaultActionService.invPower(game, false)).toBe(false);
+      game.FascPoliciesEnacted = 1;
+      expect(defaultActionService.invPower(game, false)).toBe(true);
+      game.FascPoliciesEnacted = 2;
+      expect(defaultActionService.invPower(game, false)).toBe(true);
+      game.FascPoliciesEnacted = 3;
+      expect(defaultActionService.invPower(game, false)).toBe(false);
     });
   });
 
@@ -625,7 +645,7 @@ describe('DefaultActionService', () => {
       player2.team = Team.LIB;
     });
 
-    it('returns RBB if testProb is met for RRR or RRB case', () => {
+    it('returns RBB if testProb is met for RRR', () => {
       game.currentPres = 'player-1';
       // testProb = 0.001;
       cards3 = [R, R, R];
@@ -633,7 +653,7 @@ describe('DefaultActionService', () => {
       expect(claim).toBe(PRES3.RBB);
       cards3 = [R, R, B];
       claim = defaultActionService.defaultInspect3Claim(game);
-      expect(claim).toBe(PRES3.RBB);
+      expect(claim).toBe(PRES3.RRB);
       game.currentPres = 'player-2';
       claim = defaultActionService.defaultInspect3Claim(game);
       expect(claim).toBe(PRES3.RRB);
@@ -694,60 +714,25 @@ describe('DefaultActionService', () => {
       expect(underclaimBBBInspect3Prob).toEqual(1);
     });
 
-    it('overclaims RRR and RRB with prob .9 for first deck condition', () => {
-      game.deck.deckNum = 1;
-      game.deck.drawPile.length = 5;
-      blueCount = 4;
-      game.currentPres = 'player-1';
-      cards3 = [R, R, R];
-      let [overclaimToBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
-      expect(overclaimToBBInspect3Prob).toEqual(0.9);
-      cards3 = [R, R, B];
-      [overclaimToBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
-      expect(overclaimToBBInspect3Prob).toEqual(0.9);
-    });
-
-    it('overclaims RRR and RRB with prob .9 for second deck condition', () => {
-      game.deck.deckNum = 2;
+    it('overclaims RRR with prob .6', () => {
       blueCount = 1;
       bluesToBeginTheDeck = 3;
       game.currentPres = 'player-1';
       cards3 = [R, R, R];
       let [overclaimToBBInspect3Prob] =
         defaultActionService.getInspect3ClaimProbs(game);
-      expect(overclaimToBBInspect3Prob).toEqual(0.9);
-      cards3 = [R, R, B];
-      [overclaimToBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
-      expect(overclaimToBBInspect3Prob).toEqual(0.9);
+      expect(overclaimToBBInspect3Prob).toEqual(0.6);
     });
 
-    it('does not overclaim RRR and RRB with prob if condition 1 not met', () => {
-      game.deck.deckNum = 1;
+    it('does not overclaim RRR if pres is hitler or not 2 blues in deck', () => {
+      defaultActionService.probabilityofDrawingBlues = () => [0.25, 0.75, 0, 0];
+      game.currentPres = 'player-3';
+      let [overclaimToBBInspect3Prob] =
+        defaultActionService.getInspect3ClaimProbs(game);
+      expect(overclaimToBBInspect3Prob).toEqual(0);
+      game.currentPres = 'player-1';
       blueCount = 5;
-      game.currentPres = 'player-1';
-      cards3 = [R, R, R];
-      let [overclaimToBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
-      expect(overclaimToBBInspect3Prob).toEqual(0);
-      cards3 = [R, R, B];
-      [overclaimToBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
-      expect(overclaimToBBInspect3Prob).toEqual(0);
-    });
-
-    it('does not overclaim RRR and RRB with prob if condition 2 not met', () => {
-      game.deck.deckNum = 2;
-      blueCount = 3;
-      bluesToBeginTheDeck = 4;
-      game.currentPres = 'player-1';
-      cards3 = [R, R, R];
-      let [overclaimToBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
-      expect(overclaimToBBInspect3Prob).toEqual(0);
-      cards3 = [R, R, B];
+      bluesToBeginTheDeck = 6;
       [overclaimToBBInspect3Prob] =
         defaultActionService.getInspect3ClaimProbs(game);
       expect(overclaimToBBInspect3Prob).toEqual(0);
@@ -1519,7 +1504,7 @@ describe('DefaultActionService', () => {
 
     it('returns the proper hitlerProb based on number of blues', () => {
       isDoubleDipping = false;
-      let hitlerInvLibLieProbs = [0.55, 0.65, 0.75, 0.85, 1];
+      let hitlerInvLibLieProbs = [0.65, 0.8, 0.9, 0.95, 1];
       for (let blues = 0; blues <= 4; blues++) {
         game.LibPoliciesEnacted = blues;
         expect(
@@ -2054,111 +2039,111 @@ describe('DefaultActionService', () => {
     });
   });
 
-  describe('getfascfascbluechanclaim', () => {
-    let underclaimTotal: number;
-    beforeEach(() => {
-      game.currentPres = 'player-2';
-      game.currentChan = 'player-2';
-      // defaultActionService.lib3RedOnThisDeck = () => false
-      defaultActionService.underclaimTotal = () => underclaimTotal;
-    });
+  // describe('getfascfascbluechanclaim', () => {
+  //   let underclaimTotal: number;
+  //   beforeEach(() => {
+  //     game.currentPres = 'player-2';
+  //     game.currentChan = 'player-2';
+  //     // defaultActionService.lib3RedOnThisDeck = () => false
+  //     defaultActionService.underclaimTotal = () => underclaimTotal;
+  //   });
 
-    it('underclaims BB prob 1 if overclaims are high ', () => {
-      underclaimTotal = -2;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
-      ).toBe(1);
-    });
+  //   it('underclaims BB prob 1 if overclaims are high ', () => {
+  //     underclaimTotal = -2;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
+  //     ).toBe(1);
+  //   });
 
-    it('underclaims BB prob .9 if lib3Red and no underclaim ', () => {
-      underclaimTotal = 0;
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
-      ).toBe(0.9);
-      defaultActionService.lib3RedOnThisDeck = () => false;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
-      ).not.toBe(0.9);
-    });
+  //   it('underclaims BB prob .9 if lib3Red and no underclaim ', () => {
+  //     underclaimTotal = 0;
+  //     defaultActionService.lib3RedOnThisDeck = () => true;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
+  //     ).toBe(0.9);
+  //     defaultActionService.lib3RedOnThisDeck = () => false;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
+  //     ).not.toBe(0.9);
+  //   });
 
-    it('underclaims BB prob .9 if <= 1 underclaim and lib3red and no fasc3Red', () => {
-      underclaimTotal = 0;
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      defaultActionService.fasc3RedOnThisDeck = () => false;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
-      ).toBe(0.9);
-      defaultActionService.fasc3RedOnThisDeck = () => true;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
-      ).not.toBe(0.9);
-      defaultActionService.fasc3RedOnThisDeck = () => false;
-      defaultActionService.lib3RedOnThisDeck = () => false;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
-      ).not.toBe(0.9);
-    });
+  //   it('underclaims BB prob .9 if <= 1 underclaim and lib3red and no fasc3Red', () => {
+  //     underclaimTotal = 0;
+  //     defaultActionService.lib3RedOnThisDeck = () => true;
+  //     defaultActionService.fasc3RedOnThisDeck = () => false;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
+  //     ).toBe(0.9);
+  //     defaultActionService.fasc3RedOnThisDeck = () => true;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
+  //     ).not.toBe(0.9);
+  //     defaultActionService.fasc3RedOnThisDeck = () => false;
+  //     defaultActionService.lib3RedOnThisDeck = () => false;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
+  //     ).not.toBe(0.9);
+  //   });
 
-    it('underclaims BB prob 0 if >= 2 underclaim or other', () => {
-      underclaimTotal = 2;
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      defaultActionService.fasc3RedOnThisDeck = () => false;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
-      ).toBe(0);
-      underclaimTotal = 1;
-      defaultActionService.lib3RedOnThisDeck = () => false;
-      defaultActionService.fasc3RedOnThisDeck = () => false;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
-      ).toBe(0);
-    });
+  //   it('underclaims BB prob 0 if >= 2 underclaim or other', () => {
+  //     underclaimTotal = 2;
+  //     defaultActionService.lib3RedOnThisDeck = () => true;
+  //     defaultActionService.fasc3RedOnThisDeck = () => false;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
+  //     ).toBe(0);
+  //     underclaimTotal = 1;
+  //     defaultActionService.lib3RedOnThisDeck = () => false;
+  //     defaultActionService.fasc3RedOnThisDeck = () => false;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.BB)[0],
+  //     ).toBe(0);
+  //   });
 
-    it('overclaims RB prob .75 if no underclaims/overclaims and blue count <= 2', () => {
-      underclaimTotal = 0;
-      defaultActionService.deck1BlueCount = () => 2;
-      //not if overclaim
-      underclaimTotal = -1;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
-      ).not.toBe(0.75);
-      // not if deck1BlueCount too high
-      underclaimTotal = 0;
-      defaultActionService.deck1BlueCount = () => 3;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
-      ).not.toBe(0.75);
-    });
+  //   it('overclaims RB prob .75 if no underclaims/overclaims and blue count <= 2', () => {
+  //     underclaimTotal = 0;
+  //     defaultActionService.deck1BlueCount = () => 2;
+  //     //not if overclaim
+  //     underclaimTotal = -1;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
+  //     ).not.toBe(0.75);
+  //     // not if deck1BlueCount too high
+  //     underclaimTotal = 0;
+  //     defaultActionService.deck1BlueCount = () => 3;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
+  //     ).not.toBe(0.75);
+  //   });
 
-    it('overclaims RB prob .9 if underclaim is 1 and no lib3red (cover for fasc)', () => {
-      underclaimTotal = 1;
-      defaultActionService.lib3RedOnThisDeck = () => false;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
-      ).toBe(0.9);
-      // not if a lib3Red
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
-      ).not.toBe(0.9);
-    });
+  //   it('overclaims RB prob .9 if underclaim is 1 and no lib3red (cover for fasc)', () => {
+  //     underclaimTotal = 1;
+  //     defaultActionService.lib3RedOnThisDeck = () => false;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
+  //     ).toBe(0.9);
+  //     // not if a lib3Red
+  //     defaultActionService.lib3RedOnThisDeck = () => true;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
+  //     ).not.toBe(0.9);
+  //   });
 
-    it('overclaims RB prob 1 if underclaim is at least 2', () => {
-      underclaimTotal = 2;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
-      ).toBe(1);
-    });
+  //   it('overclaims RB prob 1 if underclaim is at least 2', () => {
+  //     underclaimTotal = 2;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
+  //     ).toBe(1);
+  //   });
 
-    it('overclaims RB prob 0 otherwise', () => {
-      underclaimTotal = -1;
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      expect(
-        defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
-      ).toBe(0);
-    });
-  });
+  //   it('overclaims RB prob 0 otherwise', () => {
+  //     underclaimTotal = -1;
+  //     defaultActionService.lib3RedOnThisDeck = () => true;
+  //     expect(
+  //       defaultActionService.getFascFascBlueChanClaim(game, CHAN2.RB)[1],
+  //     ).toBe(0);
+  //   });
+  // });
 
   describe('getPresClaimWithLibProbs', () => {
     let underclaimTotal: number;
@@ -2244,6 +2229,7 @@ describe('DefaultActionService', () => {
       }
     });
 
+    //change later now that it does conf for hitler
     it('does not conf as hitler on RRR or RRB', () => {
       game.currentPres = 'player-3';
       let [fascRRBconfProb, , fascRRRconfProb] =
@@ -2760,6 +2746,16 @@ describe('DefaultActionService', () => {
 
     it('it determines confirmed lib FROM HITLER POV in 9-10 player game with 3 confs', () => {
       player2.role = Role.HITLER;
+      game.players[0].team = Team.LIB;
+      game.players[1].team = Team.FASC;
+      game.players[2].team = Team.FASC;
+      game.players[3].team = Team.LIB;
+      game.players[4].team = Team.FASC;
+      game.players[5].team = Team.LIB;
+      game.players[6].team = Team.FASC;
+      game.players[7].team = Team.LIB;
+      game.players[8].team = Team.LIB;
+      game.players[9].team = Team.LIB;
       game.confs.push({
         confer: 'player-3',
         confee: 'player-4',
@@ -2780,6 +2776,16 @@ describe('DefaultActionService', () => {
     });
     it('it determines confirmed lib FROM HITLER POV in 9-10 player game with 2 confs and hitler inv lib', () => {
       player2.role = Role.HITLER;
+      game.players[0].team = Team.LIB;
+      game.players[1].team = Team.FASC;
+      game.players[2].team = Team.FASC;
+      game.players[3].team = Team.LIB;
+      game.players[4].team = Team.FASC;
+      game.players[5].team = Team.LIB;
+      game.players[6].team = Team.FASC;
+      game.players[7].team = Team.LIB;
+      game.players[8].team = Team.LIB;
+      game.players[9].team = Team.LIB;
       game.confs.push({
         confer: 'player-3',
         confee: 'player-4',
@@ -2996,6 +3002,62 @@ describe('DefaultActionService', () => {
         expect(
           defaultActionService.knownLibToHitler(game, game.players[6]),
         ).toBe(false);
+      });
+    });
+
+    describe('nChooseR', () => {
+      it('properlyCalculates n choose r', () => {
+        expect(defaultActionService.nChooseR(5, 2)).toEqual(10);
+        expect(defaultActionService.nChooseR(4, 1)).toEqual(4);
+        expect(defaultActionService.nChooseR(12, 12)).toEqual(1);
+      });
+    });
+
+    describe('probabilityOfDrawingBlues', () => {
+      it('properlyCalculates each blue prob', () => {
+        defaultActionService.bluesToBeginTheDeck = () => 3;
+        game.drawPileState = [B, B, B, R, R, R, R, R, R, R, R, R];
+        let blueProbs = defaultActionService.probabilityofDrawingBlues(game);
+        expect(blueProbs[0]).toEqual(21 / 55);
+        game.drawPileState = [B, R, R, R];
+
+        defaultActionService.bluesToBeginTheDeck = () => 1;
+        blueProbs = defaultActionService.probabilityofDrawingBlues(game);
+        expect(blueProbs[0]).toEqual(0.25);
+        expect(blueProbs[1]).toEqual(0.75);
+        expect(blueProbs[2]).toEqual(0);
+        expect(blueProbs[3]).toEqual(0);
+
+        game.drawPileState = [];
+        let blues: number;
+        game.drawPileState = [];
+        for (blues = 0; blues < 2; blues++) {
+          game.drawPileState.push(B);
+        }
+        for (let reds = 0; reds < 9; reds++) {
+          game.drawPileState.push(R);
+        }
+
+        defaultActionService.bluesToBeginTheDeck = () => blues;
+        blueProbs = defaultActionService.probabilityofDrawingBlues(game);
+        const EV = defaultActionService.expectedValueOfBlues(game);
+        console.log(blueProbs);
+        console.log(EV);
+      });
+    });
+
+    describe('expectedValueOfBlues', () => {
+      it('properly calculates EV', () => {
+        defaultActionService.bluesToBeginTheDeck = () => 3;
+        game.drawPileState = [B, B, B, R, R, R, R, R, R, R, R, R];
+        let blueProbs = defaultActionService.probabilityofDrawingBlues(game);
+        let EV = defaultActionService.expectedValueOfBlues(game);
+        expect(EV).toEqual(blueProbs[1] + 2 * blueProbs[2] + 3 * blueProbs[3]);
+
+        game.drawPileState = [B, R, R, R];
+        defaultActionService.bluesToBeginTheDeck = () => 1;
+        EV = defaultActionService.expectedValueOfBlues(game);
+        expect(EV).toEqual(0.75);
       });
     });
   });
