@@ -1668,7 +1668,7 @@ export class DefaultActionService {
     const currentChanPlayer = this.logicService.getCurrentChan(game);
 
     const fascBBBunderclaimProb = 1;
-    const fascRRBoverclaimProb = 0;
+    const fascRRBoverclaimProb = 1;
     const fascRBBoverclaimProb = 1;
     let fascRRRconfProb = 1;
     let fascRRBconfProb = 1;

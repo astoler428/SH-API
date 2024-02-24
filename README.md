@@ -1,47 +1,107 @@
 <!-- shift command V to preview -->
-<!-- consistent capilaziing on fasc nad lib -->
 
 # Blind Secret Hitler
 
-In blind Secret Hitler, players do not know their own role to start the game. Every action besides choosing players and voting has the option to make a default decision. Liberal roles default to always telling the truth, playing B and discarding R when possible. Hitler and fascists decisions are strategically determined considering a variety of factors intended to mimic real play. An explanation of how decisions are made can be found HERE (put link).
+In blind Secret Hitler, players do not know their own role to start the game. Every action besides choosing players and voting has the option to make a default decision. Liberal roles default to always telling the truth, playing B and discarding R when possible. Hitler and fascists decisions are strategically determined considering a variety of factors intended to mimic real play.
 
-A player may attempt to confirm themself as a fascist. If they are wrong and liberal, the game ends immediately and fascists win. Therefore, guessing is not encouraged. When a vanilla fascist confirms themself, they learn who Hitler is and any other fascists who also confirm themselves. When Hitler confirms themself, they only learn other confirmed fascists in a 5-6 player game or if the Hitler knows other facists in 7+ setting is on. Vanilla fascists are not notificied whether Hitler has confirmed themself or not.
+A player may attempt to confirm themself as a fascist. If they are wrong and liberal, the game ends immediately and fascists win. Therefore, guessing is not encouraged. When a vanilla fascist confirms themself, they learn who Hitler is and any other fascists who have confirmed themselves. When Hitler confirms themself, normal rules apply for whether Hitler learns the other facists. Vanilla fascists are not notificied whether Hitler has confirmed themself or not.
 
-There is no option to confirm yourself as liberal, as it would not make sense to ever risk it. If you are wrong, you lose immediately. Therefore, if you believe strongly that you are liberal enough to want to confirm yourself, then you've already bet the game that you are liberal. You may as well just play as a liberal and if you are wrong and fascist, you still have a chance to win, or even find out your true identity later and switch sides.
+There is no option to confirm yourself as liberal, as it would not make sense to ever risk it. If you are wrong, you lose immediately. Therefore, if you believe strongly that you are liberal enough to want to confirm yourself, then you've already bet the game that you are liberal. You may as well just play as a liberal and if you are wrong and fascist, you still have a chance to win, or even find out your true identity later and and change course.
 
-There is also a setting that can be turned on called **Simple Blind** that simplifies the default decision making. It's explained here (insert link).
+There is also a setting that can be turned on called **Simple Blind** that simplifies the default decision making. In this setting, vanilla fascists take every opportunity to discard a B or lie. More information about it can be found here ...insert link
 
 ## Thoughts on Game Balance and META
 
 It's not clear if this variant will favor the liberals or the facists. If normal strict META is followed and players default to assuming they are liberal, then liberals almost certainly have the edge, since fascists are blind and can't coordinate. Also 3v3 top deck may not always be possible.
 
-It's clear that if everybody defaults to assuming they are liberal by mere probability, 4/7 vs 3/7, then liberals will have an overwhelming advantage and all player will have an over 50% winning percentage. This is lame and comparable to being easy to read as a fascist vs liberal, leading to wins as liberal and losses as fascist.
+It's clear that if everybody defaults to assuming they are liberal by mere probability, 4/7 vs 3/7, then liberals will have an overwhelming advantage and all players will have an over 50% winning percentage. This is lame and comparable to being easy to read as a fascist vs liberal, leading to wins as liberal and losses as fascist.
 
 Therefore, players should adapt their play to give the best chance of winning any one game. As a result, the META can and should change.
 
 ### Considerations
 
-An important liberal responsibility is voting for the right liberal liberal governments, especially towards the end of the game. In a normal game, a liberal that hasn't been in government to play B is still instrumental in a win by determining who they think is liberal and voting properly. If that player does not know, or worse, does not believe they are liberal, their vote cannot be counted on. Therefore, there is more importance on getting more players into government to learn about their role, which also helps fascists.
+As we know, an important liberal responsibility is voting for the right liberal liberal governments, especially towards the end of the game. In a normal game, a liberal that hasn't been in government to play B is still instrumental in a win by determining who they think is liberal and voting properly. If that player does not know, or worse, does not believe they are liberal, their vote cannot be counted on. Therefore, there is more importance on getting more players into government to learn about their role, which also helps fascists.
 
 **Scenario:** The first two governments play B and the players in government are limited. It's unlikely that these are the actual four liberals. Other liberal players will assume by probability that they are likely fascist and it will be difficult to coordinate among liberals.
 
-The idea of the META is that it's optimal for liberals. Since fascists need to keep their cover, they are compelled to go along with it or out themselves. In this variant, there is no cover to keep. You can openly say you might be fascist without outing. Players that are 50-50 on their role have incentive to openly support the losing team, keeping the possibility of winning balanced for when they can learn their role.
+The idea of the META is that it's optimal for liberals and since fascists need to keep their cover, they are compelled to go along with it or out themselves. In this variant, there is no cover to keep. You can openly say you might be fascist without outing. Players that are 50-50 on their role have incentive to openly support the losing team, keeping the possibility of winning balanced for when they can learn their role.
 
 ## How Decisions are Made
+
+I tried to account for as many factors as possible when making decisions. Sadly, this is not an AI model that can think and given the complex number of factors that could go into a decision, don't expect it to be perfect. That being said, I tried to account for almost every aspect of the game, in some way.
 
 Factors that are considered in decision making:
 
 - Whether a government is fascist fascist or not
-- Hitler and vanilla fascist make decision differently
-- How many B's are played along with how many you have already played yourself
-- How many R's are played and what the power is
-- The deck count and whether it's overclaimed or underclaimed
-- Whether or not a liberal has drawn RRR on the deck
+- Hitler vs vanilla fascist
+- The player count
+- Whether hitler knows if a particular player is fascist or liberal
+- How many B's are down along with many you and the chancellor have each played
+- How many R's are down
+- What the power is (investigation vs gun)
+- The deck count
+- Confirmed liberals
+- Number of fascists and liberals claiming RRR
 - Whether it's cucu, anti-DD or double dipping
+- Probability of draws in a given scenario
+- Existing policy conflicts and investigations
 
-All decisions are based on a random probability, so even if for example there is only a 10% chance of blind conflicting as Hitler, it may happen.
+All decisions are based on probability, so even if for example there is only a 10% chance of blind conflicting as Hitler, it may happen.
 
-**Note:** Meta pairings and seating position are not considered. Decisions are not based on trying to keep the most number of fascists in government or getting liberals skipped.
+## Simple Blind Setting
+
+In this setting, fascist decisions are not strategic or optimal. The emphasis is on performing the fascist action when possible.
+
+### Fascist Actions
+
+- Discarding B policies as president
+- Playing R policies as chancellor
+- Changing the blue count
+- Conflicting the chancellor
+- Lying on investigation
+- Lying about the top 3 policies in a 5-6 player game
+- Refusing veto
+
+### Considerations
+
+- Players in government can learn if they are vanilla fascist or not confidently
+- Hitler still plays with some nuance to keep liberal cover, so it's not guaranteed liberal if the fascist action is not taken, as you could still be Hitler.
+
+### Strategy
+
+If you believe the optimal fascist play in a given situation is to play like a liberal, then do so without taking the default action.
+You can even lie and say that you chose the default action, trying to build liberal credibility. Realize you may be a liberal lying about why you are liberal, but telling the truth that you are liberal, so it's fine!
+
+However, playing optimally in this way comes at the cost of missing the opportunity to possibly learn you role.
+
+Keep in mind, if a fascist player shoots a liberal, a 3v3 top deck is not always possible, since not all fascists necessarily know who they are to nein.
+
+**Example:** You are the chancellor under the gun with three B's down. You realize that the optimal fascist play is to play the fourth B and not get shot. You do so. Then, you claim you chose the default action, "confirming" you are liberal.
+
+### Simple Decisions
+
+Vanilla fascists will always take an action that confirms themself as fascist, even if it is idiotic. They will always conflict their chancellor on policy, always change the blue claim, etc. regardless of whether it makes them look good or bad. Liberals of course never do this. Hitler decisions are more balanced around sometimes playing blues and avoiding conflicts.
+
+## Cooperative Blind
+
+In this setting, the roles are blind as in the normal blind setting. However, most of the other information is too. Presidents and chancellors are blind to their policies. Players are blind to the investigations they do. All policy and claim decisions are made by default. Therefore, all information is the same for everyone. Hence, the cooperative aspect. The goal is for everyone to work together to make the liberal team win, regardless of the role you control.
+
+An interesting aspect of this setting is that while everyone has the same end goal, players may have different opinions on how to read the position. Therefore, players may disagree on who to trust and put into government. Each player still gets to make their independent decisions through voting and the power when they are president.
+
+# Possible alternate rules and variants
+
+- Hide player votes
+- Fascists can know when Hitler has confirmed themself
+- Players can investigate themselves
+- In a 7+ player game, one of the non-Hitler fascists can be an all knowing fascist who learns all the other fascist upon confirming themself. This would increase the possibility of signally to other facists and ensuring a top deck when there is no liberal majority.
+- Going into Hitler zone, someone (possibly the current chancellor) can pick one non-toucher (if there is one) to allow them to learn their role.
+
+<!-- # Totally Blind
+This is intended to be a twist on cooperative. It's essentially the same cooperative game except some players have an agenda for the fascists to win and know where the fascists are. They ahve to steer the game.
+Talk about strategy and thought process
+REALLY INTERESTING - aim to shoot people with poor logic. It doesn't matter if htey are lib role and 3v3 because you have 4 vs 2 voting majority to make the fascist vote forw hat you want. If fasc gets hitler, have to be extra cautious. -->
+
+<!--
 
 ### President Discard
 
@@ -167,54 +227,4 @@ Or you are double dipping and conflicted a lib on policy, you will conf another 
 - No conflict will occur if there is a gun
 
 Some cases are known to be fasc fasc by the president and others are not. The cucu conflict and the RRB conflict are unknown if it's fasc fasc at the time.
-
-# Simple Blind Setting
-
-In this setting, fascist decisions are not strategic or optimal. The emphasis is on performing the fascist action when possible.
-
-## Fascist Actions
-
-- Discarding B policies as president
-- Playing R policies as chancellor
-- Underclaiming BBB, RBB
-- Conflicting chancellor
-- Lying on investigation
-- Lying about the top 3 policies in a 5-6 player game
-- Refusing veto
-
-## Considerations
-
-- Players are more likely to confirm themselves fascist right away.
-- There isn't the full effect of wondering if you yourself are deep undercover the same way you do with others
-- Players who don't find out they are fascist through the default action will higher confidence they are liberal
-
-## Strategy
-
-If you believe the optimal fascist play in a given situation is to play like a liberal, then do so without taking the default action.
-You can even lie and say that you chose the default action, trying to build liberal credibility. Realize you may be a liberal lying about why you are liberal, but telling the truth that you are liberal, so it's fine!
-
-However, playing optimally in this way comes at the cost of missing the opportunity to possibly learn you role.
-
-Keep in mind, if a fascist player shoots a liberal, a 3v3 top deck is not always possible, since not all fascists necessarily know who they are to nein.
-
-**Example:** You are the chancellor under the gun with three B's down. You realize that the optimal fascist play is to play the fourth B and not get shot. You do so. Then, you claim you chose the default action, "confirming" you are liberal.
-
-## Simple Decisions
-
-COMMENT ON DIFFERENCES
-
-# Possible variants
-
-There could be the option for a player to investigate themself.
-In a 7+ player game, one of the non-Hitler fascists can be an all knowing fascist, who learns all other fascists upon confirming themself. This would increase the chance of helping other fascists confirm themselves if they can't get into government and helping out to topdeck at the end of the game.
-Going into Hitler zone, either the current pres or chancellor can pick one nontoucher (if there is one) to allow them to learn their role.
-
-# Cooperative Blind
-
-Can be played in one of two ways. Every player works together to help the liberals win. Or it can be regular secret hitler and the entire thing is just a blind mess.
-Talk about strategy and thought process
-
-<!-- # Totally Blind
-This is intended to be a twist on cooperative. It's essentially the same cooperative game except some players have an agenda for the fascists to win and know where the fascists are. They ahve to steer the game.
-Talk about strategy and thought process
-REALLY INTERESTING - aim to shoot people with poor logic. It doesn't matter if htey are lib role and 3v3 because you have 4 vs 2 voting majority to make the fascist vote forw hat you want. If fasc gets hitler, have to be extra cautious. -->
+-->
