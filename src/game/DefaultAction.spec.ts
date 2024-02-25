@@ -18,6 +18,10 @@ import {
   Role,
   Status,
   Team,
+  draws2,
+  draws3,
+  gameRoles,
+  gameTeams,
 } from '../consts';
 import { Card } from 'src/models/card.model';
 import { GameRepository } from './game.repository';
@@ -34,6 +38,16 @@ describe('DefaultActionService', () => {
   let player1: Player, player2: Player, player3: Player;
   let R: Card;
   let B: Card;
+
+  let players2: Player[];
+  let game2: Game;
+  let hitler: Player, fasc1: Player, fasc2: Player, fasc3: Player;
+  let lib1: Player,
+    lib2: Player,
+    lib3: Player,
+    lib4: Player,
+    lib5: Player,
+    lib6: Player;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -62,22 +76,83 @@ describe('DefaultActionService', () => {
     game.currentChan = player2.name;
     R = new CardMockFactory().createFasc();
     B = new CardMockFactory().createLib();
+
+    hitler = new PlayerMockFactory().create({
+      name: 'hitler',
+      team: Team.FASC,
+      role: Role.HITLER,
+    });
+    fasc1 = new PlayerMockFactory().create({
+      name: 'fasc1',
+      team: Team.FASC,
+      role: Role.FASC,
+    });
+    fasc2 = new PlayerMockFactory().create({
+      name: 'fasc2',
+      team: Team.FASC,
+      role: Role.FASC,
+    });
+    fasc3 = new PlayerMockFactory().create({
+      name: 'fasc3',
+      team: Team.FASC,
+      role: Role.FASC,
+    });
+    lib1 = new PlayerMockFactory().create({
+      name: 'lib1',
+      team: Team.LIB,
+      role: Role.LIB,
+    });
+    lib2 = new PlayerMockFactory().create({
+      name: 'lib2',
+      team: Team.LIB,
+      role: Role.LIB,
+    });
+    lib3 = new PlayerMockFactory().create({
+      name: 'lib3',
+      team: Team.LIB,
+      role: Role.LIB,
+    });
+    lib4 = new PlayerMockFactory().create({
+      name: 'lib4',
+      team: Team.LIB,
+      role: Role.LIB,
+    });
+    lib5 = new PlayerMockFactory().create({
+      name: 'lib5',
+      team: Team.LIB,
+      role: Role.LIB,
+    });
+    lib6 = new PlayerMockFactory().create({
+      name: 'lib6',
+      team: Team.LIB,
+      role: Role.LIB,
+    });
+    players2 = [
+      hitler,
+      fasc1,
+      lib1,
+      lib2,
+      lib3,
+      lib4,
+      fasc2,
+      lib5,
+      fasc3,
+      lib6,
+    ];
+    game2 = new GameMockFactory().create({ players: players2 });
   });
 
-  describe('determinePreCards', () => {
+  describe('determinePresCards', () => {
     it('correctly determines', () => {
-      const R = new CardMockFactory().createFasc();
-      const B = new CardMockFactory().createLib();
       const presCards = [
-        [B, B, B],
-        [R, B, B],
-        [R, R, B],
         [R, R, R],
+        [R, R, B],
+        [R, B, B],
+        [B, B, B],
       ];
-      const presDraws = ['BBB', 'RBB', 'RRB', 'RRR'];
       for (let i = 0; i < 4; i++) {
         expect(defaultActionService.determine3Cards(presCards[i])).toBe(
-          presDraws[i],
+          draws3[i],
         );
       }
     });
@@ -85,17 +160,14 @@ describe('DefaultActionService', () => {
 
   describe('determineChanCards', () => {
     it('correctly determines', () => {
-      const R = new CardMockFactory().createFasc();
-      const B = new CardMockFactory().createLib();
       const chanCards = [
-        [B, B],
-        [R, B],
         [R, R],
+        [R, B],
+        [B, B],
       ];
-      const chanDraws = ['BB', 'RB', 'RR'];
       for (let i = 0; i < 3; i++) {
         expect(defaultActionService.determine2Cards(chanCards[i])).toBe(
-          chanDraws[i],
+          draws2[i],
         );
       }
     });
@@ -103,503 +175,553 @@ describe('DefaultActionService', () => {
 
   describe('lib3RedOnThisDeck', () => {
     it('properly determines that a lib pres drew 3 red on this deck', () => {
-      player1.team = Team.LIB;
-      game.govs.push(new GovMockFactory().create());
-      expect(defaultActionService.lib3RedOnThisDeck(game)).toBe(true);
+      game2.govs.push(
+        new GovMockFactory().create({ pres: lib1.name, presClaim: PRES3.RRR }),
+      );
+      expect(defaultActionService.lib3RedOnThisDeck(game2)).toBe(true);
     });
 
     it('properly determines that a lib pres drew 3 red on a different deck', () => {
-      player1.team = Team.LIB;
-      game.govs.push(new GovMockFactory().create());
-      game.deck.deckNum = 2;
-      expect(defaultActionService.lib3RedOnThisDeck(game)).toBe(false);
+      game2.govs.push(
+        new GovMockFactory().create({ pres: lib1.name, presClaim: PRES3.RRR }),
+      );
+      game2.deck.deckNum = 2;
+      expect(defaultActionService.lib3RedOnThisDeck(game2)).toBe(false);
     });
 
     it('returns false if a fasc pres draws RRR', () => {
-      player1.team = Team.FASC;
-      game.govs.push(new GovMockFactory().create());
-      expect(defaultActionService.lib3RedOnThisDeck(game)).toBe(false);
+      game2.govs.push(
+        new GovMockFactory().create({ pres: fasc1.name, presClaim: PRES3.RRR }),
+      );
+      expect(defaultActionService.lib3RedOnThisDeck(game2)).toBe(false);
     });
   });
 
-  describe('fasc3RedOnThisDeck', () => {
-    it('properly determines that a fasc pres drew 3 red on this deck', () => {
-      player1.team = Team.FASC;
-      game.govs.push(new GovMockFactory().create());
-      expect(defaultActionService.fasc3RedOnThisDeck(game)).toBe(true);
-    });
+  // describe('fasc3RedOnThisDeck', () => {
+  //   it('properly determines that a fasc pres drew 3 red on this deck', () => {
+  //     player1.team = Team.FASC;
+  //     game.govs.push(new GovMockFactory().create());
+  //     expect(defaultActionService.fasc3RedOnThisDeck(game)).toBe(true);
+  //   });
 
-    it('properly determines that a fasc pres drew 3 red on a different deck', () => {
-      player1.team = Team.FASC;
-      game.govs.push(new GovMockFactory().create());
-      game.deck.deckNum = 2;
-      expect(defaultActionService.fasc3RedOnThisDeck(game)).toBe(false);
-    });
+  //   it('properly determines that a fasc pres drew 3 red on a different deck', () => {
+  //     player1.team = Team.FASC;
+  //     game.govs.push(new GovMockFactory().create());
+  //     game.deck.deckNum = 2;
+  //     expect(defaultActionService.fasc3RedOnThisDeck(game)).toBe(false);
+  //   });
 
-    it('returns false if a lib pres draws RRR', () => {
-      player1.team = Team.LIB;
-      game.govs.push(new GovMockFactory().create());
-      expect(defaultActionService.fasc3RedOnThisDeck(game)).toBe(false);
+  //   it('returns false if a lib pres draws RRR', () => {
+  //     player1.team = Team.LIB;
+  //     game.govs.push(new GovMockFactory().create());
+  //     expect(defaultActionService.fasc3RedOnThisDeck(game)).toBe(false);
+  //   });
+  // });
+
+  // describe('is3Red', () => {
+  //   it('properly determines that the player claimed 3 red regardless of the cards', () => {
+  //     player1.team = Team.FASC;
+  //     game.govs.push(new GovMockFactory().create({ presCards: [R, B, B] }));
+  //     expect(defaultActionService.is3Red(game, 'player-1')).toBe(true);
+  //   });
+
+  //   it('properly determines not 3 red if overclaim', () => {
+  //     player1.team = Team.FASC;
+  //     game.govs.push(new GovMockFactory().create({ presClaim: PRES3.RRB }));
+  //     expect(defaultActionService.is3Red(game, 'player-1')).toBe(false);
+  //   });
+  // });
+
+  describe('numberOf3RedLibsOnThisDeck', () => {
+    it('determines the number of 3 red libs', () => {
+      game2.deck.deckNum = 1;
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: lib1.name,
+          presClaim: PRES3.RRR,
+          deckNum: 1,
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: hitler.name,
+          presClaim: PRES3.RRR,
+          deckNum: 1,
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: lib2.name,
+          presClaim: PRES3.RRR,
+          deckNum: 1,
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: lib3.name,
+          presClaim: PRES3.RRB,
+          deckNum: 1,
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: lib4.name,
+          presClaim: PRES3.RRR,
+          deckNum: 2,
+        }),
+      );
+      expect(defaultActionService.numberOf3RedLibsOnThisDeck(game2)).toEqual(2);
     });
   });
 
-  describe('is3Red', () => {
-    it('properly determines that the player claimed 3 red regardless of the cards', () => {
-      player1.team = Team.FASC;
-      game.govs.push(new GovMockFactory().create({ presCards: [R, B, B] }));
-      expect(defaultActionService.is3Red(game, 'player-1')).toBe(true);
-    });
-
-    it('properly determines not 3 red if overclaim', () => {
-      player1.team = Team.FASC;
-      game.govs.push(new GovMockFactory().create({ presClaim: PRES3.RRB }));
-      expect(defaultActionService.is3Red(game, 'player-1')).toBe(false);
+  describe('numberOf3RedFascsOnThisDeck', () => {
+    it('determines the number of 3 red fasc', () => {
+      game2.deck.deckNum = 2;
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: fasc1.name,
+          presClaim: PRES3.RRR,
+          deckNum: 1,
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: hitler.name,
+          presClaim: PRES3.RRR,
+          deckNum: 2,
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: lib2.name,
+          presClaim: PRES3.RRR,
+          deckNum: 2,
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: fasc2.name,
+          presClaim: PRES3.RRB,
+          deckNum: 2,
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          pres: fasc3.name,
+          presClaim: PRES3.RRR,
+          deckNum: 2,
+        }),
+      );
+      expect(defaultActionService.numberOf3RedFascsOnThisDeck(game2)).toEqual(
+        2,
+      );
     });
   });
 
   describe('isAntiDD', () => {
     it('properly determines that the gov is an antiDD', () => {
-      player1.team = Team.FASC;
-      game.confs.push(
+      game2.confs.push(
         {
-          confer: 'player-1',
-          confee: 'player-2',
+          confer: fasc1.name,
+          confee: lib1.name,
           type: Conf.INV,
         },
         {
-          confer: 'player-1',
-          confee: 'player-3',
+          confer: fasc1.name,
+          confee: lib2.name,
           type: Conf.POLICY,
         },
       );
-      game.currentChan = 'player-2';
-      game.currentPres = 'player-3';
-      expect(defaultActionService.isAntiDD(game)).toBe(true);
-      game.currentChan = 'player-2';
-      game.currentPres = 'player-1';
-      expect(defaultActionService.isAntiDD(game)).toBe(false);
+      game2.currentChan = lib1.name;
+      game2.currentPres = lib2.name;
+      expect(defaultActionService.isAntiDD(game2)).toBe(true);
+      game2.currentChan = lib2.name;
+      game2.currentPres = fasc1.name;
+      expect(defaultActionService.isAntiDD(game2)).toBe(false);
     });
   });
 
   describe('underClaimTotal', () => {
     it('properly counts the total underclaims', () => {
-      game.govs.push(new GovMockFactory().create({ underclaim: 2 }));
-      game.govs.push(new GovMockFactory().create({ underclaim: 3 }));
-      game.govs.push(
+      game2.govs.push(new GovMockFactory().create({ underclaim: 2 }));
+      game2.govs.push(new GovMockFactory().create({ underclaim: 3 }));
+      game2.govs.push(
         new GovMockFactory().create({ deckNum: 2, underclaim: 3 }),
       );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({ deckNum: 2, underclaim: -4 }),
       );
-      expect(defaultActionService.underclaimTotal(game)).toEqual(5);
-      game.deck.deckNum = 2;
-      expect(defaultActionService.underclaimTotal(game)).toEqual(-1);
+      expect(defaultActionService.underclaimTotal(game2)).toEqual(5);
+      game2.deck.deckNum = 2;
+      expect(defaultActionService.underclaimTotal(game2)).toEqual(-1);
     });
   });
 
   describe('deckNBlueCount and related', () => {
     it('properly counts the blue count', () => {
-      game.govs.push(new GovMockFactory().create({ presClaim: PRES3.RRB }));
-      game.govs.push(new GovMockFactory().create({ presClaim: PRES3.RBB }));
-      game.govs.push(new GovMockFactory().create({ presClaim: PRES3.RRR }));
-      game.govs.push(new GovMockFactory().create({ presClaim: PRES3.RRR }));
-      game.govs.push(
+      game2.govs.push(new GovMockFactory().create({ presClaim: PRES3.RRB }));
+      game2.govs.push(new GovMockFactory().create({ presClaim: PRES3.RBB }));
+      game2.govs.push(new GovMockFactory().create({ presClaim: PRES3.RRR }));
+      game2.govs.push(new GovMockFactory().create({ presClaim: PRES3.RRR }));
+      game2.govs.push(
         new GovMockFactory().create({ deckNum: 2, presClaim: PRES3.RBB }),
       );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({ deckNum: 2, presClaim: PRES3.RBB }),
       );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({ deckNum: 2, presClaim: PRES3.BBB }),
       );
-      expect(defaultActionService.deckNBlueCount(game, 1)).toEqual(3);
-      expect(defaultActionService.deck1BlueCount(game)).toEqual(3);
-      expect(defaultActionService.deckNBlueCount(game, 2)).toEqual(7);
-      game.deck.deckNum = 1;
-      expect(defaultActionService.blueCountOnThisDeck(game)).toEqual(3);
-      game.deck.deckNum = 2;
-      expect(defaultActionService.blueCountOnThisDeck(game)).toEqual(7);
+      expect(defaultActionService.deckNBlueCount(game2, 1)).toEqual(3);
+      expect(defaultActionService.deck1BlueCount(game2)).toEqual(3);
+      expect(defaultActionService.deckNBlueCount(game2, 2)).toEqual(7);
+      game2.deck.deckNum = 1;
+      expect(defaultActionService.blueCountOnThisDeck(game2)).toEqual(3);
+      game2.deck.deckNum = 2;
+      expect(defaultActionService.blueCountOnThisDeck(game2)).toEqual(7);
     });
   });
 
   describe('isCucu', () => {
     it('properly determines Cucu', () => {
-      game.invClaims.push({
-        investigator: 'player-1',
-        investigatee: 'player-2',
+      game2.invClaims.push({
+        investigator: lib1.name,
+        investigatee: lib2.name,
         claim: Team.LIB,
       });
-      game.invClaims.push({
-        investigator: 'player-1',
-        investigatee: 'player-3',
+      game2.invClaims.push({
+        investigator: lib1.name,
+        investigatee: lib3.name,
         claim: Team.FASC,
       });
-      game.currentPres = 'player-2';
-      game.currentChan = 'player-1';
-      expect(defaultActionService.isCucu(game)).toBe(true);
+      game2.currentPres = lib2.name;
+      game2.currentChan = lib1.name;
+      expect(defaultActionService.isCucu(game2)).toBe(true);
 
-      game.currentPres = 'player-1';
-      game.currentChan = 'player-2';
-      expect(defaultActionService.isCucu(game)).toBe(false);
+      game2.currentPres = lib1.name;
+      game2.currentChan = lib2.name;
+      expect(defaultActionService.isCucu(game2)).toBe(false);
 
-      game.currentPres = 'player-3';
-      game.currentChan = 'player-1';
-      expect(defaultActionService.isCucu(game)).toBe(false);
+      game2.currentPres = lib3.name;
+      game2.currentChan = lib1.name;
+      expect(defaultActionService.isCucu(game2)).toBe(false);
 
-      game.currentPres = 'player-3';
-      game.currentChan = 'player-4';
-      expect(defaultActionService.isCucu(game)).toBe(false);
+      game2.currentPres = lib3.name;
+      game2.currentChan = lib4.name;
+      expect(defaultActionService.isCucu(game2)).toBe(false);
     });
   });
 
   describe('bluesEnactedInDeck', () => {
     it('properly counts the blues', () => {
-      game.govs = [];
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({
           policyPlayed: new CardMockFactory().createFasc(),
         }),
       );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({
           policyPlayed: new CardMockFactory().createLib(),
         }),
       );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({
           policyPlayed: new CardMockFactory().createLib(),
           deckNum: 2,
         }),
       );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({
           policyPlayed: new CardMockFactory().createFasc(),
         }),
       );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({
           policyPlayed: new CardMockFactory().createFasc(),
         }),
       );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({
           policyPlayed: new CardMockFactory().createLib(),
         }),
       );
-      expect(defaultActionService.bluesEnactedInDeck(game, 1)).toEqual(2);
+      expect(defaultActionService.bluesEnactedInDeck(game2, 1)).toEqual(2);
     });
   });
 
   describe('bluesToBeginTheDeck', () => {
     it('properly counts the blues', () => {
-      game.govs = [];
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({
           policyPlayed: new CardMockFactory().createFasc(),
         }),
       );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({
           policyPlayed: new CardMockFactory().createLib(),
         }),
       );
-      game.govs.push(
-        new GovMockFactory().create({
-          policyPlayed: new CardMockFactory().createLib(),
-          deckNum: 2,
-        }),
-      );
-      game.govs.push(
-        new GovMockFactory().create({
-          policyPlayed: new CardMockFactory().createFasc(),
-        }),
-      );
-      game.govs.push(
-        new GovMockFactory().create({
-          policyPlayed: new CardMockFactory().createFasc(),
-        }),
-      );
-      game.govs.push(
+      game2.govs.push(
         new GovMockFactory().create({
           policyPlayed: new CardMockFactory().createLib(),
           deckNum: 2,
         }),
       );
-      expect(defaultActionService.bluesToBeginTheDeck(game, 1)).toEqual(6);
-      expect(defaultActionService.bluesToBeginTheDeck(game, 2)).toEqual(5);
-      expect(defaultActionService.bluesToBeginTheDeck(game, 3)).toEqual(3);
+      game2.govs.push(
+        new GovMockFactory().create({
+          policyPlayed: new CardMockFactory().createFasc(),
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          policyPlayed: new CardMockFactory().createFasc(),
+        }),
+      );
+      game2.govs.push(
+        new GovMockFactory().create({
+          policyPlayed: new CardMockFactory().createLib(),
+          deckNum: 2,
+        }),
+      );
+      expect(defaultActionService.bluesToBeginTheDeck(game2, 1)).toEqual(6);
+      expect(defaultActionService.bluesToBeginTheDeck(game2, 2)).toEqual(5);
+      expect(defaultActionService.bluesToBeginTheDeck(game2, 3)).toEqual(3);
     });
   });
 
-  describe('isCucu', () => {
-    it('properly determines Cucu', () => {
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-2',
+  describe('isAntiDD', () => {
+    it('properly determines antiDD', () => {
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc2.name,
         type: Conf.POLICY,
       });
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-3',
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc3.name,
         type: Conf.INV,
       });
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-4',
+      game2.confs.push({
+        confer: lib2.name,
+        confee: hitler.name,
         type: Conf.INV,
       });
-      game.currentPres = 'player-2';
-      game.currentChan = 'player-3';
-      expect(defaultActionService.isAntiDD(game)).toBe(true);
-      game.currentPres = 'player-3';
-      game.currentChan = 'player-2';
-      expect(defaultActionService.isAntiDD(game)).toBe(true);
-      game.currentPres = 'player-4';
-      game.currentChan = 'player-3';
-      expect(defaultActionService.isAntiDD(game)).toBe(false);
+      game2.currentPres = fasc2.name;
+      game2.currentChan = fasc3.name;
+      expect(defaultActionService.isAntiDD(game2)).toBe(true);
+      game2.currentPres = fasc3.name;
+      game2.currentChan = fasc2.name;
+      expect(defaultActionService.isAntiDD(game2)).toBe(true);
+      game2.currentPres = hitler.name;
+      game2.currentChan = fasc3.name;
+      expect(defaultActionService.isAntiDD(game2)).toBe(false);
     });
   });
 
   describe('isPower', () => {
     it('properly determines if there is a power in 5-6 player games', () => {
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.isPower(game)).toBe(false);
-      game.FascPoliciesEnacted = 1;
-      game.players.push(new PlayerMockFactory().create());
-      expect(defaultActionService.isPower(game)).toBe(false);
-      game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.isPower(game)).toBe(true);
-      game.FascPoliciesEnacted = 4;
-      expect(defaultActionService.isPower(game)).toBe(true);
+      game2.players = players2.slice(0, 5);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.isPower(game2)).toBe(false);
+      game2.FascPoliciesEnacted = 1;
+      game2.players = players2.slice(0, 6);
+      expect(defaultActionService.isPower(game2)).toBe(false);
+      game2.FascPoliciesEnacted = 2;
+      expect(defaultActionService.isPower(game2)).toBe(true);
+      game2.FascPoliciesEnacted = 4;
+      expect(defaultActionService.isPower(game2)).toBe(true);
     });
 
     it('properly determines if there is a power in 7-8 player games', () => {
-      for (let i = 6; i < 8; i++) {
-        game.players.push(
-          new PlayerMockFactory().create({ name: `player-${i}` }),
-        );
-      }
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.isPower(game)).toBe(false);
-      game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.isPower(game)).toBe(true);
-      game.players.push(new PlayerMockFactory().create({ name: `player-8` }));
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.isPower(game)).toBe(false);
-      game.FascPoliciesEnacted = 4;
-      expect(defaultActionService.isPower(game)).toBe(true);
+      game2.players = players2.slice(0, 7);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.isPower(game2)).toBe(false);
+      game2.FascPoliciesEnacted = 1;
+      expect(defaultActionService.isPower(game2)).toBe(true);
+      game2.players = players2.slice(0, 8);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.isPower(game2)).toBe(false);
+      game2.FascPoliciesEnacted = 4;
+      expect(defaultActionService.isPower(game2)).toBe(true);
     });
 
     it('properly determines if there is a power in 9-10 player games', () => {
-      for (let i = 6; i < 10; i++) {
-        game.players.push(
-          new PlayerMockFactory().create({ name: `player-${i}` }),
-        );
-      }
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.isPower(game)).toBe(true);
-      game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.isPower(game)).toBe(true);
-      game.players.push(new PlayerMockFactory().create({ name: `player-10` }));
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.isPower(game)).toBe(true);
-      game.FascPoliciesEnacted = 4;
-      expect(defaultActionService.isPower(game)).toBe(true);
+      game2.players = players2.slice(0, 9);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.isPower(game2)).toBe(true);
+      game2.FascPoliciesEnacted = 1;
+      expect(defaultActionService.isPower(game2)).toBe(true);
+      game2.players = players2;
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.isPower(game2)).toBe(true);
+      game2.FascPoliciesEnacted = 4;
+      expect(defaultActionService.isPower(game2)).toBe(true);
     });
   });
 
   describe('invPower', () => {
     it('properly determines if there is a invpower in 5-6 player games', () => {
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.invPower(game, true)).toBe(false);
-      game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.invPower(game, true)).toBe(false);
-      game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.invPower(game, true)).toBe(false);
-      game.FascPoliciesEnacted = 3;
-      expect(defaultActionService.invPower(game, true)).toBe(false);
+      game2.players = players2.slice(0, 5);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.invPower(game2, true)).toBe(false);
+      game2.FascPoliciesEnacted = 1;
+      expect(defaultActionService.invPower(game2, true)).toBe(false);
+      game2.FascPoliciesEnacted = 2;
+      expect(defaultActionService.invPower(game2, true)).toBe(false);
+      game2.FascPoliciesEnacted = 3;
+      expect(defaultActionService.invPower(game2, true)).toBe(false);
     });
 
     it('properly determines if there is a power in 7-8 player games', () => {
-      for (let i = 6; i < 8; i++) {
-        game.players.push(
-          new PlayerMockFactory().create({ name: `player-${i}` }),
-        );
-      }
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.invPower(game, true)).toBe(false);
-      game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.invPower(game, true)).toBe(true);
-      game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.invPower(game, true)).toBe(false);
-      game.FascPoliciesEnacted = 3;
-      expect(defaultActionService.invPower(game, true)).toBe(false);
+      game2.players = players2.slice(0, 8);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.invPower(game2, true)).toBe(false);
+      game2.FascPoliciesEnacted = 1;
+      expect(defaultActionService.invPower(game2, true)).toBe(true);
+      game2.FascPoliciesEnacted = 2;
+      expect(defaultActionService.invPower(game2, true)).toBe(false);
+      game2.FascPoliciesEnacted = 3;
+      expect(defaultActionService.invPower(game2, true)).toBe(false);
 
       //after enactment
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.invPower(game, false)).toBe(false);
-      game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.invPower(game, false)).toBe(false);
-      game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.invPower(game, false)).toBe(true);
-      game.FascPoliciesEnacted = 3;
-      expect(defaultActionService.invPower(game, false)).toBe(false);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.invPower(game2, false)).toBe(false);
+      game2.FascPoliciesEnacted = 1;
+      expect(defaultActionService.invPower(game2, false)).toBe(false);
+      game2.FascPoliciesEnacted = 2;
+      expect(defaultActionService.invPower(game2, false)).toBe(true);
+      game2.FascPoliciesEnacted = 3;
+      expect(defaultActionService.invPower(game2, false)).toBe(false);
     });
 
     it('properly determines if there is a power in 9-10 player games', () => {
-      for (let i = 6; i < 10; i++) {
-        game.players.push(
-          new PlayerMockFactory().create({ name: `player-${i}` }),
-        );
-      }
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.invPower(game, true)).toBe(true);
-      game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.invPower(game, true)).toBe(true);
-      game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.invPower(game, true)).toBe(false);
-      game.FascPoliciesEnacted = 3;
-      expect(defaultActionService.invPower(game, true)).toBe(false);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.invPower(game2, true)).toBe(true);
+      game2.FascPoliciesEnacted = 1;
+      expect(defaultActionService.invPower(game2, true)).toBe(true);
+      game2.FascPoliciesEnacted = 2;
+      expect(defaultActionService.invPower(game2, true)).toBe(false);
+      game2.FascPoliciesEnacted = 3;
+      expect(defaultActionService.invPower(game2, true)).toBe(false);
 
       //after enactment
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.invPower(game, false)).toBe(false);
-      game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.invPower(game, false)).toBe(true);
-      game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.invPower(game, false)).toBe(true);
-      game.FascPoliciesEnacted = 3;
-      expect(defaultActionService.invPower(game, false)).toBe(false);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.invPower(game2, false)).toBe(false);
+      game2.FascPoliciesEnacted = 1;
+      expect(defaultActionService.invPower(game2, false)).toBe(true);
+      game2.FascPoliciesEnacted = 2;
+      expect(defaultActionService.invPower(game2, false)).toBe(true);
+      game2.FascPoliciesEnacted = 3;
+      expect(defaultActionService.invPower(game2, false)).toBe(false);
     });
   });
 
   describe('gunPower', () => {
     it('properly determines if there is a gunPower', () => {
-      game.FascPoliciesEnacted = 0;
-      expect(defaultActionService.gunPower(game)).toBe(false);
-      game.FascPoliciesEnacted = 1;
-      expect(defaultActionService.gunPower(game)).toBe(false);
-      game.FascPoliciesEnacted = 2;
-      expect(defaultActionService.gunPower(game)).toBe(false);
-      game.FascPoliciesEnacted = 3;
-      expect(defaultActionService.gunPower(game)).toBe(true);
-      game.FascPoliciesEnacted = 4;
-      expect(defaultActionService.gunPower(game)).toBe(true);
-      game.FascPoliciesEnacted = 5;
-      expect(defaultActionService.gunPower(game)).toBe(false);
+      game2.players = players2.slice(0, 6);
+      game2.FascPoliciesEnacted = 0;
+      expect(defaultActionService.gunPower(game2)).toBe(false);
+      game2.FascPoliciesEnacted = 1;
+      expect(defaultActionService.gunPower(game2)).toBe(false);
+      game2.FascPoliciesEnacted = 2;
+      expect(defaultActionService.gunPower(game2)).toBe(false);
+      game2.FascPoliciesEnacted = 3;
+      expect(defaultActionService.gunPower(game2)).toBe(true);
+      game2.FascPoliciesEnacted = 4;
+      expect(defaultActionService.gunPower(game2)).toBe(true);
+      game2.FascPoliciesEnacted = 5;
+      expect(defaultActionService.gunPower(game2)).toBe(false);
     });
   });
 
   describe('doubleDipping', () => {
     it('properly determines if the pres is doubledipping', () => {
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-2',
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: lib1.name,
         type: Conf.POLICY,
       });
-      game.currentPres = 'player-1';
-      game.currentChan = 'player-2';
-      expect(defaultActionService.doubleDipping(game)).toBe(true);
+      game2.currentPres = fasc1.name;
+      game2.currentChan = lib1.name;
+      expect(defaultActionService.doubleDipping(game2)).toBe(true);
     });
 
     it('properly determines if the pres is not doubledipping', () => {
-      game.confs.push({
-        confer: 'player-3',
-        confee: 'player-4',
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: lib1.name,
         type: Conf.INV,
       });
-      game.currentPres = 'player-3';
-      game.currentChan = 'player-4';
-      expect(defaultActionService.doubleDipping(game)).toBe(false);
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-2',
+      game2.currentPres = fasc1.name;
+      game2.currentChan = lib1.name;
+      expect(defaultActionService.doubleDipping(game2)).toBe(false);
+      game2.confs.push({
+        confer: fasc2.name,
+        confee: lib1.name,
         type: Conf.POLICY,
       });
-      game.currentPres = 'player-2';
-      game.currentChan = 'player-1';
-      expect(defaultActionService.doubleDipping(game)).toBe(false);
+      game2.currentPres = lib1.name;
+      game2.currentChan = fasc2.name;
+      expect(defaultActionService.doubleDipping(game2)).toBe(false);
     });
   });
 
   describe('inConflict', () => {
     it('properly determines if two players are on conflict', () => {
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-2',
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: hitler.name,
         type: Conf.POLICY,
       });
-      expect(defaultActionService.inConflict(game, player1, player2)).toBe(
-        true,
-      );
-      expect(defaultActionService.inConflict(game, player1, player3)).toBe(
-        false,
-      );
+      expect(defaultActionService.inConflict(game2, fasc1, hitler)).toBe(true);
+      expect(defaultActionService.inConflict(game2, fasc1, fasc2)).toBe(false);
     });
   });
 
   describe('inAnyConflict', () => {
     it('properly determines if a player is in any conflict', () => {
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-2',
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: lib1.name,
         type: Conf.POLICY,
       });
-      expect(defaultActionService.inAnyConflict(game, player1)).toBe(true);
-      expect(defaultActionService.inAnyConflict(game, player2)).toBe(true);
-      expect(defaultActionService.inAnyConflict(game, player3)).toBe(false);
+      expect(defaultActionService.inAnyConflict(game2, fasc1)).toBe(true);
+      expect(defaultActionService.inAnyConflict(game2, lib1)).toBe(true);
+      expect(defaultActionService.inAnyConflict(game2, lib2)).toBe(false);
     });
   });
 
   describe('inFascFascConflict', () => {
     it('properly determines if a player is in any fasc fasc conflict', () => {
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: hitler.name,
         type: Conf.POLICY,
       });
-      game.confs.push({
-        confer: 'player-4',
-        confee: 'player-5',
+      game2.confs.push({
+        confer: fasc2.name,
+        confee: lib1.name,
         type: Conf.POLICY,
       });
-      player2.team = Team.FASC;
-      player3.team = Team.FASC;
-      expect(defaultActionService.inFascFascConflict(game, player2)).toBe(true);
-      expect(defaultActionService.inFascFascConflict(game, player3)).toBe(true);
-      const player4 = logicService.findPlayerIngame(game, 'player-4');
-      const player5 = logicService.findPlayerIngame(game, 'player-5');
-      player4.team = Team.FASC;
-      player5.team = Team.LIB;
-      expect(defaultActionService.inFascFascConflict(game, player4)).toBe(
-        false,
-      );
+
+      expect(defaultActionService.inFascFascConflict(game2, fasc1)).toBe(true);
+      expect(defaultActionService.inFascFascConflict(game2, hitler)).toBe(true);
+      expect(defaultActionService.inFascFascConflict(game2, fasc2)).toBe(false);
     });
   });
 
   describe('numAliveOnTeam', () => {
-    beforeEach(() => {
-      game.players = [];
-      for (let i = 1; i <= 10; i++) {
-        game.players.push(
-          new PlayerMockFactory().create({
-            name: `player-${i}`,
-            team: i <= 4 ? Team.FASC : Team.LIB,
-          }),
-        );
-      }
-    });
-
     it('properly determines number of alive fascists', () => {
-      expect(defaultActionService.numAliveOnTeam(game, Team.LIB)).toEqual(6);
-      expect(defaultActionService.numAliveOnTeam(game, Team.FASC)).toEqual(4);
-      game.players[0].alive = false;
-      game.players[1].alive = false;
-      game.players[9].alive = false;
-      game.players[6].alive = false;
-      game.players[5].alive = false;
-      expect(defaultActionService.numAliveOnTeam(game, Team.LIB)).toEqual(3);
-      expect(defaultActionService.numAliveOnTeam(game, Team.FASC)).toEqual(2);
+      expect(defaultActionService.numAliveOnTeam(game2, Team.LIB)).toEqual(6);
+      expect(defaultActionService.numAliveOnTeam(game2, Team.FASC)).toEqual(4);
+      fasc1.alive = false;
+      lib1.alive = false;
+      fasc2.alive = false;
+      lib5.alive = false;
+      lib6.alive = false;
+
+      expect(defaultActionService.numAliveOnTeam(game2, Team.LIB)).toEqual(3);
+      expect(defaultActionService.numAliveOnTeam(game2, Team.FASC)).toEqual(2);
     });
   });
 
@@ -609,7 +731,7 @@ describe('DefaultActionService', () => {
       expect(
         defaultActionService.testProb(
           0.71,
-          game,
+          game2,
           'testName',
           DefaultAction.CHAN_CLAIM,
           'test',
@@ -622,12 +744,498 @@ describe('DefaultActionService', () => {
       expect(
         defaultActionService.testProb(
           0.69,
-          game,
+          game2,
           'testName',
           DefaultAction.CHAN_CLAIM,
           'test',
         ),
       ).toBe(false);
+    });
+  });
+
+  //still to test
+
+  describe('bothSidesOfAConflictShot', () => {
+    beforeEach(() => {
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: lib1.name,
+        type: Conf.INV,
+      });
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc2.name,
+        type: Conf.POLICY,
+      });
+    });
+
+    it('returns true if both sides of a conf are shot', () => {
+      fasc1.alive = false;
+      lib1.alive = false;
+      expect(defaultActionService.bothSidesOfAConflictShot(game2)).toBe(true);
+    });
+
+    it('returns false if both sides of a conf are not shot', () => {
+      fasc1.alive = false;
+      lib1.alive = true;
+      fasc2.alive = false;
+      expect(defaultActionService.bothSidesOfAConflictShot(game2)).toBe(false);
+    });
+  });
+
+  describe('confirmedLib', () => {
+    it('it determines confirmed lib in 5-6 player game with 2 confs', () => {
+      game2.players = players2.slice(0, 5);
+      expect(game2.players).toHaveLength(5);
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: lib1.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: hitler.name,
+        confee: lib2.name,
+        type: Conf.POLICY,
+      });
+      expect(defaultActionService.confirmedLib(game2, lib3)).toBe(true);
+      game2.players = players2.slice(0, 6);
+      expect(game2.players).toHaveLength(6);
+      expect(defaultActionService.confirmedLib(game2, lib3)).toBe(true);
+    });
+
+    it('it determines confirmed lib in 5-6 player game with 1 conf and cnh', () => {
+      game2.players = players2.slice(0, 5);
+      expect(game2.players).toHaveLength(5);
+      lib2.confirmedNotHitler = true;
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: lib1.name,
+        type: Conf.POLICY,
+      });
+      fasc1.alive = false;
+      lib1.alive = false;
+      expect(defaultActionService.confirmedLib(game2, lib2)).toBe(true);
+      game2.players = players2.slice(0, 6);
+      expect(game2.players).toHaveLength(6);
+      expect(defaultActionService.confirmedLib(game2, lib2)).toBe(true);
+    });
+
+    it('it determines NOT confirmed lib in 5-6 player game if conditions aren not met', () => {
+      game2.players = players2.slice(0, 5);
+
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: lib1.name,
+        type: Conf.POLICY,
+      });
+      expect(defaultActionService.confirmedLib(game2, lib2)).toBe(false);
+      game2.confs.push({
+        confer: hitler.name,
+        confee: lib2.name,
+        type: Conf.POLICY,
+      });
+      expect(defaultActionService.confirmedLib(game2, lib2)).toBe(false);
+
+      game2.confs = [];
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: lib1.name,
+        type: Conf.POLICY,
+      });
+      fasc1.alive = false;
+      lib1.alive = false;
+      lib2.confirmedNotHitler = false;
+      expect(defaultActionService.confirmedLib(game2, lib2)).toBe(false);
+    });
+
+    it('it determines NOT confirmed lib in 7 player game with confs and cnh', () => {
+      game2.players = players2.slice(0, 7);
+      lib2.confirmedNotHitler = true;
+      game2.confs.push({
+        confer: fasc1.name,
+        confee: lib1.name,
+        type: Conf.POLICY,
+      });
+      fasc1.alive = false;
+      lib1.alive = false;
+      expect(defaultActionService.confirmedLib(game2, lib2)).toBe(false);
+    });
+
+    it('it determines confirmed lib in 7-8 player game with 3 confs', () => {
+      game2.players = players2.slice(0, 7);
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc1.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: lib2.name,
+        confee: fasc2.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: hitler.name,
+        confee: lib3.name,
+        type: Conf.POLICY,
+      });
+      expect(defaultActionService.confirmedLib(game2, lib4)).toBe(true);
+      game2.players = players2.slice(0, 8);
+      expect(defaultActionService.confirmedLib(game2, lib5)).toBe(true);
+    });
+    it('it determines confirmed lib in 7-8 player game with 2 confs and inv lib', () => {
+      game2.players = players2.slice(0, 8);
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc1.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: lib2.name,
+        confee: fasc2.name,
+        type: Conf.POLICY,
+      });
+      game2.invClaims.push({
+        investigator: hitler.name,
+        investigatee: lib3.name,
+        claim: Team.LIB,
+      });
+      expect(defaultActionService.confirmedLib(game2, lib3)).toBe(true);
+    });
+    it('it determines NOT confirmed lib in 7-8 player game with 2 confs and inv lib from someone in conf', () => {
+      game2.players = players2.slice(0, 8);
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc1.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: lib2.name,
+        confee: fasc2.name,
+        type: Conf.POLICY,
+      });
+      game2.invClaims.push({
+        investigator: lib1.name,
+        investigatee: lib3.name,
+        claim: Team.LIB,
+      });
+      expect(defaultActionService.confirmedLib(game2, lib3)).toBe(false);
+    });
+    it('it determines confirmed lib in 9-10 player game with 4 confs', () => {
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc1.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: lib2.name,
+        confee: fasc2.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: lib3.name,
+        confee: lib3.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: hitler.name,
+        confee: lib4.name,
+        type: Conf.POLICY,
+      });
+
+      expect(defaultActionService.confirmedLib(game2, lib5)).toBe(true);
+    });
+    it('it determines confirmed lib in 9-10 player game with 2 confs and lib chain of two', () => {
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc1.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: lib2.name,
+        confee: fasc2.name,
+        type: Conf.POLICY,
+      });
+      game2.invClaims.push({
+        investigator: hitler.name,
+        investigatee: lib3.name,
+        claim: Team.LIB,
+      });
+      game2.invClaims.push({
+        investigator: lib3.name,
+        investigatee: lib4.name,
+        claim: Team.LIB,
+      });
+
+      expect(defaultActionService.confirmedLib(game2, lib4)).toBe(true);
+    });
+
+    it('it determines confirmed lib FROM HITLER POV in 9-10 player game with 3 confs', () => {
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc1.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: lib2.name,
+        confee: fasc2.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: lib3.name,
+        confee: lib3.name,
+        type: Conf.POLICY,
+      });
+
+      expect(defaultActionService.confirmedLib(game2, lib4, true)).toBe(true);
+    });
+    it('it determines confirmed lib FROM HITLER POV in 9-10 player game with 2 confs and hitler inv lib', () => {
+      game2.confs.push({
+        confer: lib1.name,
+        confee: fasc1.name,
+        type: Conf.POLICY,
+      });
+      game2.confs.push({
+        confer: lib2.name,
+        confee: fasc2.name,
+        type: Conf.POLICY,
+      });
+      game2.invClaims.push({
+        investigator: fasc3.name,
+        investigatee: hitler.name,
+        claim: Team.LIB,
+      });
+
+      expect(defaultActionService.confirmedLib(game2, lib3, true)).toBe(true);
+      expect(defaultActionService.confirmedLib(game2, lib4, true)).toBe(true);
+      expect(defaultActionService.confirmedLib(game2, lib5, true)).toBe(true);
+      expect(defaultActionService.confirmedLib(game2, lib6, true)).toBe(true);
+    });
+  });
+
+  describe('presAgainWithoutTopDeck', () => {
+    it('determines if you can get back to current pres in a small game without SE', () => {
+      game2.players = players2.slice(0, 5);
+      expect(game2.players).toHaveLength(5);
+      game2.presIdx = 0;
+      game2.currentPres = game2.players[0].name;
+      game2.players[1].alive = false;
+      game2.players[2].alive = false;
+      //down to 3 players
+      expect(defaultActionService.presAgainWithoutTopDeck(game2)).toBe(true);
+      game2.players[2].alive = true;
+      expect(defaultActionService.presAgainWithoutTopDeck(game2)).toBe(false);
+    });
+
+    it('determines if you can get back to current pres from SE', () => {
+      game2.players = players2.slice(0, 7);
+      expect(game2.players).toHaveLength(7);
+      game2.presIdx = 3;
+      game2.currentPres = game2.players[0].name;
+      game2.players[1].alive = true;
+      game2.players[2].alive = true;
+      game2.players[6].alive = false;
+      expect(defaultActionService.presAgainWithoutTopDeck(game2)).toBe(true);
+      game2.players[6].alive = true;
+      expect(defaultActionService.presAgainWithoutTopDeck(game2)).toBe(false);
+    });
+  });
+
+  describe('knownFascistToHitler', () => {
+    it('recognizing a fascist from hitler investigating', () => {
+      game2.invClaims.push({
+        investigator: hitler.name,
+        investigatee: fasc1.name,
+        claim: Team.FASC,
+      });
+      expect(logicService.getHitler(game2).name).toBe(hitler.name);
+      expect(defaultActionService.knownFascistToHitler(game2, fasc1)).toBe(
+        true,
+      );
+    });
+    it('recognizes a fascist from fascist investigating hitler lib', () => {
+      game2.invClaims.push({
+        investigator: fasc1.name,
+        investigatee: hitler.name,
+        claim: Team.LIB,
+      });
+      expect(defaultActionService.knownFascistToHitler(game2, fasc1)).toBe(
+        true,
+      );
+    });
+    it('does not recognize a fascist from fascist investigating hitler fasc', () => {
+      game2.invClaims.push({
+        investigator: fasc1.name,
+        investigatee: hitler.name,
+        claim: Team.FASC,
+      });
+      expect(defaultActionService.knownFascistToHitler(game2, fasc1)).toBe(
+        false,
+      );
+    });
+    it('recognizes a fascist from fascist chan changing the claim', () => {
+      game2.govs = [
+        new GovMockFactory().create({
+          pres: hitler.name,
+          chan: fasc1.name,
+          chanCards: [B, B],
+          chanClaim: CHAN2.RB,
+        }),
+      ];
+      expect(defaultActionService.knownFascistToHitler(game2, fasc1)).toBe(
+        true,
+      );
+      game2.govs = [
+        new GovMockFactory().create({
+          pres: hitler.name,
+          chan: fasc1.name,
+          chanCards: [R, B],
+          chanClaim: CHAN2.RR,
+        }),
+      ];
+      expect(defaultActionService.knownFascistToHitler(game2, fasc1)).toBe(
+        true,
+      );
+    });
+
+    it('does not recognize a fascist from fascist chan not changing the claim', () => {
+      game2.govs = [
+        new GovMockFactory().create({
+          pres: hitler.name,
+          chan: fasc1.name,
+          chanCards: [B, B],
+          chanClaim: CHAN2.BB,
+        }),
+      ];
+      expect(defaultActionService.knownFascistToHitler(game2, fasc1)).toBe(
+        false,
+      );
+    });
+
+    it('does not recognize a fascist from different player changing claim', () => {
+      game2.govs = [
+        new GovMockFactory().create({
+          pres: hitler.name,
+          chan: fasc1.name,
+          chanCards: [B, B],
+          chanClaim: CHAN2.RB,
+        }),
+      ];
+      game2.govs = [
+        new GovMockFactory().create({
+          pres: fasc2.name,
+          chan: fasc1.name,
+          chanCards: [B, B],
+          chanClaim: CHAN2.RB,
+        }),
+      ];
+      expect(defaultActionService.knownFascistToHitler(game2, fasc2)).toBe(
+        false,
+      );
+    });
+
+    describe('knownLibToHitler', () => {
+      it('determines known lib to hitler if two conflicts', () => {
+        game2.players = players2.slice(0, 7);
+        game2.confs.push({
+          confer: lib1.name,
+          confee: fasc1.name,
+          type: Conf.POLICY,
+        });
+        game2.confs.push({
+          confer: fasc2.name,
+          confee: lib2.name,
+          type: Conf.INV,
+        });
+        expect(defaultActionService.knownLibToHitler(game2, lib3)).toBe(true);
+        expect(defaultActionService.knownLibToHitler(game2, lib4)).toBe(true);
+      });
+
+      it('does not determines known lib to hitler if not enough confs or player already in a conf', () => {
+        game2.players = players2.slice(0, 7);
+
+        game2.confs.push({
+          confer: lib1.name,
+          confee: fasc1.name,
+          type: Conf.POLICY,
+        });
+        expect(defaultActionService.knownLibToHitler(game2, lib3)).toBe(false);
+        game2.confs.push({
+          confer: fasc1.name,
+          confee: lib2.name,
+          type: Conf.INV,
+        });
+
+        expect(defaultActionService.knownLibToHitler(game2, lib4)).toBe(false);
+      });
+
+      it('does not determine confirmed lib if hitler is the one in conf', () => {
+        game2.players = players2.slice(0, 7);
+        game2.confs.push({
+          confer: lib1.name,
+          confee: hitler.name,
+          type: Conf.POLICY,
+        });
+        game2.confs.push({
+          confer: fasc2.name,
+          confee: lib2.name,
+          type: Conf.INV,
+        });
+        expect(defaultActionService.knownLibToHitler(game2, lib3)).toBe(false);
+      });
+    });
+
+    describe('nChooseR', () => {
+      it('properlyCalculates n choose r', () => {
+        expect(defaultActionService.nChooseR(5, 2)).toEqual(10);
+        expect(defaultActionService.nChooseR(4, 1)).toEqual(4);
+        expect(defaultActionService.nChooseR(12, 12)).toEqual(1);
+      });
+    });
+
+    describe('probabilityOfDrawingBlues', () => {
+      it('properlyCalculates each blue prob', () => {
+        defaultActionService.bluesToBeginTheDeck = () => 3;
+        game2.drawPileState = [B, B, B, R, R, R, R, R, R, R, R, R];
+        let blueProbs = defaultActionService.probabilityofDrawingBlues(game2);
+        expect(blueProbs[0]).toEqual(21 / 55);
+        game2.drawPileState = [B, R, R, R];
+
+        defaultActionService.bluesToBeginTheDeck = () => 1;
+        blueProbs = defaultActionService.probabilityofDrawingBlues(game2);
+        expect(blueProbs[0]).toEqual(0.25);
+        expect(blueProbs[1]).toEqual(0.75);
+        expect(blueProbs[2]).toEqual(0);
+        expect(blueProbs[3]).toEqual(0);
+
+        game2.drawPileState = [];
+        let blues: number;
+        game2.drawPileState = [];
+        for (blues = 0; blues < 2; blues++) {
+          game2.drawPileState.push(B);
+        }
+        for (let reds = 0; reds < 9; reds++) {
+          game2.drawPileState.push(R);
+        }
+
+        defaultActionService.bluesToBeginTheDeck = () => blues;
+        blueProbs = defaultActionService.probabilityofDrawingBlues(game2);
+        const EV = defaultActionService.expectedValueOfBlues(game2);
+      });
+    });
+
+    describe('expectedValueOfBlues', () => {
+      it('properly calculates EV', () => {
+        defaultActionService.bluesToBeginTheDeck = () => 3;
+        game2.drawPileState = [B, B, B, R, R, R, R, R, R, R, R, R];
+        let blueProbs = defaultActionService.probabilityofDrawingBlues(game2);
+        let EV = defaultActionService.expectedValueOfBlues(game2);
+        expect(EV).toEqual(blueProbs[1] + 2 * blueProbs[2] + 3 * blueProbs[3]);
+
+        game2.drawPileState = [B, R, R, R];
+        defaultActionService.bluesToBeginTheDeck = () => 1;
+        EV = defaultActionService.expectedValueOfBlues(game2);
+        expect(EV).toEqual(0.75);
+      });
     });
   });
 
@@ -2450,616 +3058,6 @@ describe('DefaultActionService', () => {
     //   [fascFascConfProb] = defaultActionService.getPresClaimWithFascProbs(game);
     //   expect(fascFascConfProb).toEqual(0);
     // });
-  });
-
-  describe('bothSidesOfAConflictShot', () => {
-    beforeEach(() => {
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-2',
-        type: Conf.INV,
-      });
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-    });
-
-    it('returns true if both sides of a conf are shot', () => {
-      player1.alive = false;
-      player2.alive = false;
-      expect(defaultActionService.bothSidesOfAConflictShot(game)).toBe(true);
-    });
-
-    it('returns false if both sides of a conf are not shot', () => {
-      player1.alive = false;
-      player2.alive = true;
-      player3.alive = false;
-      expect(defaultActionService.bothSidesOfAConflictShot(game)).toBe(false);
-    });
-  });
-
-  // describe('minimumNumberOfFascFromConfs', () => {
-  //   beforeEach(() => {
-  //     game.players = [];
-  //     for (let i = 1; i < 10; i++) {
-  //       game.players.push(
-  //         new PlayerMockFactory().create({ name: `player-${i}` }),
-  //       );
-  //     }
-  //     game.confs = [];
-  //     game.invClaims = [];
-  //     game.confs.push({
-  //       confer: 'player-1',
-  //       confee: 'player-2',
-  //       type: Conf.INV,
-  //     });
-  //   });
-
-  //   it('returns 2 in a 3 way conf', () => {
-  //     game.confs.push({
-  //       confer: 'player-2',
-  //       confee: 'player-3',
-  //       type: Conf.POLICY,
-  //     });
-  //     game.confs.push({
-  //       confer: 'player-1',
-  //       confee: 'player-3',
-  //       type: Conf.POLICY,
-  //     });
-  //     expect(defaultActionService.minimumNumberOfFascFromConfs(game)).toEqual(
-  //       2,
-  //     );
-  //   });
-
-  //   it('returns correct for distinct pairs', () => {
-  //     game.confs.push({
-  //       confer: 'player-3',
-  //       confee: 'player-4',
-  //       type: Conf.POLICY,
-  //     });
-  //     game.confs.push({
-  //       confer: 'player-5',
-  //       confee: 'player-6',
-  //       type: Conf.POLICY,
-  //     });
-  //     expect(defaultActionService.minimumNumberOfFascFromConfs(game)).toEqual(
-  //       3,
-  //     );
-  //   });
-  //   it('returns correct for nondistinct pairs', () => {
-  //     game.confs.push({
-  //       confer: 'player-2',
-  //       confee: 'player-3',
-  //       type: Conf.POLICY,
-  //     });
-  //     game.confs.push({
-  //       confer: 'player-5',
-  //       confee: 'player-6',
-  //       type: Conf.POLICY,
-  //     });
-
-  //     expect(defaultActionService.minimumNumberOfFascFromConfs(game)).toEqual(
-  //       2,
-  //     );
-  //   });
-  // });
-
-  describe('confirmedLib', () => {
-    let player1: Player;
-    let player2: Player;
-    let player3: Player;
-
-    beforeEach(() => {
-      game.players = [];
-      for (let i = 1; i <= 10; i++) {
-        game.players.push(
-          new PlayerMockFactory().create({ name: `player-${i}` }),
-        );
-      }
-      player1 = game.players.find((player) => player.name === 'player-1');
-      player2 = game.players.find((player) => player.name === 'player-2');
-      player3 = game.players.find((player) => player.name === 'player-3');
-
-      player1.team = Team.LIB;
-      game.confs = [];
-      game.invClaims = [];
-    });
-
-    it('it determines confirmed lib in 5-6 player game with 2 confs', () => {
-      game.players = game.players.slice(0, 6);
-      expect(game.players).toHaveLength(6);
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-4',
-        confee: 'player-5',
-        type: Conf.POLICY,
-      });
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(true);
-    });
-
-    it('it determines confirmed lib in 5-6 player game with 1 conf and cnh', () => {
-      game.players = game.players.slice(0, 6);
-      expect(game.players).toHaveLength(6);
-      player1.confirmedNotHitler = true;
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      player2.alive = false;
-      player3.alive = false;
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(true);
-    });
-
-    it('it determines NOT confirmed lib in 5-6 player game if conditions aren not met', () => {
-      game.players = game.players.slice(0, 6);
-
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(false);
-      game.confs.push({
-        confer: 'player-1',
-        confee: 'player-4',
-        type: Conf.POLICY,
-      });
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(false);
-
-      game.confs = [];
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      player2.alive = false;
-      player3.alive = false;
-      player1.confirmedNotHitler = false;
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(false);
-    });
-
-    it('it determines NOT confirmed lib in 7 player game with confs and cnh', () => {
-      game.players = game.players.slice(0, 7);
-      player1.confirmedNotHitler = true;
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      player2.alive = false;
-      player3.alive = false;
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(false);
-    });
-
-    it('it determines confirmed lib in 7-8 player game with 3 confs', () => {
-      game.players = game.players.slice(0, 7);
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-4',
-        confee: 'player-5',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-6',
-        confee: 'player-7',
-        type: Conf.POLICY,
-      });
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(true);
-    });
-    it('it determines confirmed lib in 7-8 player game with 2 confs and inv lib', () => {
-      game.players = game.players.slice(0, 8);
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-4',
-        confee: 'player-5',
-        type: Conf.POLICY,
-      });
-      game.invClaims.push({
-        investigator: 'player-6',
-        investigatee: 'player-1',
-        claim: Team.LIB,
-      });
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(true);
-    });
-    it('it determines NOT confirmed lib in 7-8 player game with 2 confs and inv lib from someone in conf', () => {
-      game.players = game.players.slice(0, 8);
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-4',
-        confee: 'player-5',
-        type: Conf.POLICY,
-      });
-      game.invClaims.push({
-        investigator: 'player-2',
-        investigatee: 'player-1',
-        claim: Team.LIB,
-      });
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(false);
-    });
-    it('it determines confirmed lib in 9-10 player game with 4 confs', () => {
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-4',
-        confee: 'player-5',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-6',
-        confee: 'player-7',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-8',
-        confee: 'player-9',
-        type: Conf.POLICY,
-      });
-
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(true);
-    });
-    it('it determines confirmed lib in 9-10 player game with 2 confs and lib chain of two', () => {
-      game.confs.push({
-        confer: 'player-2',
-        confee: 'player-3',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-4',
-        confee: 'player-5',
-        type: Conf.POLICY,
-      });
-      game.invClaims.push({
-        investigator: 'player-6',
-        investigatee: 'player-1',
-        claim: Team.LIB,
-      });
-      game.invClaims.push({
-        investigator: 'player-7',
-        investigatee: 'player-6',
-        claim: Team.LIB,
-      });
-
-      expect(defaultActionService.confirmedLib(game, player1)).toBe(true);
-    });
-
-    it('it determines confirmed lib FROM HITLER POV in 9-10 player game with 3 confs', () => {
-      player2.role = Role.HITLER;
-      game.players[0].team = Team.LIB;
-      game.players[1].team = Team.FASC;
-      game.players[2].team = Team.FASC;
-      game.players[3].team = Team.LIB;
-      game.players[4].team = Team.FASC;
-      game.players[5].team = Team.LIB;
-      game.players[6].team = Team.FASC;
-      game.players[7].team = Team.LIB;
-      game.players[8].team = Team.LIB;
-      game.players[9].team = Team.LIB;
-      game.confs.push({
-        confer: 'player-3',
-        confee: 'player-4',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-5',
-        confee: 'player-6',
-        type: Conf.POLICY,
-      });
-      game.invClaims.push({
-        investigator: 'player-7',
-        investigatee: 'player-8',
-        claim: Team.FASC,
-      });
-
-      expect(defaultActionService.confirmedLib(game, player1, true)).toBe(true);
-    });
-    it('it determines confirmed lib FROM HITLER POV in 9-10 player game with 2 confs and hitler inv lib', () => {
-      player2.role = Role.HITLER;
-      game.players[0].team = Team.LIB;
-      game.players[1].team = Team.FASC;
-      game.players[2].team = Team.FASC;
-      game.players[3].team = Team.LIB;
-      game.players[4].team = Team.FASC;
-      game.players[5].team = Team.LIB;
-      game.players[6].team = Team.FASC;
-      game.players[7].team = Team.LIB;
-      game.players[8].team = Team.LIB;
-      game.players[9].team = Team.LIB;
-      game.confs.push({
-        confer: 'player-3',
-        confee: 'player-4',
-        type: Conf.POLICY,
-      });
-      game.confs.push({
-        confer: 'player-5',
-        confee: 'player-6',
-        type: Conf.POLICY,
-      });
-      game.invClaims.push({
-        investigator: 'player-7',
-        investigatee: 'player-2',
-        claim: Team.LIB,
-      });
-
-      expect(defaultActionService.confirmedLib(game, player1, true)).toBe(true);
-    });
-  });
-
-  describe('presAgainWithoutTopDeck', () => {
-    it('determines if you can get back to current pres in a small game without SE', () => {
-      expect(game.players).toHaveLength(5);
-      game.presIdx = 0;
-      game.currentPres == 'player-1';
-      player2.alive = false;
-      player3.alive = false;
-      //down to 3 players
-      expect(defaultActionService.presAgainWithoutTopDeck(game)).toBe(true);
-    });
-
-    it('determines if you can get back to current pres from SE', () => {
-      for (let i = 6; i < 8; i++) {
-        game.players.push(
-          new PlayerMockFactory().create({ name: `player-${i}` }),
-        );
-      }
-      expect(game.players).toHaveLength(7);
-      game.presIdx = 3;
-      game.currentPres == 'player-1';
-      player2.alive = true;
-      player3.alive = true;
-      game.players[6].alive = false;
-      expect(defaultActionService.presAgainWithoutTopDeck(game)).toBe(true);
-    });
-  });
-
-  describe('knownFascistToHitler', () => {
-    beforeEach(() => {
-      game.invClaims = [];
-    });
-    it('recognizing a fascist from hitler investigating', () => {
-      expect(game.players).toHaveLength(5);
-      game.invClaims.push({
-        investigator: 'player-3',
-        investigatee: 'player-2',
-        claim: Team.FASC,
-      });
-      expect(logicService.getHitler(game).name).toBe('player-3');
-      expect(defaultActionService.knownFascistToHitler(game, player2)).toBe(
-        true,
-      );
-    });
-    it('recognizing a fascist from fascist investigating hitler lib', () => {
-      expect(game.players).toHaveLength(5);
-      game.invClaims.push({
-        investigator: 'player-2',
-        investigatee: 'player-3',
-        claim: Team.LIB,
-      });
-      expect(logicService.getHitler(game).name).toBe('player-3');
-      expect(defaultActionService.knownFascistToHitler(game, player2)).toBe(
-        true,
-      );
-    });
-    it('does not recognize a fascist from fascist investigating hitler fasc', () => {
-      expect(game.players).toHaveLength(5);
-      game.invClaims.push({
-        investigator: 'player-2',
-        investigatee: 'player-3',
-        claim: Team.FASC,
-      });
-      expect(logicService.getHitler(game).name).toBe('player-3');
-      expect(defaultActionService.knownFascistToHitler(game, player2)).toBe(
-        false,
-      );
-    });
-    it('recognizes a fascist from fascist chan changing the claim', () => {
-      expect(game.players).toHaveLength(5);
-      game.govs = [
-        new GovMockFactory().create({
-          pres: 'player-3',
-          chan: 'player-2',
-          chanCards: [B, B],
-          chanClaim: CHAN2.RB,
-        }),
-      ];
-      expect(logicService.getHitler(game).name).toBe('player-3');
-      expect(defaultActionService.knownFascistToHitler(game, player2)).toBe(
-        true,
-      );
-      game.govs = [
-        new GovMockFactory().create({
-          pres: 'player-3',
-          chan: 'player-2',
-          chanCards: [R, B],
-          chanClaim: CHAN2.RR,
-        }),
-      ];
-      expect(defaultActionService.knownFascistToHitler(game, player2)).toBe(
-        true,
-      );
-    });
-
-    it('does not recognize a fascist from fascist chan not changing the claim', () => {
-      game.govs = [
-        new GovMockFactory().create({
-          pres: 'player-3',
-          chan: 'player-2',
-          chanCards: [B, B],
-          chanClaim: CHAN2.BB,
-        }),
-      ];
-      expect(defaultActionService.knownFascistToHitler(game, player2)).toBe(
-        false,
-      );
-    });
-
-    it('does not recognize a fascist from different player changing claim', () => {
-      game.govs = [
-        new GovMockFactory().create({
-          pres: 'player-3',
-          chan: 'player-2',
-          chanCards: [B, B],
-          chanClaim: CHAN2.RB,
-        }),
-      ];
-      game.govs = [
-        new GovMockFactory().create({
-          pres: 'player-2',
-          chan: 'player-1',
-          chanCards: [B, B],
-          chanClaim: CHAN2.RB,
-        }),
-      ];
-      expect(defaultActionService.knownFascistToHitler(game, player1)).toBe(
-        false,
-      );
-    });
-
-    describe('knownLibToHitler', () => {
-      beforeEach(() => {
-        game.players = [];
-        for (let i = 1; i <= 7; i++) {
-          game.players.push(
-            new PlayerMockFactory().create({
-              name: `player-${i}`,
-              team: i <= 3 ? Team.FASC : Team.LIB,
-              role: i === 1 ? Role.HITLER : i <= 3 ? Role.FASC : Role.LIB,
-            }),
-          );
-        }
-      });
-
-      it('determines known lib to hitler', () => {
-        game.confs.push({
-          confer: 'player-2',
-          confee: 'player-5',
-          type: Conf.POLICY,
-        });
-        game.confs.push({
-          confer: 'player-3',
-          confee: 'player-6',
-          type: Conf.INV,
-        });
-        expect(
-          defaultActionService.knownLibToHitler(game, game.players[3]),
-        ).toBe(true);
-        expect(
-          defaultActionService.knownLibToHitler(game, game.players[6]),
-        ).toBe(true);
-      });
-
-      it('does not determines known lib to hitler if not enough confs or player already in a conf', () => {
-        game.confs.push({
-          confer: 'player-2',
-          confee: 'player-5',
-          type: Conf.POLICY,
-        });
-        expect(
-          defaultActionService.knownLibToHitler(game, game.players[3]),
-        ).toBe(false);
-        game.confs.push({
-          confer: 'player-3',
-          confee: 'player-6',
-          type: Conf.INV,
-        });
-        expect(
-          defaultActionService.knownLibToHitler(game, game.players[5]),
-        ).toBe(false);
-      });
-
-      it('does not determine confirmed lib if hitler in conf', () => {
-        game.confs.push({
-          confer: 'player-1',
-          confee: 'player-4',
-          type: Conf.POLICY,
-        });
-        game.confs.push({
-          confer: 'player-2',
-          confee: 'player-5',
-          type: Conf.INV,
-        });
-        expect(
-          defaultActionService.knownLibToHitler(game, game.players[6]),
-        ).toBe(false);
-      });
-    });
-
-    describe('nChooseR', () => {
-      it('properlyCalculates n choose r', () => {
-        expect(defaultActionService.nChooseR(5, 2)).toEqual(10);
-        expect(defaultActionService.nChooseR(4, 1)).toEqual(4);
-        expect(defaultActionService.nChooseR(12, 12)).toEqual(1);
-      });
-    });
-
-    describe('probabilityOfDrawingBlues', () => {
-      it('properlyCalculates each blue prob', () => {
-        defaultActionService.bluesToBeginTheDeck = () => 3;
-        game.drawPileState = [B, B, B, R, R, R, R, R, R, R, R, R];
-        let blueProbs = defaultActionService.probabilityofDrawingBlues(game);
-        expect(blueProbs[0]).toEqual(21 / 55);
-        game.drawPileState = [B, R, R, R];
-
-        defaultActionService.bluesToBeginTheDeck = () => 1;
-        blueProbs = defaultActionService.probabilityofDrawingBlues(game);
-        expect(blueProbs[0]).toEqual(0.25);
-        expect(blueProbs[1]).toEqual(0.75);
-        expect(blueProbs[2]).toEqual(0);
-        expect(blueProbs[3]).toEqual(0);
-
-        game.drawPileState = [];
-        let blues: number;
-        game.drawPileState = [];
-        for (blues = 0; blues < 2; blues++) {
-          game.drawPileState.push(B);
-        }
-        for (let reds = 0; reds < 9; reds++) {
-          game.drawPileState.push(R);
-        }
-
-        defaultActionService.bluesToBeginTheDeck = () => blues;
-        blueProbs = defaultActionService.probabilityofDrawingBlues(game);
-        const EV = defaultActionService.expectedValueOfBlues(game);
-        console.log(blueProbs);
-        console.log(EV);
-      });
-    });
-
-    describe('expectedValueOfBlues', () => {
-      it('properly calculates EV', () => {
-        defaultActionService.bluesToBeginTheDeck = () => 3;
-        game.drawPileState = [B, B, B, R, R, R, R, R, R, R, R, R];
-        let blueProbs = defaultActionService.probabilityofDrawingBlues(game);
-        let EV = defaultActionService.expectedValueOfBlues(game);
-        expect(EV).toEqual(blueProbs[1] + 2 * blueProbs[2] + 3 * blueProbs[3]);
-
-        game.drawPileState = [B, R, R, R];
-        defaultActionService.bluesToBeginTheDeck = () => 1;
-        EV = defaultActionService.expectedValueOfBlues(game);
-        expect(EV).toEqual(0.75);
-      });
-    });
   });
 });
 
