@@ -140,6 +140,8 @@ describe('DefaultActionService', () => {
       lib6,
     ];
     game2 = new GameMockFactory().create({ players: players2 });
+    game2.currentPres = lib1.name;
+    game2.currentChan = fasc1.name;
   });
 
   describe('determinePresCards', () => {
@@ -1249,131 +1251,130 @@ describe('DefaultActionService', () => {
     beforeEach(() => {
       jest.spyOn(logicService, 'inspect3').mockImplementation(() => cards3);
       defaultActionService.getInspect3ClaimProbs = () => [1, 1];
-      player1.team = Team.FASC;
-      player2.team = Team.LIB;
     });
 
-    it('returns RBB if testProb is met for RRR', () => {
-      game.currentPres = 'player-1';
-      // testProb = 0.001;
+    it('returns RBB if testProb is met for RRR as a fasc', () => {
+      game2.currentPres = fasc1.name;
       cards3 = [R, R, R];
-      let claim = defaultActionService.defaultInspect3Claim(game);
+      let claim = defaultActionService.defaultInspect3Claim(game2);
       expect(claim).toBe(PRES3.RBB);
       cards3 = [R, R, B];
-      claim = defaultActionService.defaultInspect3Claim(game);
-      expect(claim).toBe(PRES3.RRB);
-      game.currentPres = 'player-2';
-      claim = defaultActionService.defaultInspect3Claim(game);
+      claim = defaultActionService.defaultInspect3Claim(game2);
       expect(claim).toBe(PRES3.RRB);
     });
 
-    it('returns RBB if testProb is met for BBB case', () => {
-      game.currentPres = 'player-1';
+    it('returns RBB if testProb is met for BBB case as a fasc', () => {
+      game2.currentPres = fasc1.name;
       cards3 = [B, B, B];
-      let claim = defaultActionService.defaultInspect3Claim(game);
+      let claim = defaultActionService.defaultInspect3Claim(game2);
       expect(claim).toBe(PRES3.RBB);
     });
 
     it('returns truth on RBB', () => {
-      game.currentPres = 'player-1';
+      game2.currentPres = fasc1.name;
       cards3 = [R, B, B];
-      let claim = defaultActionService.defaultInspect3Claim(game);
+      let claim = defaultActionService.defaultInspect3Claim(game2);
       expect(claim).toBe(PRES3.RBB);
     });
 
     it('returns truth if lib', () => {
-      game.currentPres = 'player-2';
+      game2.currentPres = lib1.name;
       cards3 = [R, R, R];
-      let claim = defaultActionService.defaultInspect3Claim(game);
+      let claim = defaultActionService.defaultInspect3Claim(game2);
       expect(claim).toBe(PRES3.RRR);
       cards3 = [R, R, B];
-      claim = defaultActionService.defaultInspect3Claim(game);
+      claim = defaultActionService.defaultInspect3Claim(game2);
       expect(claim).toBe(PRES3.RRB);
       cards3 = [R, B, B];
-      claim = defaultActionService.defaultInspect3Claim(game);
+      claim = defaultActionService.defaultInspect3Claim(game2);
       expect(claim).toBe(PRES3.RBB);
       cards3 = [B, B, B];
-      claim = defaultActionService.defaultInspect3Claim(game);
+      claim = defaultActionService.defaultInspect3Claim(game2);
       expect(claim).toBe(PRES3.BBB);
     });
   });
 
-  describe('defaultInspect3Claim', () => {
+  describe('getInspect3ClaimProbs', () => {
     let cards3: Card[];
-    let blueCount: number;
-    let bluesEnactedInDeck: number;
-    let bluesToBeginTheDeck: number;
+
     beforeEach(() => {
       jest.spyOn(logicService, 'inspect3').mockImplementation(() => cards3);
-
-      defaultActionService.blueCountOnThisDeck = () => blueCount;
-      defaultActionService.bluesEnactedInDeck = () => bluesEnactedInDeck;
-      defaultActionService.bluesToBeginTheDeck = () => bluesToBeginTheDeck;
-      player1.team = Team.FASC;
-      player2.team = Team.LIB;
-      cards3 = [R, R, B];
     });
 
-    it('underclaims BBB with prob 1', () => {
+    it('underclaims BBB with prob 1 for vanilla fasc and hitler', () => {
       cards3 = [B, B, B];
-      game.currentPres = 'player-1';
-      const [, underclaimBBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
+      game2.currentPres = fasc1.name;
+      let [, underclaimBBBInspect3Prob] =
+        defaultActionService.getInspect3ClaimProbs(game2);
+      expect(underclaimBBBInspect3Prob).toEqual(1);
+      game2.currentPres = hitler.name;
+      [, underclaimBBBInspect3Prob] =
+        defaultActionService.getInspect3ClaimProbs(game2);
       expect(underclaimBBBInspect3Prob).toEqual(1);
     });
 
-    it('overclaims RRR with prob .6', () => {
-      blueCount = 1;
-      bluesToBeginTheDeck = 3;
-      game.currentPres = 'player-1';
-      cards3 = [R, R, R];
+    it('overclaims RRR prob .6 if pres if at least 2 blues in deck', () => {
+      defaultActionService.probabilityofDrawingBlues = () => [
+        0.25, 0.74, 0.01, 0,
+      ];
+      game2.currentPres = fasc1.name;
       let [overclaimToBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
+        defaultActionService.getInspect3ClaimProbs(game2);
       expect(overclaimToBBInspect3Prob).toEqual(0.6);
     });
 
     it('does not overclaim RRR if pres is hitler or not 2 blues in deck', () => {
       defaultActionService.probabilityofDrawingBlues = () => [0.25, 0.75, 0, 0];
-      game.currentPres = 'player-3';
+      game2.currentPres = fasc1.name;
       let [overclaimToBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
+        defaultActionService.getInspect3ClaimProbs(game2);
       expect(overclaimToBBInspect3Prob).toEqual(0);
-      game.currentPres = 'player-1';
-      blueCount = 5;
-      bluesToBeginTheDeck = 6;
+      game2.currentPres = hitler.name;
+      defaultActionService.probabilityofDrawingBlues = () => [0.25, 0.75, 1, 0];
       [overclaimToBBInspect3Prob] =
-        defaultActionService.getInspect3ClaimProbs(game);
+        defaultActionService.getInspect3ClaimProbs(game2);
       expect(overclaimToBBInspect3Prob).toEqual(0);
     });
   });
 
   describe('defaultVetoReply', () => {
     it('accepts veto on RR as a lib', () => {
-      game.currentPres = 'player-1';
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultVetoReply(game)).toBe(true);
+      game2.currentPres = lib1.name;
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultVetoReply(game2)).toBe(true);
     });
 
     it('rejects veto on RB or BB as a lib', () => {
-      game.currentPres = 'player-1';
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultVetoReply(game)).toBe(false);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultVetoReply(game)).toBe(false);
+      game2.currentPres = lib1.name;
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultVetoReply(game2)).toBe(false);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultVetoReply(game2)).toBe(false);
     });
 
     it('rejects veto on RR and RB as a fasc', () => {
-      game.currentPres = 'player-2';
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultVetoReply(game)).toBe(false);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultVetoReply(game)).toBe(false);
+      game2.currentPres = fasc1.name;
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultVetoReply(game2)).toBe(false);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultVetoReply(game2)).toBe(false);
     });
 
-    it('accepts veto on BB as a fasc', () => {
-      game.currentPres = 'player-2';
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultVetoReply(game)).toBe(true);
+    it('rejects veto on RR and RB as hitler', () => {
+      game2.currentPres = hitler.name;
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultVetoReply(game2)).toBe(false);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultVetoReply(game2)).toBe(false);
+    });
+
+    it('accepts veto on BB as a fasc or hitler', () => {
+      game2.currentPres = fasc1.name;
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultVetoReply(game2)).toBe(true);
+      game2.currentPres = hitler.name;
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultVetoReply(game2)).toBe(true);
     });
   });
 
@@ -1383,29 +1384,28 @@ describe('DefaultActionService', () => {
       jest
         .spyOn(defaultActionService, 'testProb')
         .mockImplementation(() => true);
+      game2.currentChan = lib1.name;
     });
 
     it('tells the truth as a lib', () => {
-      game.currentPres = 'player-1';
-      player1.investigations.push('player-2');
-      expect(logicService.getCurrentPres(game).team).toBe(Team.LIB);
-      expect(defaultActionService.defaultInvClaim(game)).toBe(Team.FASC);
-      player1.investigations.push('player-1');
-      expect(defaultActionService.defaultInvClaim(game)).toBe(Team.LIB);
-      player1.investigations.push('player-3');
-      expect(defaultActionService.defaultInvClaim(game)).toBe(Team.FASC);
+      game2.currentPres = lib1.name;
+      lib1.investigations.push(fasc1.name);
+      expect(defaultActionService.defaultInvClaim(game2)).toBe(Team.FASC);
+      lib1.investigations.push(lib2.name);
+      expect(defaultActionService.defaultInvClaim(game2)).toBe(Team.LIB);
+      lib1.investigations.push(hitler.name);
+      expect(defaultActionService.defaultInvClaim(game2)).toBe(Team.FASC);
       expect(defaultActionService.testProb).toBeCalledTimes(0);
     });
 
     it('confs based on test prob as a fasc', () => {
-      game.currentPres = 'player-3';
-      player3.investigations.push('player-2');
-      expect(logicService.getCurrentPres(game).team).toBe(Team.FASC);
-      expect(defaultActionService.defaultInvClaim(game)).toBe(Team.FASC);
-      player3.investigations.push('player-1');
-      expect(defaultActionService.defaultInvClaim(game)).toBe(Team.FASC);
-      player3.investigations.push('player-3');
-      expect(defaultActionService.defaultInvClaim(game)).toBe(Team.FASC);
+      game2.currentPres = fasc1.name;
+      fasc1.investigations.push(lib1.name);
+      expect(defaultActionService.defaultInvClaim(game2)).toBe(Team.FASC);
+      fasc1.investigations.push(fasc2.name);
+      expect(defaultActionService.defaultInvClaim(game2)).toBe(Team.FASC);
+      fasc1.investigations.push(hitler.name);
+      expect(defaultActionService.defaultInvClaim(game2)).toBe(Team.FASC);
       expect(defaultActionService.testProb).toBeCalledTimes(3);
     });
 
@@ -1413,26 +1413,24 @@ describe('DefaultActionService', () => {
       jest
         .spyOn(defaultActionService, 'testProb')
         .mockImplementation(() => false);
-      game.currentPres = 'player-3';
-      player3.investigations.push('player-2');
-      expect(logicService.getCurrentPres(game).team).toBe(Team.FASC);
-      expect(defaultActionService.defaultInvClaim(game)).toBe(Team.LIB);
-      player3.investigations.push('player-1');
-      expect(defaultActionService.defaultInvClaim(game)).toBe(Team.LIB);
-      player3.investigations.push('player-3');
-      expect(defaultActionService.defaultInvClaim(game)).toBe(Team.LIB);
+      game2.currentPres = fasc1.name;
+      fasc1.investigations.push(lib1.name);
+      expect(defaultActionService.defaultInvClaim(game2)).toBe(Team.LIB);
+      fasc1.investigations.push(fasc2.name);
+      expect(defaultActionService.defaultInvClaim(game2)).toBe(Team.LIB);
+      fasc1.investigations.push(hitler.name);
+      expect(defaultActionService.defaultInvClaim(game2)).toBe(Team.LIB);
       expect(defaultActionService.testProb).toBeCalledTimes(3);
     });
 
     it('calls simple version when the game setting is simpleBlind', () => {
       jest.spyOn(defaultActionService, 'getSimpleFascInvConfProb');
       jest.spyOn(defaultActionService, 'getFascInvConfProb');
-      game.currentPres = 'player-3';
-      player3.investigations.push('player-2');
-      game.settings.simpleBlind = true;
-      game.currentPres = player3.name;
-      game.currentChan = player1.name;
-      defaultActionService.defaultInvClaim(game);
+      game2.currentPres = fasc1.name;
+      fasc1.investigations.push(lib1.name);
+      game2.settings.simpleBlind = true;
+      game2.currentPres = fasc1.name;
+      defaultActionService.defaultInvClaim(game2);
       expect(defaultActionService.getFascInvConfProb).toBeCalledTimes(0);
       expect(defaultActionService.getSimpleFascInvConfProb).toBeCalledTimes(1);
     });
@@ -1442,97 +1440,74 @@ describe('DefaultActionService', () => {
     beforeEach(() => {
       jest
         .spyOn(defaultActionService, 'testProb')
-        .mockImplementation((prob) => 0.5 < prob);
+        .mockImplementation(() => true);
       jest.spyOn(defaultActionService, 'getPresDropProbs');
       jest.spyOn(defaultActionService, 'getSimplePresDropProbs');
+      game2.currentChan = fasc2.name;
     });
 
-    it('does and does not vanilla fasc to pass a B in RRB with 3 more reds down', () => {
-      game.currentPres = player2.name;
-      expect(logicService.getCurrentPres(game).role).toBe(Role.FASC);
-      game.FascPoliciesEnacted = 3;
-
-      game.currentChan = player2.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.FASC);
-      game.presCards = [R, R, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED);
-
-      game.currentChan = player1.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-      game.presCards = [R, R, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE);
-    });
-
-    it('discards red whenever possible for a lib', () => {
-      game.currentPres = player1.name;
-      expect(logicService.getCurrentPres(game).role).toBe(Role.LIB);
-      game.presCards = [B, B, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE);
-      game.presCards = [R, B, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED);
-      game.presCards = [R, R, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED);
-      game.presCards = [R, R, R];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED);
-      expect(defaultActionService.getPresDropProbs).toBeCalledTimes(0);
-      expect(defaultActionService.getSimplePresDropProbs).toBeCalledTimes(0);
-    });
-
-    it('discards blue when passing test prob for a fasc', () => {
-      jest
-        .spyOn(defaultActionService, 'getPresDropProbs')
-        .mockImplementation(() => [1, 1]);
-      game.currentPres = player2.name;
-      expect(logicService.getCurrentPres(game).role).toBe(Role.FASC);
-      game.presCards = [B, B, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE);
-      game.presCards = [R, B, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE);
-      game.presCards = [R, R, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE);
-      game.presCards = [R, R, R];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED);
+    it('vanilla fasc discard B when test prob is true', () => {
+      game2.currentPres = fasc1.name;
+      game2.presCards = [R, R, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.BLUE);
+      game2.presCards = [R, B, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.BLUE);
+      game2.presCards = [B, B, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.BLUE);
+      game2.presCards = [R, R, R];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.RED);
       expect(defaultActionService.getPresDropProbs).toBeCalledTimes(4);
       expect(defaultActionService.getSimplePresDropProbs).toBeCalledTimes(0);
     });
 
     it('discards blue when passing test prob for hitler', () => {
-      jest
-        .spyOn(defaultActionService, 'getPresDropProbs')
-        .mockImplementation(() => [1, 1]);
-      game.currentPres = player3.name;
-      expect(logicService.getCurrentPres(game).role).toBe(Role.HITLER);
-      game.presCards = [B, B, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE);
-      game.presCards = [R, B, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE);
-      game.presCards = [R, R, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE);
-      game.presCards = [R, R, R];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED);
+      game2.currentPres = hitler.name;
+      game2.presCards = [R, R, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.BLUE);
+      game2.presCards = [R, B, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.BLUE);
+      game2.presCards = [B, B, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.BLUE);
+      game2.presCards = [R, R, R];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.RED);
+      expect(defaultActionService.getPresDropProbs).toBeCalledTimes(4);
+      expect(defaultActionService.getSimplePresDropProbs).toBeCalledTimes(0);
+    });
+
+    it('discards red whenever possible for a lib', () => {
+      game2.currentPres = lib1.name;
+      game2.presCards = [B, B, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.BLUE);
+      game2.presCards = [R, B, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.RED);
+      game2.presCards = [R, R, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.RED);
+      game2.presCards = [R, R, R];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.RED);
+      expect(defaultActionService.getPresDropProbs).toBeCalledTimes(0);
+      expect(defaultActionService.getSimplePresDropProbs).toBeCalledTimes(0);
     });
 
     it('discards red when failing test prob for a fasc', () => {
       jest
-        .spyOn(defaultActionService, 'getPresDropProbs')
-        .mockImplementation(() => [0, 0]);
-      game.currentPres = player2.name;
-      expect(logicService.getCurrentPres(game).role).toBe(Role.FASC);
-      game.presCards = [B, B, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.BLUE);
-      game.presCards = [R, B, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED);
-      game.presCards = [R, R, B];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED);
-      game.presCards = [R, R, R];
-      expect(defaultActionService.defaultPresDiscard(game)).toBe(Color.RED);
+        .spyOn(defaultActionService, 'testProb')
+        .mockImplementation(() => false);
+      game2.currentPres = fasc1.name;
+      game2.presCards = [B, B, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.BLUE);
+      game2.presCards = [R, B, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.RED);
+      game2.presCards = [R, R, B];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.RED);
+      game2.presCards = [R, R, R];
+      expect(defaultActionService.defaultPresDiscard(game2)).toBe(Color.RED);
     });
 
     it('calls simple version when the game setting is simpleBlind', () => {
-      game.settings.simpleBlind = true;
-      game.currentPres = player2.name;
-      game.presCards = [B, B, B];
-      defaultActionService.defaultPresDiscard(game);
+      game2.settings.simpleBlind = true;
+      game2.currentPres = fasc1.name;
+      game2.presCards = [B, B, B];
+      defaultActionService.defaultPresDiscard(game2);
       expect(defaultActionService.getPresDropProbs).toBeCalledTimes(0);
       expect(defaultActionService.getSimplePresDropProbs).toBeCalledTimes(1);
     });
@@ -1548,166 +1523,166 @@ describe('DefaultActionService', () => {
     });
 
     it('plays blue whenever possible for a lib', () => {
-      game.currentChan = player1.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.BLUE);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.BLUE);
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.RED);
+      game2.currentChan = lib1.name;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.BLUE);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.BLUE);
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.RED);
     });
 
     it('plays red when passing testProb for a fasc', () => {
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 1);
-      game.currentChan = player2.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.FASC);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.BLUE);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.RED);
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.RED);
+      game2.currentChan = fasc1.name;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.FASC);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.BLUE);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.RED);
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.RED);
     });
 
     it('plays red when passing testProb for hitler', () => {
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 1);
-      game.currentChan = player3.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.HITLER);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.BLUE);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.RED);
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.RED);
+      game2.currentChan = hitler.name;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.HITLER);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.BLUE);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.RED);
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.RED);
     });
 
     it('plays blue when failing testProb for a fasc', () => {
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 0);
-      game.currentChan = player2.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.FASC);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.BLUE);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.BLUE);
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultChanPlay(game)).toBe(Color.RED);
+      game2.currentChan = fasc1.name;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.FASC);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.BLUE);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.BLUE);
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultChanPlay(game2)).toBe(Color.RED);
     });
 
     it('does not request veto for a lib on RR if not in veto zone', () => {
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 0);
-      game.currentChan = player1.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultChanPlay(game)).not.toBeNull();
+      game2.currentChan = lib1.name;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultChanPlay(game2)).not.toBeNull();
     });
 
     it('does not request veto for a lib on RR in veto zone but veto already declined', () => {
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 0);
-      game.FascPoliciesEnacted = 5;
-      game.status = Status.VETO_DECLINED;
-      game.currentChan = player1.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultChanPlay(game)).not.toBeNull();
+      game2.FascPoliciesEnacted = 5;
+      game2.status = Status.VETO_DECLINED;
+      game2.currentChan = lib1.name;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultChanPlay(game2)).not.toBeNull();
     });
 
     it('does request veto for a lib on RR in veto zone', () => {
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 0);
-      game.FascPoliciesEnacted = 5;
-      game.status = Status.CHAN_PLAY;
-      game.currentChan = player1.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultChanPlay(game)).toBeNull();
+      game2.FascPoliciesEnacted = 5;
+      game2.status = Status.CHAN_PLAY;
+      game2.currentChan = lib1.name;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultChanPlay(game2)).toBeNull();
     });
 
     it('does not request veto for a lib on RB or BB in veto zone', () => {
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 0);
-      game.FascPoliciesEnacted = 5;
-      game.status = Status.CHAN_PLAY;
-      game.currentChan = player1.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanPlay(game)).not.toBeNull();
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanPlay(game)).not.toBeNull();
+      game2.FascPoliciesEnacted = 5;
+      game2.status = Status.CHAN_PLAY;
+      game2.currentChan = lib1.name;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanPlay(game2)).not.toBeNull();
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanPlay(game2)).not.toBeNull();
     });
 
     it('does not request veto for a fasc on BB with fasc if not in veto zone', () => {
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 0);
-      game.currentChan = player2.name;
-      game.currentPres = player3.name;
-      game.status = Status.CHOOSE_CHAN;
-      expect(logicService.getCurrentChan(game).team).toBe(Team.FASC);
-      expect(logicService.getCurrentPres(game).team).toBe(Team.FASC);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanPlay(game)).not.toBeNull();
+      game2.currentChan = fasc1.name;
+      game2.currentPres = hitler.name;
+      game2.status = Status.CHOOSE_CHAN;
+      expect(logicService.getCurrentChan(game2).team).toBe(Team.FASC);
+      expect(logicService.getCurrentPres(game2).team).toBe(Team.FASC);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanPlay(game2)).not.toBeNull();
     });
 
     it('does request veto for a fasc on BB with fasc if  in veto zone', () => {
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 0);
-      game.currentChan = player2.name;
-      game.currentPres = player3.name;
-      game.status = Status.CHOOSE_CHAN;
-      game.FascPoliciesEnacted = 5;
-      expect(logicService.getCurrentChan(game).team).toBe(Team.FASC);
-      expect(logicService.getCurrentPres(game).team).toBe(Team.FASC);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanPlay(game)).toBeNull();
+      game2.currentChan = fasc1.name;
+      game2.currentPres = hitler.name;
+      game2.status = Status.CHOOSE_CHAN;
+      game2.FascPoliciesEnacted = 5;
+      expect(logicService.getCurrentChan(game2).team).toBe(Team.FASC);
+      expect(logicService.getCurrentPres(game2).team).toBe(Team.FASC);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanPlay(game2)).toBeNull();
     });
 
     it('does not request veto for a fasc on BB in veto zone if veto already declined', () => {
-      game.FascPoliciesEnacted = 5;
-      game.status = Status.VETO_DECLINED;
+      game2.FascPoliciesEnacted = 5;
+      game2.status = Status.VETO_DECLINED;
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 0);
-      game.currentChan = player2.name;
-      game.currentPres = player3.name;
-      expect(logicService.getCurrentChan(game).team).toBe(Team.FASC);
-      expect(logicService.getCurrentPres(game).team).toBe(Team.FASC);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanPlay(game)).not.toBeNull();
+      game2.currentChan = fasc1.name;
+      game2.currentPres = fasc2.name;
+      expect(logicService.getCurrentChan(game2).team).toBe(Team.FASC);
+      expect(logicService.getCurrentPres(game2).team).toBe(Team.FASC);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanPlay(game2)).not.toBeNull();
     });
 
     it('does not request veto for a fasc on BB in veto zone if pres is lib', () => {
-      game.FascPoliciesEnacted = 5;
-      game.status = Status.CHOOSE_CHAN;
+      game2.FascPoliciesEnacted = 5;
+      game2.status = Status.CHOOSE_CHAN;
       jest
         .spyOn(defaultActionService, 'getChanDropProbs')
         .mockImplementation(() => 0);
-      game.currentChan = player2.name;
-      game.currentPres = player1.name;
-      expect(logicService.getCurrentChan(game).team).toBe(Team.FASC);
-      expect(logicService.getCurrentPres(game).team).toBe(Team.LIB);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanPlay(game)).not.toBeNull();
+      game2.currentChan = fasc1.name;
+      game2.currentPres = lib1.name;
+      expect(logicService.getCurrentChan(game2).team).toBe(Team.FASC);
+      expect(logicService.getCurrentPres(game2).team).toBe(Team.LIB);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanPlay(game2)).not.toBeNull();
     });
 
     it('calls simple version when the game setting is simpleBlind', () => {
-      game.settings.simpleBlind = true;
-      game.currentChan = player2.name;
-      game.chanCards = [B, B];
-      defaultActionService.defaultChanPlay(game);
+      game2.settings.simpleBlind = true;
+      game2.currentChan = fasc1.name;
+      game2.chanCards = [B, B];
+      defaultActionService.defaultChanPlay(game2);
       expect(defaultActionService.getSimpleChanDropProbs).toBeCalledTimes(1);
       expect(defaultActionService.getChanDropProbs).toBeCalledTimes(0);
     });
@@ -1722,14 +1697,14 @@ describe('DefaultActionService', () => {
     });
 
     it('tells the truth when lib', () => {
-      game.currentChan = player1.name;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.BB);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.RB);
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.RR);
+      game2.currentChan = lib1.name;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.BB);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.RB);
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.RR);
       expect(defaultActionService.getFascFascBlueChanClaim).toBeCalledTimes(0);
       expect(
         defaultActionService.getSimpleFascFascBlueChanClaim,
@@ -1737,15 +1712,15 @@ describe('DefaultActionService', () => {
     });
 
     it('fasc claim RR if a red is played', () => {
-      game.currentChan = player2.name;
-      game.currentPres = player3.name;
-      game.chanPlay = R;
-      expect(logicService.getCurrentChan(game).team).toBe(Team.FASC);
-      expect(logicService.getCurrentChan(game).team).toBe(Team.FASC);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.RR);
-      game.chanCards = [R, R];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.RR);
+      game2.currentChan = fasc1.name;
+      game2.currentPres = fasc2.name;
+      game2.chanPlay = R;
+      expect(logicService.getCurrentChan(game2).team).toBe(Team.FASC);
+      expect(logicService.getCurrentChan(game2).team).toBe(Team.FASC);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.RR);
+      game2.chanCards = [R, R];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.RR);
       expect(defaultActionService.getFascFascBlueChanClaim).toBeCalledTimes(0);
       expect(
         defaultActionService.getSimpleFascFascBlueChanClaim,
@@ -1753,38 +1728,39 @@ describe('DefaultActionService', () => {
     });
 
     it('doesnt lie as a fasc if pres is lib', () => {
-      game.currentChan = player2.name;
-      game.currentPres = player1.name;
-      game.chanPlay = B;
-      expect(logicService.getCurrentChan(game).team).toBe(Team.FASC);
-      expect(logicService.getCurrentPres(game).team).toBe(Team.LIB);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.RB);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.BB);
+      game2.currentChan = fasc1.name;
+      game2.currentPres = lib1.name;
+      game2.chanPlay = B;
+      expect(logicService.getCurrentChan(game2).team).toBe(Team.FASC);
+      expect(logicService.getCurrentPres(game2).team).toBe(Team.LIB);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.RB);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.BB);
       expect(defaultActionService.getFascFascBlueChanClaim).toBeCalledTimes(0);
       expect(
         defaultActionService.getSimpleFascFascBlueChanClaim,
       ).toBeCalledTimes(0);
     });
 
-    it('doesnt lie as a fasc if hitler is the chan regardless of who is pres', () => {
-      game.currentChan = player3.name;
-      game.currentPres = player1.name;
-      game.chanPlay = B;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.HITLER);
-      expect(logicService.getCurrentPres(game).team).toBe(Team.LIB);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.RB);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.BB);
+    it('doesnt lie as a fasc if hitler is the chan if not knownFasc', () => {
+      defaultActionService.knownFascistToHitler = () => false;
+      game2.currentChan = hitler.name;
+      game2.currentPres = lib1.name;
+      game2.chanPlay = B;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.HITLER);
+      expect(logicService.getCurrentPres(game2).team).toBe(Team.LIB);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.RB);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.BB);
       //fasc pres
-      game.currentPres = player2.name;
-      expect(logicService.getCurrentPres(game).team).toBe(Team.FASC);
-      game.chanCards = [R, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.RB);
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.BB);
+      game2.currentPres = fasc1.name;
+      expect(logicService.getCurrentPres(game2).team).toBe(Team.FASC);
+      game2.chanCards = [R, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.RB);
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.BB);
 
       expect(defaultActionService.getFascFascBlueChanClaim).toBeCalledTimes(0);
       expect(
@@ -1793,16 +1769,34 @@ describe('DefaultActionService', () => {
     });
 
     it('it calls getFascFascBlueChanClaim when fasc fasc to get claim', () => {
-      game.currentChan = player2.name;
-      game.currentPres = player3.name;
-      game.chanPlay = B;
-      expect(logicService.getCurrentChan(game).role).toBe(Role.FASC);
-      expect(logicService.getCurrentPres(game).team).toBe(Team.FASC);
-      game.chanCards = [R, B];
-      defaultActionService.testProb = (threshold) => 0.4 < threshold;
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.BB); //mockImplementation
-      game.chanCards = [B, B];
-      expect(defaultActionService.defaultChanClaim(game)).toBe(CHAN2.RB); //mockImplementation
+      game2.currentChan = fasc1.name;
+      game2.currentPres = fasc2.name;
+      game2.chanPlay = B;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.FASC);
+      expect(logicService.getCurrentPres(game2).team).toBe(Team.FASC);
+      game2.chanCards = [R, B];
+      defaultActionService.testProb = () => true;
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.BB); //mockImplementation
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.RB); //mockImplementation
+      expect(defaultActionService.getFascFascBlueChanClaim).toBeCalledTimes(2);
+      expect(
+        defaultActionService.getSimpleFascFascBlueChanClaim,
+      ).toBeCalledTimes(0);
+    });
+
+    it('it calls getFascFascBlueChanClaim when hitler is chan with a known fasc to get claim', () => {
+      defaultActionService.knownFascistToHitler = () => true;
+      game2.currentChan = hitler.name;
+      game2.currentPres = fasc1.name;
+      game2.chanPlay = B;
+      expect(logicService.getCurrentChan(game2).role).toBe(Role.HITLER);
+      expect(logicService.getCurrentPres(game2).team).toBe(Team.FASC);
+      game2.chanCards = [R, B];
+      defaultActionService.testProb = () => true;
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.BB); //mockImplementation
+      game2.chanCards = [B, B];
+      expect(defaultActionService.defaultChanClaim(game2)).toBe(CHAN2.RB); //mockImplementation
       expect(defaultActionService.getFascFascBlueChanClaim).toBeCalledTimes(2);
       expect(
         defaultActionService.getSimpleFascFascBlueChanClaim,
@@ -1810,12 +1804,12 @@ describe('DefaultActionService', () => {
     });
 
     it('calls simple version when the game setting is simpleBlind', () => {
-      game.settings.simpleBlind = true;
-      game.currentPres = player3.name;
-      game.currentChan = player2.name;
-      game.chanPlay = B;
-      game.chanCards = [B, B];
-      defaultActionService.defaultChanClaim(game);
+      game2.settings.simpleBlind = true;
+      game2.currentPres = fasc1.name;
+      game2.currentChan = fasc2.name;
+      game2.chanPlay = B;
+      game2.chanCards = [B, B];
+      defaultActionService.defaultChanClaim(game2);
       expect(defaultActionService.getFascFascBlueChanClaim).toBeCalledTimes(0);
       expect(
         defaultActionService.getSimpleFascFascBlueChanClaim,
@@ -1836,16 +1830,16 @@ describe('DefaultActionService', () => {
 
     describe('lib pres', () => {
       it('tells the truth as a lib', () => {
-        game.currentPres = player1.name;
-        expect(logicService.getCurrentPres(game).role).toBe(Role.LIB);
-        game.presCards = [B, B, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.BBB);
-        game.presCards = [R, B, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RBB);
-        game.presCards = [R, R, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRB);
-        game.presCards = [R, R, R];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRR);
+        game2.currentPres = lib1.name;
+        expect(logicService.getCurrentPres(game2).role).toBe(Role.LIB);
+        game2.presCards = [B, B, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.BBB);
+        game2.presCards = [R, B, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RBB);
+        game2.presCards = [R, R, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRB);
+        game2.presCards = [R, R, R];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRR);
         expect(defaultActionService.getPresClaimWithLibProbs).toBeCalledTimes(
           0,
         );
@@ -1857,17 +1851,18 @@ describe('DefaultActionService', () => {
 
     describe('fasc pres with lib chan', () => {
       it('claims different than what was passed when discarding a B if passes testprob', () => {
-        game.currentPres = player2.name;
-        game.currentChan = player1.name;
-        game.presDiscard = B;
-        expect(logicService.getCurrentPres(game).role).toBe(Role.FASC);
-        expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-        game.presCards = [R, R, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRB);
-        game.presCards = [R, B, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRB);
-        game.presCards = [B, B, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RBB);
+        game2.currentPres = fasc1.name;
+        game2.currentChan = lib1.name;
+        game2.presDiscard = B;
+        expect(logicService.getCurrentPres(game2).role).toBe(Role.FASC);
+        expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+        game2.presCards = [R, R, B];
+        defaultActionService.testProb = () => true;
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRB);
+        game2.presCards = [R, B, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRB);
+        game2.presCards = [B, B, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RBB);
         expect(defaultActionService.getPresClaimWithLibProbs).toBeCalledTimes(
           3,
         );
@@ -1880,18 +1875,19 @@ describe('DefaultActionService', () => {
         jest
           .spyOn(defaultActionService, 'getPresClaimWithLibProbs')
           .mockImplementation(() => [0, 0, 0, 0, 0]);
+        defaultActionService.testProb = () => false;
 
-        game.currentPres = player2.name;
-        game.currentChan = player1.name;
-        game.presDiscard = B;
-        expect(logicService.getCurrentPres(game).role).toBe(Role.FASC);
-        expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-        game.presCards = [R, R, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRR);
-        game.presCards = [R, B, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRB);
-        game.presCards = [B, B, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.BBB);
+        game2.currentPres = fasc1.name;
+        game2.currentChan = lib1.name;
+        game2.presDiscard = B;
+        expect(logicService.getCurrentPres(game2).role).toBe(Role.FASC);
+        expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+        game2.presCards = [R, R, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRR);
+        game2.presCards = [R, B, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRB);
+        game2.presCards = [B, B, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.BBB);
         expect(defaultActionService.getPresClaimWithLibProbs).toBeCalledTimes(
           3,
         );
@@ -1901,17 +1897,19 @@ describe('DefaultActionService', () => {
       });
 
       it('claims different than what was passed when discarding a R if passes testprob', () => {
-        game.currentPres = player2.name;
-        game.currentChan = player1.name;
-        game.presDiscard = R;
-        expect(logicService.getCurrentPres(game).role).toBe(Role.FASC);
-        expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-        game.presCards = [R, R, R];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRB);
-        game.presCards = [R, R, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RBB);
-        game.presCards = [R, B, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.BBB);
+        defaultActionService.testProb = () => true;
+
+        game2.currentPres = fasc1.name;
+        game2.currentChan = lib1.name;
+        game2.presDiscard = R;
+        expect(logicService.getCurrentPres(game2).role).toBe(Role.FASC);
+        expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+        game2.presCards = [R, R, R];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRB);
+        game2.presCards = [R, R, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RBB);
+        game2.presCards = [R, B, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.BBB);
         expect(defaultActionService.getPresClaimWithLibProbs).toBeCalledTimes(
           3,
         );
@@ -1924,17 +1922,19 @@ describe('DefaultActionService', () => {
         jest
           .spyOn(defaultActionService, 'getPresClaimWithLibProbs')
           .mockImplementation(() => [0, 0, 0, 0, 0]);
-        game.currentPres = player2.name;
-        game.currentChan = player1.name;
-        game.presDiscard = R;
-        expect(logicService.getCurrentPres(game).role).toBe(Role.FASC);
-        expect(logicService.getCurrentChan(game).role).toBe(Role.LIB);
-        game.presCards = [R, R, R];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRR);
-        game.presCards = [R, R, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRB);
-        game.presCards = [R, B, B];
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RBB);
+        defaultActionService.testProb = () => false;
+
+        game2.currentPres = fasc1.name;
+        game2.currentChan = lib1.name;
+        game2.presDiscard = R;
+        expect(logicService.getCurrentPres(game2).role).toBe(Role.FASC);
+        expect(logicService.getCurrentChan(game2).role).toBe(Role.LIB);
+        game2.presCards = [R, R, R];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRR);
+        game2.presCards = [R, R, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRB);
+        game2.presCards = [R, B, B];
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RBB);
         expect(defaultActionService.getPresClaimWithLibProbs).toBeCalledTimes(
           3,
         );
@@ -1946,13 +1946,13 @@ describe('DefaultActionService', () => {
       it('calls simple version when the game setting is simpleBlind', () => {
         jest.spyOn(defaultActionService, 'getSimplePresClaimWithLibProbs');
         jest.spyOn(defaultActionService, 'getPresClaimWithLibProbs');
-        game.settings.simpleBlind = true;
-        game.currentPres = player3.name;
-        game.currentChan = player1.name;
-        game.presDiscard = B;
-        game.chanCards = [B, B];
-        game.presCards = [B, B, B];
-        defaultActionService.defaultPresClaim(game);
+        game2.settings.simpleBlind = true;
+        game2.currentPres = hitler.name;
+        game2.currentChan = lib1.name;
+        game2.presDiscard = B;
+        game2.chanCards = [B, B];
+        game2.presCards = [B, B, B];
+        defaultActionService.defaultPresClaim(game2);
         expect(defaultActionService.getPresClaimWithLibProbs).toBeCalledTimes(
           0,
         );
@@ -1964,17 +1964,19 @@ describe('DefaultActionService', () => {
 
     describe('fasc pres with fasc chan', () => {
       it('claims inline with chan and changes as appropriate when passing testprob', () => {
-        game.currentPres = player3.name;
-        game.currentChan = player2.name;
-        game.presCards = [B, B, B];
-        expect(logicService.getCurrentPres(game).team).toBe(Team.FASC);
-        expect(logicService.getCurrentChan(game).team).toBe(Team.FASC);
-        game.chanClaim = CHAN2.RR;
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRB);
-        game.chanClaim = CHAN2.RB;
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRB);
-        game.chanClaim = CHAN2.BB;
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.BBB);
+        defaultActionService.testProb = () => true;
+
+        game2.currentPres = hitler.name;
+        game2.currentChan = fasc1.name;
+        game2.presCards = [R, B, B];
+        expect(logicService.getCurrentPres(game2).team).toBe(Team.FASC);
+        expect(logicService.getCurrentChan(game2).team).toBe(Team.FASC);
+        game2.chanClaim = CHAN2.RR;
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRB);
+        game2.chanClaim = CHAN2.RB;
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRB);
+        game2.chanClaim = CHAN2.BB;
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.BBB);
         expect(defaultActionService.getPresClaimWithLibProbs).toBeCalledTimes(
           0,
         );
@@ -1987,18 +1989,19 @@ describe('DefaultActionService', () => {
         jest
           .spyOn(defaultActionService, 'getPresClaimWithFascProbs')
           .mockImplementation(() => [0, 0]);
+        defaultActionService.testProb = () => false;
 
-        game.currentPres = player3.name;
-        game.currentChan = player2.name;
-        game.presCards = [B, B, B];
-        expect(logicService.getCurrentPres(game).team).toBe(Team.FASC);
-        expect(logicService.getCurrentChan(game).team).toBe(Team.FASC);
-        game.chanClaim = CHAN2.RR;
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRR);
-        game.chanClaim = CHAN2.RB;
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RRB);
-        game.chanClaim = CHAN2.BB;
-        expect(defaultActionService.defaultPresClaim(game)).toBe(PRES3.RBB);
+        game2.currentPres = fasc1.name;
+        game2.currentChan = fasc2.name;
+        game2.presCards = [R, B, B];
+        expect(logicService.getCurrentPres(game2).team).toBe(Team.FASC);
+        expect(logicService.getCurrentChan(game2).team).toBe(Team.FASC);
+        game2.chanClaim = CHAN2.RR;
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRR);
+        game2.chanClaim = CHAN2.RB;
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RRB);
+        game2.chanClaim = CHAN2.BB;
+        expect(defaultActionService.defaultPresClaim(game2)).toBe(PRES3.RBB);
         expect(defaultActionService.getPresClaimWithLibProbs).toBeCalledTimes(
           0,
         );

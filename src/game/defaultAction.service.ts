@@ -310,17 +310,6 @@ export class DefaultActionService {
     }
   }
 
-  /**
-   * truth unless it's 1 or 0 blues and enough underclaims for RBB to be believable as outing on 2 topDecks is worth it
-   * also unlikely BBB should be RBB to avoid auto 3 topdecks
-   */
-
-  /**
-   *
-   * @param game         (top3 === PRES3.RRR && this.underclaimTotal(game) >= 2) ||
-        (top3 === PRES3.RRB && this.underclaimTotal(game) >= 1)
-   * @returns
-   */
   defaultInspect3Claim(game: Game): PRES3 {
     const top3Cards = this.logicService.inspect3(game.deck);
     const top3 = this.determine3Cards(top3Cards);
@@ -372,11 +361,6 @@ export class DefaultActionService {
 
   //prob calculators
 
-  /**
-   * lies based on probabilities that account for hitler vs vanilla and number of blues down
-   * If double dipping and inv a lib - 50%
-   * If inv a fasc and low blue count and you are 3 red - 40% conf to look bad
-   */
   getFascInvConfProb(
     game: Game,
     currentPresPlayer: Player,
@@ -444,29 +428,6 @@ export class DefaultActionService {
     return [overclaimFromRRRtoRBBInspect3Prob, underclaimBBBInspect3Prob];
   }
 
-  /**
-   *
-   * vanilla RBB drop:
-   *  .5 unless lib drawn 3 red, then .8
-   *  1 if 4 blues played (avoid auto loss)
-   *  1 if chan is fasc - offer double drop (on the player to force manually if it looks bad to drop as a fasc)
-   * Hitler RBB drop:
-   * .6
-   * .9 if 2 blues down in case chan is fasc
-   * 1 if 3 blues down to hope chan is fasc (on player to manually force if it looks bad to drop)
-   * 1 if 4 blues down
-   *
-   * vanilla RRB drop:
-   * 1 unless fasc fasc
-   *  0 with vanilla chan (they can drop)
-   *  0 with early hitler and no power
-   *  .4 with medium hitler and no power
-   *
-   * Hitler RRB drop:
-   * matrix based on blues played and powers
-   *
-   * Both always take the gun or auto win
-   */
   getPresDropProbs(game: Game) {
     const currentPresPlayer = this.logicService.getCurrentPres(game);
     const currentChanPlayer = this.logicService.getCurrentChan(game);
