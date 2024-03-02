@@ -1,10 +1,16 @@
 import { Player } from './player.model';
-import { DefaultAction } from 'src/consts';
+import { DefaultAction, Role } from 'src/consts';
 
 export type DefaultProbabilityLogItem = {
+  playerName: string;
+  role: Role;
   threshold: number;
   randomProb: number;
-  playerName: string;
   actionName: DefaultAction;
   probabilityName: string;
+  govNum: number;
 };
+/**
+ *
+ *
+ */

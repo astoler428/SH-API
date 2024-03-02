@@ -276,7 +276,7 @@ export class GameService {
         type: LogType.INDIVIDUAL_SEAT,
         date: getFormattedDate(),
       });
-      if (game.settings.type !== GameType.BLIND) {
+      if (!isBlindSetting(game.settings.type)) {
         game.log.push({ type: LogType.HITLER_SEAT, date: getFormattedDate() });
         game.log.push({
           type: LogType.OTHER_FASCIST_SEATS,
@@ -286,11 +286,9 @@ export class GameService {
       await this.handleUpdate(id, game);
     }, logTimeout);
 
-    const changeStatusTimeout =
-      game.settings.type === GameType.BLIND ||
-      game.settings.type === GameType.COOPERATIVE_BLIND
-        ? 4000
-        : 9000;
+    const changeStatusTimeout = isBlindSetting(game.settings.type)
+      ? 4000
+      : 9000;
     setTimeout(async () => {
       const game = await this.findById(id);
       if (game.status === Status.STARTED) {

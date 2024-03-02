@@ -37,7 +37,6 @@ export class LogicService {
     if (game.settings.redDown) {
       this.removeRed(game.deck);
       game.FascPoliciesEnacted = 1;
-      game.LibPoliciesEnacted = 4;
     }
 
     //in this lib spy version, hitler doesn't know fasc by default
@@ -780,6 +779,7 @@ export class LogicService {
         payload: {
           remainingPolicies: game.deck.drawPile
             .map((card) => card.color)
+            .reverse()
             .join(''),
         },
       });

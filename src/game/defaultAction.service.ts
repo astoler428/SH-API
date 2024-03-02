@@ -17,6 +17,7 @@ import { Card } from '../models/card.model';
 import { LogicService } from './logic.service';
 import { Player } from '../models/player.model';
 import { log } from 'console';
+import { DefaultProbabilityLogItem } from 'src/models/defaultProbabilityLogItem.model';
 
 @Injectable()
 export class DefaultActionService {
@@ -40,6 +41,8 @@ export class DefaultActionService {
         currentPresPlayer.name,
         DefaultAction.PRES_DISCARD,
         'fascPresRBBDropProb',
+        currentPresPlayer.role,
+        game.govs.length + 1,
       )
         ? Color.BLUE
         : Color.RED;
@@ -50,6 +53,8 @@ export class DefaultActionService {
         currentPresPlayer.name,
         DefaultAction.PRES_DISCARD,
         'fascPresRRBDropProb',
+        currentPresPlayer.role,
+        game.govs.length + 1,
       )
         ? Color.BLUE
         : Color.RED;
@@ -94,6 +99,8 @@ export class DefaultActionService {
         currentChanPlayer.name,
         DefaultAction.CHAN_PLAY,
         'fascChanDropProb',
+        currentChanPlayer.role,
+        game.govs.length + 1,
       )
         ? Color.RED
         : Color.BLUE;
@@ -135,6 +142,8 @@ export class DefaultActionService {
         currentChanPlayer.name,
         DefaultAction.CHAN_CLAIM,
         'BBUnderclaimProb',
+        currentChanPlayer.role,
+        game.govs.length + 1,
       )
         ? CHAN2.RB
         : CHAN2.BB;
@@ -146,6 +155,8 @@ export class DefaultActionService {
         currentChanPlayer.name,
         DefaultAction.CHAN_CLAIM,
         'RBOverclaimProb',
+        currentChanPlayer.role,
+        game.govs.length + 1,
       )
         ? CHAN2.BB
         : CHAN2.RB;
@@ -181,6 +192,8 @@ export class DefaultActionService {
             currentPresPlayer.name,
             DefaultAction.PRES_CLAIM,
             'fascRRBconfProb',
+            currentPresPlayer.role,
+            game.govs.length + 1,
           )
             ? PRES3.RRB
             : PRES3.RRR;
@@ -196,6 +209,8 @@ export class DefaultActionService {
             currentPresPlayer.name,
             DefaultAction.PRES_CLAIM,
             'fascBBBunderclaimProb',
+            currentPresPlayer.role,
+            game.govs.length + 1,
           )
             ? PRES3.RBB
             : PRES3.BBB;
@@ -211,6 +226,8 @@ export class DefaultActionService {
             currentPresPlayer.name,
             DefaultAction.PRES_CLAIM,
             'fascRRRconfProb',
+            currentPresPlayer.role,
+            game.govs.length + 1,
           )
             ? PRES3.RRB
             : PRES3.RRR;
@@ -224,6 +241,8 @@ export class DefaultActionService {
             currentPresPlayer.name,
             DefaultAction.PRES_CLAIM,
             'fascRRBoverclaimProb',
+            currentPresPlayer.role,
+            game.govs.length + 1,
           )
             ? PRES3.RBB
             : PRES3.RRB;
@@ -235,6 +254,8 @@ export class DefaultActionService {
             currentPresPlayer.name,
             DefaultAction.PRES_CLAIM,
             'fascRBBoverclaimProb',
+            currentPresPlayer.role,
+            game.govs.length + 1,
           )
             ? PRES3.BBB
             : PRES3.RBB;
@@ -255,6 +276,8 @@ export class DefaultActionService {
           currentPresPlayer.name,
           DefaultAction.PRES_CLAIM,
           'fascFascConfProb',
+          currentPresPlayer.role,
+          game.govs.length + 1,
         )
           ? PRES3.RRB
           : PRES3.RRR;
@@ -268,6 +291,8 @@ export class DefaultActionService {
           currentPresPlayer.name,
           DefaultAction.PRES_CLAIM,
           'BBBfromBBclaimProb',
+          currentPresPlayer.role,
+          game.govs.length + 1,
         )
           ? PRES3.BBB
           : PRES3.RBB;
@@ -302,6 +327,8 @@ export class DefaultActionService {
         currentPresPlayer.name,
         DefaultAction.INV_CLAIM,
         'fascInvConfProb',
+        currentPresPlayer.role,
+        game.govs.length,
       )
     ) {
       return Team.FASC;
@@ -331,6 +358,8 @@ export class DefaultActionService {
         currentPresPlayer.name,
         DefaultAction.INSPECT_TOP3_CLAIM,
         'overclaimFromRRRtoRBBInspect3Prob',
+        currentPresPlayer.role,
+        game.govs.length,
       )
         ? PRES3.RBB
         : top3;
@@ -341,6 +370,8 @@ export class DefaultActionService {
         currentPresPlayer.name,
         DefaultAction.INSPECT_TOP3_CLAIM,
         'underclaimBBBInspect3Prob',
+        currentPresPlayer.role,
+        game.govs.length,
       )
         ? PRES3.RBB
         : top3;
@@ -1115,6 +1146,8 @@ export class DefaultActionService {
     playerName: string,
     actionName: DefaultAction,
     probabilityName: string,
+    role: Role,
+    govNum: number,
   ) {
     const randomProb = Math.random();
     game.defaultProbabilityLog.push({
@@ -1123,6 +1156,8 @@ export class DefaultActionService {
       playerName,
       actionName,
       probabilityName,
+      role,
+      govNum,
     });
     return randomProb < threshold;
   }
@@ -1293,7 +1328,7 @@ export class DefaultActionService {
     //adding the fromHitlerPOV flag checks if the player is confirmed lib to Hitler (since hitler knows they are fasc)
     if (player.team !== Team.LIB) {
       return false;
-    } else if (game.settings.hitlerKnowsFasc) {
+    } else if (fromHitlerPOV && game.settings.hitlerKnowsFasc) {
       return true;
     }
     // else if (this.inAnyConflict(game, player)) {

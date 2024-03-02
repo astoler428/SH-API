@@ -10,5 +10,5 @@ export function getFormattedDate() {
 }
 
 export function isBlindSetting(gameType: GameType) {
-  return gameType.slice(-5) === 'Blind';
+  return gameType?.slice(-5) === 'Blind';
 }
