@@ -125,7 +125,7 @@ export class DefaultActionService {
     }
     //chan is vanilla fasc (or hitler who knows fasc) with a fasc pres (could be hitler) and you played a blue - advanced feature to change claim based on blue count and who had drawn 3R
     const [BBUnderclaimProb, RBOverclaimProb] = game.settings.simpleBlind
-      ? this.getSimpleFascFascBlueChanClaim(game, chan2)
+      ? this.getSimpleFascFascBlueChanClaim(game)
       : this.getFascFascBlueChanClaim(game);
 
     if (chan2 === CHAN2.BB) {
@@ -367,6 +367,7 @@ export class DefaultActionService {
     investigatedPlayer: Player,
   ) {
     let fascInvConfProb: number;
+    let hitlerInvConfProb: number;
     let vanillaFascInvLibConfProbs = [0.85, 0.95, 1, 1, 1]; //based on number of blues down
     let hitlerInvLibConfProbs = [0.65, 0.8, 0.9, 0.95, 1]; //based on number of blues down
     const currentChanPlayer = this.logicService.getCurrentChan(game);
@@ -375,19 +376,31 @@ export class DefaultActionService {
       return (fascInvConfProb = 1);
     }
     if (this.doubleDipping(game)) {
-      if (currentChanPlayer.team === Team.LIB) {
-        //conf another lib 60%, conf hitler 20%, conf vanilla 40%
-        fascInvConfProb =
-          investigatedPlayer.team === Team.LIB
-            ? 0.6
-            : investigatedPlayer.role === Role.HITLER
-            ? 0.15
-            : 0.33;
+      if (
+        currentPresPlayer.role !== Role.HITLER ||
+        this.knownRoleToHitler(game, currentChanPlayer)
+      ) {
+        if (currentChanPlayer.team === Team.LIB) {
+          //conf another lib 60%, conf hitler 20%, conf vanilla 40%
+          fascInvConfProb =
+            investigatedPlayer.team === Team.LIB
+              ? 0.6
+              : investigatedPlayer.role === Role.HITLER
+              ? 0.15
+              : 0.33;
+          hitlerInvConfProb = investigatedPlayer.team === Team.LIB ? 0.4 : 0.2;
+        } else {
+          //if confed a fasc, 100% conf a lib, 0% conf another fasc
+          fascInvConfProb = investigatedPlayer.team === Team.LIB ? 1 : 0;
+          hitlerInvConfProb = fascInvConfProb;
+        }
       } else {
-        //if confed a fasc, 100% conf a lib, 0% conf another fasc
-        fascInvConfProb = investigatedPlayer.team === Team.LIB ? 1 : 0;
+        //hitler and blind. Less likely to double conf. Definitely don't fasc fasc conf after blind conflicting someone else
+        hitlerInvConfProb = investigatedPlayer.team === Team.LIB ? 0.5 : 0;
       }
-      return fascInvConfProb;
+      return currentPresPlayer.role === Role.HITLER
+        ? hitlerInvConfProb
+        : fascInvConfProb;
     }
 
     if (investigatedPlayer.team === Team.LIB) {
@@ -456,12 +469,6 @@ export class DefaultActionService {
             : underclaimTotal <= -1
             ? 1
             : 0.5 + 0.25 * (numberOf3RedLibs - numberOf3RedFascs);
-        if (
-          currentChanPlayer.team === Team.FASC &&
-          (this.isPower(game) || game.LibPoliciesEnacted > 1)
-        ) {
-          vanillaFascPresRBBDropProb = 1;
-        }
 
         hitlerPresRBBDropProb =
           game.LibPoliciesEnacted === 2
@@ -469,9 +476,11 @@ export class DefaultActionService {
             : game.LibPoliciesEnacted === 3
             ? 1
             : 0.6;
+
         if (this.deck1FinalGovBlueCountTooLow(game, 2)) {
           hitlerPresRBBDropProb = 0;
         }
+
         break;
       case 2:
         vanillaFascPresRBBDropProb = 0.9;
@@ -480,25 +489,50 @@ export class DefaultActionService {
       default:
     }
 
+    if (
+      (currentChanPlayer.role === Role.FASC ||
+        (currentChanPlayer.role === Role.HITLER &&
+          this.knownFascistToHitler(game, currentPresPlayer))) &&
+      (this.isPower(game) || game.LibPoliciesEnacted > 1)
+    ) {
+      vanillaFascPresRBBDropProb = 1;
+    }
+
+    if (
+      this.knownFascistToHitler(game, currentChanPlayer) &&
+      (this.isPower(game) || game.LibPoliciesEnacted > 1)
+    ) {
+      hitlerPresRBBDropProb = 1;
+    }
+
     if (game.LibPoliciesEnacted === 3 && currentChanPlayer.team === Team.LIB) {
       vanillaFascPresRBBDropProb = 0.1;
+    }
+    if (
+      game.LibPoliciesEnacted === 3 &&
+      this.knownLibToHitler(game, currentChanPlayer)
+    ) {
+      hitlerPresRBBDropProb = 0.1;
     }
 
     //hitler knows the chan is fasc since the person that conflicted hitler also conflicted them, same with cucu
 
     //RBB special cases
 
-    if (
-      (this.isAntiDD(game) && currentChanPlayer.team === Team.FASC) ||
-      this.isCucu(game)
-    ) {
+    //if in anti dd with a lib and deck count low, bad to drop if a blue going down anyway
+    if (this.isAntiDD(game)) {
+      hitlerPresRBBDropProb = 1;
+      vanillaFascPresRBBDropProb = 1;
+    }
+
+    if (this.isCucu(game)) {
       hitlerPresRBBDropProb = 1;
       vanillaFascPresRBBDropProb = 1;
     }
 
     if (game.LibPoliciesEnacted === 4) {
-      vanillaFascPresRBBDropProb = 1;
       hitlerPresRBBDropProb = 1;
+      vanillaFascPresRBBDropProb = 1;
     }
 
     //vanillaFasc RRB
@@ -507,7 +541,10 @@ export class DefaultActionService {
     if (currentChanPlayer.team === Team.FASC) {
       //if chan is not hitler or they are hitler but it's an early blue for no power, always pass blue
       //don't pass in cucu because you were inved lib, think you are lib, you need to drop to show you are fasc
-      if (currentChanPlayer.role !== Role.HITLER) {
+      if (
+        currentChanPlayer.role !== Role.HITLER ||
+        this.knownFascistToHitler(game, currentPresPlayer)
+      ) {
         vanillaFascPresRRBDropProb = 0;
       } else if (game.LibPoliciesEnacted <= 1 && !this.isPower(game)) {
         vanillaFascPresRRBDropProb = 0;
@@ -515,8 +552,13 @@ export class DefaultActionService {
         vanillaFascPresRRBDropProb = 0.4;
       }
 
-      if (this.isAntiDD(game) || this.isCucu(game)) {
-        //helps you confirm that you are fasc
+      if (this.isAntiDD(game)) {
+        //if antiDD with a lib, drop, otherwise pass to fasc
+        vanillaFascPresRRBDropProb =
+          currentChanPlayer.role === Role.LIB ? 1 : 0;
+      }
+      if (this.isCucu(game)) {
+        //dropping here helps confirm you are fasc since you were inved lib
         vanillaFascPresRRBDropProb = 1;
       }
     }
@@ -542,9 +584,11 @@ export class DefaultActionService {
     hitlerPresRRBDropProb =
       hitlerPresRRBDropProbs[game.LibPoliciesEnacted][bluesPlayedByPres];
 
-    //pass the blue to your fasc chan
-    if (this.isAntiDD(game) && currentChanPlayer.team === Team.FASC) {
-      hitlerPresRRBDropProb = 0;
+    //drop unless you know chan is fasc
+    if (this.isAntiDD(game)) {
+      hitlerPresRRBDropProb = this.knownFascistToHitler(game, currentChanPlayer)
+        ? 0
+        : 1;
     }
     if (this.isCucu(game)) {
       hitlerPresRRBDropProb = 1;
@@ -655,7 +699,7 @@ export class DefaultActionService {
 
     //have to discard if all blues already claimed
     if (blueProbs[1] === 0) {
-      hitlerChanDropProb = 1;
+      //dont put hitler here - can gain good credit and also could contradict the not out on cucu
       vanillaFascChanDropProb = 1;
     }
 
@@ -996,6 +1040,8 @@ export class DefaultActionService {
     return [fascFascConfProb, BBBfromBBclaimProb];
   }
 
+  //it's possible the deck 2 conf probs are too high in most cases
+  //it's definitely good for the 3B 2R RRB conf necessity
   getHitlerBlindConfProbs(game: Game) {
     const hitlerPlayer = this.logicService.getHitler(game);
     const chanPlayer = this.logicService.getCurrentChan(game);
@@ -1015,6 +1061,12 @@ export class DefaultActionService {
         RRRHitlerBlindConfProb =
           RRRHitlerBlindConfProb +
           0.2 * (bluesPlayedByChan - bluesPlayedByHitler);
+        if (underclaimTotal <= 0) {
+          RRRHitlerBlindConfProb = Math.min(
+            RRRHitlerBlindConfProb,
+            0.2 * (1 + underclaimTotal),
+          );
+        }
         RRBHitlerBlindConfProb =
           RRBHitlerBlindConfProb +
           0.2 * (bluesPlayedByChan - bluesPlayedByHitler) +
@@ -1350,6 +1402,13 @@ export class DefaultActionService {
     return distanceBackToSE <= 3;
   }
 
+  knownRoleToHitler(game: Game, player: Player) {
+    return (
+      this.knownLibToHitler(game, player) ||
+      this.knownFascistToHitler(game, player)
+    );
+  }
+
   knownLibToHitler(game: Game, player: Player) {
     return this.confirmedLib(game, player, true);
   }
@@ -1504,7 +1563,7 @@ export class DefaultActionService {
    *
    * Always change the count to signal
    */
-  getSimpleFascFascBlueChanClaim(game: Game, chan2: CHAN2) {
+  getSimpleFascFascBlueChanClaim(game: Game) {
     //only here for hitler if hitler knows fasc fasc
     const BBUnderclaimProb = 1;
     const RBOverclaimProb = 1;
@@ -1697,6 +1756,12 @@ export class DefaultActionService {
         RRRHitlerBlindConfProb =
           RRRHitlerBlindConfProb +
           0.2 * (bluesPlayedByChan - bluesPlayedByHitler);
+        if (underclaimTotal <= 0) {
+          RRRHitlerBlindConfProb = Math.min(
+            RRRHitlerBlindConfProb,
+            0.2 * (1 + underclaimTotal),
+          );
+        }
         RRBHitlerBlindConfProb =
           RRBHitlerBlindConfProb +
           0.2 * (bluesPlayedByChan - bluesPlayedByHitler) +

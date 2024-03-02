@@ -1320,6 +1320,30 @@ describe('Logic Service', () => {
         ),
       ).toBe(true);
     });
+    it('does not include a conf in inv lib case', () => {
+      game.confs.push({
+        confer: player1.name,
+        confee: player2.name,
+        type: Conf.POLICY,
+      });
+      game.invClaims.push({
+        investigator: player2.name,
+        investigatee: player3.name,
+        claim: Team.LIB,
+      });
+      logicService.addIndirectConfs(
+        game,
+        player1.name,
+        player2.name,
+        Conf.POLICY,
+      );
+      expect(
+        game.confs.some(
+          (conf) =>
+            conf.confer === player1.name && conf.confee === player3.name,
+        ),
+      ).toBe(false);
+    });
   });
 
   describe('chooseSE', () => {
