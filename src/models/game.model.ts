@@ -40,7 +40,6 @@ export type Game = {
   chanPlay: Card | undefined;
   presClaim: PRES3 | undefined;
   chanClaim: CHAN2 | undefined;
-  top3: Card[];
   govs: Gov[];
   log: LogChatMessage[];
   chat: chatMessage[];
@@ -49,6 +48,5 @@ export type Game = {
   remakeId: string;
   topDecked: boolean;
   defaultProbabilityLog: DefaultProbabilityLogItem[];
-  drawPileState: Card[];
 };
 //Figure out how they work with game logic: veto, topdecked

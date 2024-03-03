@@ -43,6 +43,9 @@ export class LogicService {
     if (game.players.length < 7 && game.settings.type !== GameType.LIB_SPY) {
       game.settings.hitlerKnowsFasc = true;
     }
+    if (game.settings.redDown) {
+      game.log.push({ type: LogType.INTRO_RED_DOWN, date: getFormattedDate() });
+    }
     game.log.push({ type: LogType.INTRO_DECK, date: getFormattedDate() });
     game.log.push({ type: LogType.INTRO_ROLES, date: getFormattedDate() });
     if (game.settings.type === GameType.LIB_SPY) {
@@ -57,9 +60,7 @@ export class LogicService {
         date: getFormattedDate(),
       });
     }
-    if (game.settings.redDown) {
-      game.log.push({ type: LogType.INTRO_RED_DOWN, date: getFormattedDate() });
-    }
+
     //individual seta and fascists logs are set in game service after timeout
   }
 
@@ -125,6 +126,10 @@ export class LogicService {
     });
     game.status = Status.VOTE;
     game.topDecked = false;
+    if (game.deck.justReshuffled) {
+      game.deck.deckNum++;
+      game.deck.justReshuffled = false;
+    }
   }
 
   vote(game: Game, name: string, vote: Vote): number {
@@ -201,7 +206,7 @@ export class LogicService {
   }
 
   presDraw3(game: Game) {
-    game.drawPileState = [...game.deck.drawPile];
+    game.deck.drawPileLengthBeforeDraw3 = game.deck.drawPile.length; //drawPileState = [...game.deck.drawPile];
     game.presCards = this.draw3(game.deck);
     game.status = Status.PRES_DISCARD;
   }
@@ -308,7 +313,7 @@ export class LogicService {
     }
     this.resetTracker(game);
     if (game.deck.drawPile.length < 3) {
-      this.reshuffle(game.deck, !topDeck);
+      this.reshuffle(game.deck);
       game.log.push({
         type: LogType.SHUFFLE_DECK,
         date: getFormattedDate(),
@@ -351,7 +356,7 @@ export class LogicService {
     this.determinePolicyConf(game);
     // this.setPrevLocks(game) do this after power and do it inside of nextPres
     this.determinePower(game);
-    game.deck.deckNum++;
+    // game.deck.deckNum++;
   }
 
   addGov(game: Game) {
@@ -405,7 +410,7 @@ export class LogicService {
       } else if (game.FascPoliciesEnacted === 3 && game.players.length >= 7) {
         return (game.status = Status.SE);
       } else if (game.FascPoliciesEnacted === 3 && game.players.length < 7) {
-        game.top3 = this.inspect3(game.deck);
+        game.deck.inspectTop3 = this.inspect3(game.deck);
         game.log.push({
           type: LogType.INSPECT_TOP3,
           date: getFormattedDate(),
@@ -552,7 +557,7 @@ export class LogicService {
       game.chanCards.forEach((card) => this.discard(card, game.deck));
       // this.setPrevLocks(game)
       if (game.deck.drawPile.length < 3) {
-        this.reshuffle(game.deck, false);
+        this.reshuffle(game.deck);
         game.log.push({
           type: LogType.SHUFFLE_DECK,
           date: getFormattedDate(),
@@ -715,26 +720,19 @@ export class LogicService {
     deck.drawPile.sort(() => Math.random() - 0.5);
   }
 
-  reshuffle(deck: Deck, delayIncrementDeckNum: boolean) {
-    if (!delayIncrementDeckNum) {
-      deck.deckNum++;
-    }
+  reshuffle(deck: Deck) {
+    //not incrementing the deck num until chooseChan
+    deck.justReshuffled = true;
     deck.drawPile = [...deck.drawPile, ...deck.discardPile];
     deck.discardPile = [];
     this.shuffleDeck(deck);
   }
 
   topDeckCard(deck: Deck) {
-    // if(deck.drawPile.length < 3){
-    //   this.reshuffle(deck)
-    // }
     return deck.drawPile.pop();
   }
 
   draw3(deck: Deck) {
-    // if(deck.drawPile.length < 3){
-    //   this.reshuffle(deck)
-    // }
     const card1 = deck.drawPile.pop();
     const card2 = deck.drawPile.pop();
     const card3 = deck.drawPile.pop();
@@ -743,9 +741,6 @@ export class LogicService {
   }
 
   inspect3(deck: Deck) {
-    // if(deck.drawPile.length < 3){
-    //   this.reshuffle(deck)
-    // }
     const n = deck.drawPile.length;
     const card1 = deck.drawPile[n - 1];
     const card2 = deck.drawPile[n - 2];

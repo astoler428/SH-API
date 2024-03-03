@@ -59,7 +59,14 @@ export class GameService {
       },
       status: Status.CREATED,
       players: [],
-      deck: { drawPile: [], discardPile: [], deckNum: 1 },
+      deck: {
+        drawPile: [],
+        discardPile: [],
+        deckNum: 1,
+        justReshuffled: false,
+        drawPileLengthBeforeDraw3: 0,
+        inspectTop3: [],
+      },
       LibPoliciesEnacted: 0,
       FascPoliciesEnacted: 0,
       tracker: 0,
@@ -75,7 +82,6 @@ export class GameService {
       chanPlay: null,
       presClaim: null,
       chanClaim: null,
-      top3: null,
       log: [],
       chat: [],
       govs: [],
@@ -84,7 +90,6 @@ export class GameService {
       remakeId: '',
       topDecked: false,
       defaultProbabilityLog: [],
-      drawPileState: [],
     };
 
     await this.gameRespository.set(id, game);
@@ -169,7 +174,14 @@ export class GameService {
       },
       status: Status.CREATED,
       players: [],
-      deck: { drawPile: [], discardPile: [], deckNum: 1 },
+      deck: {
+        drawPile: [],
+        discardPile: [],
+        deckNum: 1,
+        justReshuffled: false,
+        drawPileLengthBeforeDraw3: 0,
+        inspectTop3: [],
+      },
       LibPoliciesEnacted: 0,
       FascPoliciesEnacted: 0,
       tracker: 0,
@@ -185,7 +197,6 @@ export class GameService {
       chanPlay: null,
       presClaim: null,
       chanClaim: null,
-      top3: null,
       log: [],
       chat: [],
       govs: [],
@@ -194,7 +205,6 @@ export class GameService {
       remakeId: '',
       topDecked: false,
       defaultProbabilityLog: [],
-      drawPileState: [],
     };
     await this.gameRespository.set(newId, newGame);
     await this.handleUpdate(id, game);

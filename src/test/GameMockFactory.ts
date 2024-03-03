@@ -31,7 +31,6 @@ export class GameMockFactory {
       chanPlay: null,
       presClaim: null,
       chanClaim: null,
-      top3: null,
       govs: [],
       log: [],
       chat: [],
@@ -40,7 +39,6 @@ export class GameMockFactory {
       remakeId: '',
       topDecked: false,
       defaultProbabilityLog: [],
-      drawPileState: [],
       ...params,
     };
   }

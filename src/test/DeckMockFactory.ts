@@ -9,6 +9,9 @@ export class DeckMockFactory {
       drawPile: [],
       discardPile: [],
       deckNum: 1,
+      justReshuffled: false,
+      drawPileLengthBeforeDraw3: 0,
+      inspectTop3: [],
       ...params,
     };
   }
@@ -18,6 +21,9 @@ export class DeckMockFactory {
       drawPile: [],
       discardPile: [],
       deckNum: 1,
+      justReshuffled: false,
+      drawPileLengthBeforeDraw3: 0,
+      inspectTop3: [],
       ...params,
     };
     this.buildDeck(deck);

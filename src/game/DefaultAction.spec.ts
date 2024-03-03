@@ -729,6 +729,8 @@ describe('DefaultActionService', () => {
           'testName',
           DefaultAction.CHAN_CLAIM,
           'test',
+          Role.FASC,
+          0,
         ),
       ).toBe(true);
     });
@@ -742,6 +744,8 @@ describe('DefaultActionService', () => {
           'testName',
           DefaultAction.CHAN_CLAIM,
           'test',
+          Role.FASC,
+          0,
         ),
       ).toBe(false);
     });
@@ -1189,11 +1193,11 @@ describe('DefaultActionService', () => {
     describe('probabilityOfDrawingBlues', () => {
       it('properlyCalculates each blue prob', () => {
         defaultActionService.bluesToBeginTheDeck = () => 3;
-        game2.drawPileState = [B, B, B, R, R, R, R, R, R, R, R, R];
+        game2.deck.drawPileLengthBeforeDraw3 = 12;
         let blueProbs = defaultActionService.probabilityofDrawingBlues(game2);
         expect(blueProbs[0]).toEqual(21 / 55);
-        game2.drawPileState = [B, R, R, R];
 
+        game2.deck.drawPileLengthBeforeDraw3 = 4;
         defaultActionService.bluesToBeginTheDeck = () => 1;
         blueProbs = defaultActionService.probabilityofDrawingBlues(game2);
         expect(blueProbs[0]).toEqual(0.25);
@@ -1201,31 +1205,59 @@ describe('DefaultActionService', () => {
         expect(blueProbs[2]).toEqual(0);
         expect(blueProbs[3]).toEqual(0);
 
-        game2.drawPileState = [];
-        let blues: number;
-        game2.drawPileState = [];
-        for (blues = 0; blues < 2; blues++) {
-          game2.drawPileState.push(B);
-        }
-        for (let reds = 0; reds < 9; reds++) {
-          game2.drawPileState.push(R);
-        }
-
-        defaultActionService.bluesToBeginTheDeck = () => blues;
+        game2.deck.drawPileLengthBeforeDraw3 = 10;
+        defaultActionService.bluesToBeginTheDeck = () => 2;
         blueProbs = defaultActionService.probabilityofDrawingBlues(game2);
         const EV = defaultActionService.expectedValueOfBlues(game2);
       });
     });
 
+    describe('deck1FinalGovBlueCountTooLow', () => {
+      it('properly checks true', () => {
+        game2.deck.deckNum = 1;
+        game2.deck.drawPileLengthBeforeDraw3 = 5;
+        defaultActionService.blueCountOnThisDeck = () => 0;
+        expect(
+          defaultActionService.deck1FinalGovBlueCountTooLow(game2, 2),
+        ).toBe(true);
+        defaultActionService.blueCountOnThisDeck = () => 1;
+        expect(
+          defaultActionService.deck1FinalGovBlueCountTooLow(game2, 2),
+        ).toBe(true);
+        defaultActionService.blueCountOnThisDeck = () => 2;
+        expect(
+          defaultActionService.deck1FinalGovBlueCountTooLow(game2, 2),
+        ).toBe(true);
+      });
+      it('properly checks false', () => {
+        game2.deck.deckNum = 1;
+        game2.deck.drawPileLengthBeforeDraw3 = 5;
+        defaultActionService.blueCountOnThisDeck = () => 3;
+        expect(
+          defaultActionService.deck1FinalGovBlueCountTooLow(game2, 2),
+        ).toBe(false);
+        defaultActionService.blueCountOnThisDeck = () => 0;
+        game2.deck.drawPileLengthBeforeDraw3 = 6;
+        expect(
+          defaultActionService.deck1FinalGovBlueCountTooLow(game2, 2),
+        ).toBe(false);
+        game2.deck.deckNum = 2;
+        game2.deck.drawPileLengthBeforeDraw3 = 1;
+        defaultActionService.blueCountOnThisDeck = () => 0;
+        expect(
+          defaultActionService.deck1FinalGovBlueCountTooLow(game2, 2),
+        ).toBe(false);
+      });
+    });
     describe('expectedValueOfBlues', () => {
       it('properly calculates EV', () => {
         defaultActionService.bluesToBeginTheDeck = () => 3;
-        game2.drawPileState = [B, B, B, R, R, R, R, R, R, R, R, R];
+        game2.deck.drawPileLengthBeforeDraw3 = 12;
         let blueProbs = defaultActionService.probabilityofDrawingBlues(game2);
         let EV = defaultActionService.expectedValueOfBlues(game2);
         expect(EV).toEqual(blueProbs[1] + 2 * blueProbs[2] + 3 * blueProbs[3]);
 
-        game2.drawPileState = [B, R, R, R];
+        game2.deck.drawPileLengthBeforeDraw3 = 4;
         defaultActionService.bluesToBeginTheDeck = () => 1;
         EV = defaultActionService.expectedValueOfBlues(game2);
         expect(EV).toEqual(0.75);
@@ -1315,6 +1347,22 @@ describe('DefaultActionService', () => {
       expect(overclaimToBBInspect3Prob).toEqual(0.6);
     });
 
+    it('overclaims RRR prob even more if underclaims', () => {
+      defaultActionService.probabilityofDrawingBlues = () => [
+        0.25, 0.74, 0.01, 0,
+      ];
+      defaultActionService.underclaimTotal = () => 1;
+      game2.currentPres = fasc1.name;
+      let [overclaimToBBInspect3Prob] =
+        defaultActionService.getInspect3ClaimProbs(game2);
+      expect(overclaimToBBInspect3Prob).toEqual(0.8);
+      defaultActionService.underclaimTotal = () => 2;
+      game2.currentPres = fasc1.name;
+      [overclaimToBBInspect3Prob] =
+        defaultActionService.getInspect3ClaimProbs(game2);
+      expect(overclaimToBBInspect3Prob).toEqual(1);
+    });
+
     it('does not overclaim RRR if pres is hitler or not 2 blues in deck', () => {
       defaultActionService.probabilityofDrawingBlues = () => [0.25, 0.75, 0, 0];
       game2.currentPres = fasc1.name;
@@ -1326,6 +1374,15 @@ describe('DefaultActionService', () => {
       [overclaimToBBInspect3Prob] =
         defaultActionService.getInspect3ClaimProbs(game2);
       expect(overclaimToBBInspect3Prob).toEqual(0);
+    });
+    it('uses a different deck count if just reshuffle', () => {
+      game2.deck.justReshuffled = true;
+      game2.deck.deckNum = 1;
+      game2.govs.push(new GovMockFactory().create({ underclaim: 2 }));
+      defaultActionService.probabilityofDrawingBlues = () => [0.25, 0.75, 1, 0];
+      const [overclaimToBBInspect3Prob] =
+        defaultActionService.getInspect3ClaimProbs(game2);
+      expect(overclaimToBBInspect3Prob).toEqual(0.6);
     });
   });
   describe('getSimpleInspect3ClaimProbs', () => {
@@ -2762,14 +2819,43 @@ describe('DefaultActionService', () => {
       expect(dropProb).toEqual(0.05);
     });
 
+    it('returns lower if lower game count and lower blue count', () => {
+      game2.players = players2.slice(0, 6);
+      defaultActionService.invPower = () => false;
+      game2.LibPoliciesEnacted = 1;
+      let dropProb = defaultActionService.getChanDropProbs(game2);
+      expect(dropProb).toEqual(0.2);
+      game2.players = players2.slice(0, 8);
+      dropProb = defaultActionService.getChanDropProbs(game2);
+      expect(dropProb).toEqual(0.2);
+      game2.currentChan = hitler.name;
+      game2.LibPoliciesEnacted = 0;
+      dropProb = defaultActionService.getChanDropProbs(game2);
+      expect(dropProb).toEqual(0.1);
+      game2.players = players2.slice(0, 8);
+      dropProb = defaultActionService.getChanDropProbs(game2);
+      expect(dropProb).toEqual(0.1);
+      game2.LibPoliciesEnacted = 2;
+      dropProb = defaultActionService.getChanDropProbs(game2);
+      expect(dropProb).not.toEqual(0.1);
+      game2.players = players2.slice(0, 7);
+      game2.currentChan = fasc1.name;
+      game2.LibPoliciesEnacted = 0;
+      dropProb = defaultActionService.getChanDropProbs(game2);
+      expect(dropProb).not.toEqual(0.2);
+    });
+
     it('returns lower if inv and <= 1 blue', () => {
       defaultActionService.invPower = () => true;
       game2.LibPoliciesEnacted = 1;
       let dropProb = defaultActionService.getChanDropProbs(game2);
       expect(dropProb).toEqual(0.65);
-      game2.players = players2.slice(0, 8);
+      game2.players = players2.slice(0, 7);
       dropProb = defaultActionService.getChanDropProbs(game2);
       expect(dropProb).toEqual(0.3);
+      game2.players = players2.slice(0, 8);
+      dropProb = defaultActionService.getChanDropProbs(game2);
+      expect(dropProb).toEqual(0.1);
     });
 
     it('handles cucu with fasc fasc', () => {
@@ -3025,7 +3111,7 @@ describe('DefaultActionService', () => {
       game2.deck.deckNum = 2;
       bluesToBeginDeck = 3;
       blueCount = 0;
-      game2.drawPileState.length = 12;
+      game2.deck.drawPileLengthBeforeDraw3 = 12;
       let [RRBHitlerBlindConfProb, RRRHitlerBlindConfProb] =
         defaultActionService.getHitlerBlindConfProbs(game2);
       expect(Math.abs(RRRHitlerBlindConfProb - 0.61818)).toBeLessThanOrEqual(
@@ -3047,7 +3133,7 @@ describe('DefaultActionService', () => {
       bluesToBeginDeck = 2;
       game2.FascPoliciesEnacted = 0;
       blueCount = 0;
-      game2.drawPileState.length = 12;
+      game2.deck.drawPileLengthBeforeDraw3 = 12;
       [RRBHitlerBlindConfProb, RRRHitlerBlindConfProb] =
         defaultActionService.getHitlerBlindConfProbs(game2);
       expect(Math.abs(RRRHitlerBlindConfProb - 0.4545)).toBeLessThanOrEqual(

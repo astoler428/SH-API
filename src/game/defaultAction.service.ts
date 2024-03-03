@@ -462,13 +462,21 @@ export class DefaultActionService {
   getInspect3ClaimProbs(game: Game) {
     let overclaimFromRRRtoRBBInspect3Prob = 0;
     let underclaimBBBInspect3Prob = 1;
-    const currentPresPlayer = this.logicService.getCurrentPres(game);
-    const blueProbs = this.probabilityofDrawingBlues(game);
-    //I think only if 3R ? If one B doesn't seem worth it
-    if (currentPresPlayer.role !== Role.HITLER && blueProbs[2] !== 0) {
-      overclaimFromRRRtoRBBInspect3Prob = 0.6;
+    if (game.deck.justReshuffled) {
+      game.deck.deckNum++;
     }
 
+    const currentPresPlayer = this.logicService.getCurrentPres(game);
+    const blueProbs = this.probabilityofDrawingBlues(game);
+    const underclaimTotal = this.underclaimTotal(game);
+    //I think only if 3R ? If one B doesn't seem worth it
+    if (currentPresPlayer.role !== Role.HITLER && blueProbs[2] !== 0) {
+      overclaimFromRRRtoRBBInspect3Prob = 0.6 + 0.2 * underclaimTotal;
+    }
+
+    if (game.deck.justReshuffled) {
+      game.deck.deckNum--;
+    }
     return [overclaimFromRRRtoRBBInspect3Prob, underclaimBBBInspect3Prob];
   }
 
@@ -690,6 +698,13 @@ export class DefaultActionService {
     vanillaFascChanDropProb =
       vanillaFascChanDropProbs[game.LibPoliciesEnacted][bluesPlayedByChan];
 
+    if (game.players.length < 7 || game.players.length === 8) {
+      if (game.LibPoliciesEnacted <= 1) {
+        hitlerChanDropProb = 0.1;
+        vanillaFascChanDropProb = 0.2;
+      }
+    }
+
     //fasc fasc and power - drop, otherwise play blue
     if (currentPresPlayer.team === Team.FASC) {
       if (this.isPower(game)) {
@@ -706,7 +721,12 @@ export class DefaultActionService {
     } else {
       //less likely to give inv
       if (game.LibPoliciesEnacted <= 1 && this.invPower(game, true)) {
-        vanillaFascChanDropProb = game.players.length <= 8 ? 0.3 : 0.65; //in 9 and 10, more likely to give inv
+        vanillaFascChanDropProb =
+          game.players.length === 7
+            ? 0.3
+            : game.players.length <= 8
+            ? 0.1
+            : 0.65; //in 9 and 10, more likely to give inv
       }
     }
 
@@ -888,7 +908,7 @@ export class DefaultActionService {
             : underclaimTotal === 1
             ? 0.75
             : this.deck1FinalGovBlueCountTooLow(game, 3) ||
-              (game.deck.drawPile.length >= 9 && blueCount <= 1)
+              (game.deck.drawPileLengthBeforeDraw3 >= 12 && blueCount <= 1)
             ? 0.6 + 0.2 * (numberOf3RedFascs - numberOf3RedLibs)
             : 0;
         break;
@@ -1000,7 +1020,7 @@ export class DefaultActionService {
             : underclaimTotal === BBBOverclaimAmount
             ? 0.75
             : this.deck1FinalGovBlueCountTooLow(game, 3) ||
-              (game.deck.drawPile.length >= 9 &&
+              (game.deck.drawPileLengthBeforeDraw3 >= 12 &&
                 blueCount <= 1 &&
                 BBBOverclaimAmount <= 1)
             ? 0.6 + 0.2 * (numberOf3RedFascs - numberOf3RedLibs)
@@ -1562,7 +1582,7 @@ export class DefaultActionService {
   }
 
   probabilityofDrawingBlues(game: Game) {
-    const n = game.drawPileState.length;
+    const n = game.deck.drawPileLengthBeforeDraw3;
     const blueProbs = [];
     const totalBlues = this.bluesToBeginTheDeck(game, game.deck.deckNum);
     const blueCount = this.blueCountOnThisDeck(game);
@@ -1585,7 +1605,7 @@ export class DefaultActionService {
   deck1FinalGovBlueCountTooLow(game: Game, blueCount: number) {
     return (
       game.deck.deckNum === 1 &&
-      game.deck.drawPile.length <= 5 &&
+      game.deck.drawPileLengthBeforeDraw3 <= 5 &&
       this.blueCountOnThisDeck(game) <= blueCount
     );
   }

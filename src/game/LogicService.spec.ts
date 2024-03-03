@@ -439,6 +439,14 @@ describe('Logic Service', () => {
     it('sets the status to VOTE', () => {
       expect(game.status).toEqual(Status.VOTE);
     });
+
+    it('increments deckNum and resets reshuffled if already shuffled', () => {
+      expect(game.deck.deckNum).toEqual(1);
+      game.deck.justReshuffled = true;
+      logicService.chooseChan(game, 'player-2');
+      expect(game.deck.deckNum).toEqual(2);
+      expect(game.deck.justReshuffled).toBe(false);
+    });
   });
 
   describe('vote', () => {
@@ -906,10 +914,6 @@ describe('Logic Service', () => {
       expect(logicService.addGov).toBeCalledTimes(1);
       expect(logicService.determinePolicyConf).toBeCalledTimes(1);
       expect(logicService.determinePower).toBeCalledTimes(1);
-    });
-
-    it('increments deck count', () => {
-      expect(game.deck.deckNum).toEqual(2);
     });
   });
 
@@ -1651,10 +1655,7 @@ describe('Logic Service', () => {
     describe('reshuffle', () => {
       beforeEach(async () => {
         jest.spyOn(logicService, 'shuffleDeck');
-        logicService.reshuffle(deck, false);
-      });
-      it('increases the deckNum', () => {
-        expect(deck.deckNum).toEqual(2);
+        logicService.reshuffle(deck);
       });
 
       it('combines the cards back into the drawPile', () => {
@@ -1663,13 +1664,17 @@ describe('Logic Service', () => {
         }
         expect(deck.drawPile).toHaveLength(2);
         expect(deck.discardPile).toHaveLength(15);
-        logicService.reshuffle(deck, true);
+        logicService.reshuffle(deck);
         expect(deck.drawPile).toHaveLength(17);
         expect(deck.discardPile).toHaveLength(0);
       });
 
       it('calls shuffleDeck', () => {
         expect(logicService.shuffleDeck).toBeCalled();
+      });
+
+      it('sets deck to just reshuffled', () => {
+        expect(deck.justReshuffled).toBe(true);
       });
     });
 
