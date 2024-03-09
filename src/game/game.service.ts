@@ -25,10 +25,12 @@ import {
 import { LogicService } from './logic.service';
 import { GameRepository } from './game.repository';
 import { DefaultActionService } from './defaultAction.service';
-import { getFormattedDate, isBlindSetting } from '../helperFunctions';
+import { gameOver, getFormattedDate, isBlindSetting } from '../helperFunctions';
 
 @Injectable()
 export class GameService {
+  private deleteGameTimeoutId: NodeJS.Timeout;
+
   constructor(
     private eventEmitter: EventEmitter2,
     private logicService: LogicService,
@@ -115,6 +117,7 @@ export class GameService {
       if (!playerAlreadyInGame.socketId) {
         // console.log('reassigning socketId')
         playerAlreadyInGame.socketId = socketId;
+        clearTimeout(this.deleteGameTimeoutId);
       } else if (playerAlreadyInGame.socketId !== socketId) {
         throw new BadRequestException(
           `A player with that name is already in the game`,
@@ -141,6 +144,7 @@ export class GameService {
           confirmedNotHitler: false,
           identity: Identity.LIB,
         });
+        clearTimeout(this.deleteGameTimeoutId);
       }
     }
     await this.handleUpdate(id, game);
@@ -235,17 +239,16 @@ export class GameService {
       } else if (playerLeaving.name === game.host) {
         game.host = game.players[0]?.name;
       }
-
-      //here set new host
     } else {
       //game in progress - disconnect
-      // console.log('player disconnected - removing socketId')
       playerLeaving.socketId = null;
 
-      //if everybody disconnects - then delete game after 5 minute (in case everyone crashes out it doesn't automatically delete)
-      if (game.players.every((player) => player.socketId === null)) {
-        // console.log('deleting game')
-        setTimeout(
+      //if everybody disconnects and the game is not over (keep completed games) then delete game after 10 minutes (in case everyone crashes out it doesn't automatically delete)
+      if (
+        game.players.every((player) => player.socketId === null) &&
+        !gameOver(game)
+      ) {
+        this.deleteGameTimeoutId = setTimeout(
           async () => {
             const game = await this.gameRespository.get(id);
             if (game?.players.every((player) => player.socketId === null)) {
@@ -253,10 +256,8 @@ export class GameService {
               this.deleteGame(id);
             }
           },
-          1000 * 5 * 60,
+          1000 * 60 * 10,
         );
-
-        //maybe try adding something like settimeout for a while, then if still all null, then delete game in case everyone gets kicked or something
       }
     }
     if (!gameDeleted) {

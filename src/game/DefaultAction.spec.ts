@@ -3495,14 +3495,109 @@ describe('DefaultActionService', () => {
       expect(fascRRBoverclaimProb).toEqual(0);
     });
 
-    //here
+    it('always underclaims BBB if more 3 red libs', () => {
+      numberOf3RedFascs = 1;
+      numberOf3RedLibs = 2;
+      const [, fascBBBunderclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascBBBunderclaimProb).toEqual(1);
+    });
 
+    it('underclaims BBB .75 if same', () => {
+      numberOf3RedFascs = 1;
+      numberOf3RedLibs = 1;
+      const [, fascBBBunderclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascBBBunderclaimProb).toEqual(0.75);
+    });
+
+    it('underclaims BBB 0 if more 3 red fascs', () => {
+      numberOf3RedFascs = 1;
+      numberOf3RedLibs = 0;
+      const [, fascBBBunderclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascBBBunderclaimProb).toEqual(0);
+    });
+
+    it('never overclaims RBB if more 3 red libs', () => {
+      numberOf3RedFascs = 1;
+      numberOf3RedLibs = 0;
+      const [, , , , fascRBBoverclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRBBoverclaimProb).toEqual(0);
+    });
+
+    it('always overclaims RBB if at least 2 underclaims', () => {
+      numberOf3RedFascs = 1;
+      numberOf3RedLibs = 1;
+      underclaimTotal = 2;
+      const [, , , , fascRBBoverclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRBBoverclaimProb).toEqual(1);
+    });
+
+    it('overclaims RBB .75 if 1 undercaim', () => {
+      numberOf3RedFascs = 2;
+      numberOf3RedLibs = 1;
+      underclaimTotal = 1;
+      const [, , , , fascRBBoverclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRBBoverclaimProb).toEqual(0.75);
+    });
+
+    it('overclaims RBB with <= 0 underclaims if final gov deck count too low underclaims according to probs', () => {
+      numberOf3RedFascs = 0;
+      numberOf3RedLibs = 0;
+      underclaimTotal = 0;
+      defaultActionService.deck1FinalGovBlueCountTooLow = () => true;
+      let [, , , , fascRBBoverclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRBBoverclaimProb).toEqual(0.6);
+      numberOf3RedFascs = 2;
+      numberOf3RedLibs = 1;
+      [, , , , fascRBBoverclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRBBoverclaimProb).toEqual(0.8);
+    });
+
+    it('overclaims RBB with <= 0 underclaims if enough cards in deck and low blue count underclaims according to probs', () => {
+      numberOf3RedFascs = 0;
+      numberOf3RedLibs = 0;
+      underclaimTotal = 0;
+      blueCount = 1;
+      game2.deck.drawPileLengthBeforeDraw3 = 12;
+      let [, , , , fascRBBoverclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRBBoverclaimProb).toEqual(0.25);
+    });
+
+    it('does not overclaim in any other scenario', () => {
+      numberOf3RedFascs = 0;
+      numberOf3RedLibs = 0;
+      underclaimTotal = 0;
+      blueCount = 2;
+      game2.deck.drawPileLengthBeforeDraw3 = 13;
+      let [, , , , fascRBBoverclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRBBoverclaimProb).toEqual(0);
+    });
+
+    it('returns the right deck 2 probs for BBB underclaim and RBB overclaim', () => {
+      game2.deck.deckNum = 2;
+      let [, fascBBBunderclaimProb, , , fascRBBoverclaimProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRBBoverclaimProb).toEqual(0);
+      defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascBBBunderclaimProb).toEqual(1);
+    });
+
+    //
     it('returns RRBConfProb according to blues blues down', () => {
       const fascRRBconfProbs = [0.75, 0.85, 0.95, 1, 1];
       for (let bluesDown = 0; bluesDown <= 4; bluesDown++) {
-        game.LibPoliciesEnacted = bluesDown;
+        game2.LibPoliciesEnacted = bluesDown;
         let [fascRRBconfProb] =
-          defaultActionService.getPresClaimWithLibProbs(game);
+          defaultActionService.getPresClaimWithLibProbs(game2);
         expect(fascRRBconfProb).toEqual(fascRRBconfProbs[bluesDown]);
       }
     });
@@ -3510,287 +3605,535 @@ describe('DefaultActionService', () => {
     it('returns RRRConfProb according to blues blues down', () => {
       const fascRRRconfProbs = [0.4, 0.6, 0.8, 0.9, 1];
       for (let bluesDown = 0; bluesDown <= 4; bluesDown++) {
-        game.LibPoliciesEnacted = bluesDown;
+        game2.LibPoliciesEnacted = bluesDown;
         let [, , fascRRRconfProb] =
-          defaultActionService.getPresClaimWithLibProbs(game);
+          defaultActionService.getPresClaimWithLibProbs(game2);
         expect(fascRRRconfProb).toEqual(fascRRRconfProbs[bluesDown]);
       }
+    });
+
+    it('RRRconfProb if underlcaims not more 3 red libs', () => {
+      underclaimTotal = 1;
+      let [, , fascRRRconfProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRRRconfProb).toEqual(0.4 + 0.25);
+      underclaimTotal = 2;
+      [, , fascRRRconfProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRRRconfProb).toEqual(0.4 + 0.5);
+    });
+
+    it('returns proper deck 2 RRR and RRB conf probs', () => {
+      game2.deck.deckNum = 2;
+      let [fascRRBconfProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRRBconfProb).toEqual(1);
+
+      let [, , fascRRRconfProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRRRconfProb).toEqual(0.4);
+      underclaimTotal = 1;
+      [, , fascRRRconfProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRRRconfProb).toEqual(1);
     });
 
     it('returns RRBConfProb of .5 on inv regardless of blues down', () => {
       defaultActionService.invPower = () => true;
       for (let bluesDown = 0; bluesDown <= 4; bluesDown++) {
-        game.LibPoliciesEnacted = bluesDown;
+        game2.LibPoliciesEnacted = bluesDown;
         let [fascRRBconfProb] =
-          defaultActionService.getPresClaimWithLibProbs(game);
+          defaultActionService.getPresClaimWithLibProbs(game2);
         expect(fascRRBconfProb).toEqual(0.5);
       }
     });
 
-    it('returns RRBConfProb of .2 if less than 7 players or 8 players', () => {
-      game.players.push(new PlayerMockFactory().create());
-      expect(game.players).toHaveLength(8);
+    it('returns RRRConfProb of max .5 on inv', () => {
       defaultActionService.invPower = () => true;
-      for (let bluesDown = 0; bluesDown <= 4; bluesDown++) {
-        game.LibPoliciesEnacted = bluesDown;
-        let [fascRRBconfProb] =
-          defaultActionService.getPresClaimWithLibProbs(game);
-        expect(fascRRBconfProb).toEqual(0.2);
+      for (let bluesDown = 1; bluesDown <= 4; bluesDown++) {
+        game2.LibPoliciesEnacted = bluesDown;
+        let [, , fascRRRconfProb] =
+          defaultActionService.getPresClaimWithLibProbs(game2);
+        expect(fascRRRconfProb).toEqual(0.5);
       }
-      game.players = game.players.slice(0, 6);
-      defaultActionService.invPower = () => true;
+      game2.LibPoliciesEnacted = 0;
+      let [, , fascRRRconfProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRRRconfProb).toEqual(0.4);
+      underclaimTotal = 2;
+      [, , fascRRRconfProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRRRconfProb).toEqual(0.5);
+    });
+
+    it('it confs if deck1finalgov blue count too low', () => {
+      defaultActionService.deck1FinalGovBlueCountTooLow = () => true;
       for (let bluesDown = 0; bluesDown <= 4; bluesDown++) {
-        game.LibPoliciesEnacted = bluesDown;
-        let [fascRRBconfProb] =
-          defaultActionService.getPresClaimWithLibProbs(game);
-        expect(fascRRBconfProb).toEqual(0.2);
+        game2.LibPoliciesEnacted = bluesDown;
+        let [fascRRBconfProb, , fascRRRconfProb] =
+          defaultActionService.getPresClaimWithLibProbs(game2);
+        expect(fascRRBconfProb).toEqual(1);
+        expect(fascRRRconfProb).toEqual(1);
       }
     });
 
-    it('returns RRRConfProb of .1 if less than 7 players or 8 players', () => {
-      game.players.push(new PlayerMockFactory().create());
-      expect(game.players).toHaveLength(8);
+    it('returns RRBConfProb of .2 and RRRconfProb of .1 if less than 7 players or 8 players', () => {
+      game2.players = players2.slice(0, 6);
       defaultActionService.invPower = () => true;
+      defaultActionService.deck1FinalGovBlueCountTooLow = () => true;
       for (let bluesDown = 0; bluesDown <= 4; bluesDown++) {
-        game.LibPoliciesEnacted = bluesDown;
-        let [, , fascRRRconfProb] =
-          defaultActionService.getPresClaimWithLibProbs(game);
+        game2.LibPoliciesEnacted = bluesDown;
+        let [fascRRBconfProb, , fascRRRconfProb] =
+          defaultActionService.getPresClaimWithLibProbs(game2);
+        expect(fascRRBconfProb).toEqual(0.2);
         expect(fascRRRconfProb).toEqual(0.1);
       }
-      game.players = game.players.slice(0, 6);
-      defaultActionService.invPower = () => true;
+      game2.players = players2.slice(0, 6);
       for (let bluesDown = 0; bluesDown <= 4; bluesDown++) {
-        game.LibPoliciesEnacted = bluesDown;
-        let [, , fascRRRconfProb] =
-          defaultActionService.getPresClaimWithLibProbs(game);
+        game2.LibPoliciesEnacted = bluesDown;
+        let [fascRRBconfProb, , fascRRRconfProb] =
+          defaultActionService.getPresClaimWithLibProbs(game2);
+        expect(fascRRBconfProb).toEqual(0.2);
         expect(fascRRRconfProb).toEqual(0.1);
+      }
+      game2.players = players2.slice(0, 8);
+      for (let bluesDown = 0; bluesDown <= 4; bluesDown++) {
+        game2.LibPoliciesEnacted = bluesDown;
+        let [fascRRBconfProb, , fascRRRconfProb] =
+          defaultActionService.getPresClaimWithLibProbs(game2);
+        expect(fascRRBconfProb).toEqual(0.2);
+        expect(fascRRRconfProb).toEqual(0.1);
+      }
+    });
+
+    it('it confs if deck1finalgov blue count too low', () => {
+      defaultActionService.deck1FinalGovBlueCountTooLow = () => true;
+      blueCount = 6;
+      bluesToBeginTheDeck = 6;
+      for (let bluesDown = 0; bluesDown <= 4; bluesDown++) {
+        game2.LibPoliciesEnacted = bluesDown;
+        let [fascRRBconfProb, , fascRRRconfProb] =
+          defaultActionService.getPresClaimWithLibProbs(game2);
+        expect(fascRRBconfProb).toEqual(0);
+        expect(fascRRRconfProb).toEqual(0);
       }
     });
 
     //change later now that it does conf for hitler
-    it('does not conf as hitler on RRR or RRB', () => {
-      game.currentPres = 'player-3';
-      let [fascRRBconfProb, , fascRRRconfProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
-      expect(fascRRBconfProb).toEqual(0);
-      expect(fascRRRconfProb).toEqual(0);
+    it('uses getHitlerBlindConfProbs if hitler and does not know they are lib', () => {
+      game2.currentPres = hitler.name;
+      jest.spyOn(defaultActionService, 'getHitlerBlindConfProbs');
+      defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(defaultActionService.getHitlerBlindConfProbs).toBeCalledTimes(1);
     });
 
     it('does not conf if investgiated lib on RRR or RRB', () => {
-      game.currentPres = 'player-2';
-      game.invClaims.push({
-        investigator: 'player-2',
-        investigatee: 'player-1',
+      game2.invClaims.push({
+        investigator: fasc1.name,
+        investigatee: lib1.name,
         claim: Team.LIB,
       });
       let [fascRRBconfProb, , fascRRRconfProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
+        defaultActionService.getPresClaimWithLibProbs(game2);
       expect(fascRRBconfProb).toEqual(0);
       expect(fascRRRconfProb).toEqual(0);
     });
 
-    it('determines fascBBBunderclaimProb of 1 if lib3red otherwise .75', () => {
-      game.currentPres = 'player-3';
-      let [, fascBBBunderclaimProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
-      expect(fascBBBunderclaimProb).toEqual(0.75);
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      [, fascBBBunderclaimProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
-      expect(fascBBBunderclaimProb).toEqual(1);
-    });
-
-    it('determines fascRRBoverclaimProb', () => {
-      //Currently never overclaiming
-
-      game.currentPres = 'player-3';
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      let [, , , fascRRBoverclaimProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
-      expect(fascRRBoverclaimProb).toEqual(0);
-      defaultActionService.lib3RedOnThisDeck = () => false;
-      [, , , fascRRBoverclaimProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
-      expect(fascRRBoverclaimProb).toEqual(0);
-      // underclaimTotal = 2;
-      // [, , , fascRRBoverclaimProb] =
-      //   defaultActionService.getPresClaimWithLibProbs(game);
-      // expect(fascRRBoverclaimProb).toEqual(0.9);
-      // underclaimTotal = 1;
-      // [, , , fascRRBoverclaimProb] =
-      //   defaultActionService.getPresClaimWithLibProbs(game);
-      // expect(fascRRBoverclaimProb).toEqual(0.25);
-    });
-
-    it('determines fascRBBoverclaimProb', () => {
-      game.currentPres = 'player-3';
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      let [, , , , fascRBBoverclaimProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
-      expect(fascRBBoverclaimProb).toEqual(0);
-      defaultActionService.lib3RedOnThisDeck = () => false;
-      [, , , , fascRBBoverclaimProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
-      expect(fascRBBoverclaimProb).toEqual(0);
-      underclaimTotal = 2;
-      [, , , , fascRBBoverclaimProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
-      expect(fascRBBoverclaimProb).toEqual(1);
-      underclaimTotal = 1;
-      [, , , , fascRBBoverclaimProb] =
-        defaultActionService.getPresClaimWithLibProbs(game);
-      expect(fascRBBoverclaimProb).toEqual(0.75);
+    it('does not conf if confirmed lib', () => {
+      defaultActionService.confirmedLib = () => true;
+      let [fascRRBconfProb, , fascRRRconfProb] =
+        defaultActionService.getPresClaimWithLibProbs(game2);
+      expect(fascRRBconfProb).toEqual(0);
+      expect(fascRRRconfProb).toEqual(0);
     });
   });
 
+  describe('getSimplePresClaimWithFascProbs', () => {
+    it('returns 1 always for vanilla fasc', () => {
+      let [
+        fascRRBconfProb,
+        fascBBBunderclaimProb,
+        fascRRRconfProb,
+        fascRRBoverclaimProb,
+        fascRBBoverclaimProb,
+      ] = defaultActionService.getSimplePresClaimWithLibProbs(game2);
+      expect(fascRRBconfProb).toEqual(1);
+      expect(fascBBBunderclaimProb).toEqual(1);
+      expect(fascRRRconfProb).toEqual(1);
+      expect(fascRRBoverclaimProb).toEqual(1);
+      expect(fascRBBoverclaimProb).toEqual(1);
+    });
+
+    it('uses get simple hitler blind conf probs for hitler', () => {
+      game2.currentPres = hitler.name;
+      jest.spyOn(defaultActionService, 'getSimpleHitlerBlindConfProbs');
+      defaultActionService.getSimplePresClaimWithLibProbs(game2);
+      expect(
+        defaultActionService.getSimpleHitlerBlindConfProbs,
+      ).toBeCalledTimes(1);
+    });
+  });
+
+  //
   describe('getPresClaimWithFascProbs', () => {
+    let numberOf3RedFascs: number;
+    let numberOf3RedLibs: number;
     let underclaimTotal: number;
+    let blueCount: number;
+    let bluesToBeginTheDeck: number;
     let presCards: PRES3;
+
     beforeEach(() => {
+      game2.currentPres = fasc1.name;
+      game2.currentChan = fasc2.name;
+      game2.LibPoliciesEnacted = 0;
+      game2.FascPoliciesEnacted = 0;
+      game2.deck.deckNum = 1;
+      numberOf3RedFascs = 0;
+      numberOf3RedLibs = 0;
       underclaimTotal = 0;
-      game.currentPres = 'player-2';
-      game.currentChan = 'player-2';
-      defaultActionService.lib3RedOnThisDeck = () => false;
+      blueCount = 0;
+      presCards = PRES3.BBB;
+      defaultActionService.invPower = () => false;
+      defaultActionService.numberOf3RedLibsOnThisDeck = () => numberOf3RedLibs;
+      defaultActionService.numberOf3RedFascsOnThisDeck = () =>
+        numberOf3RedFascs;
       defaultActionService.underclaimTotal = () => underclaimTotal;
+      defaultActionService.blueCountOnThisDeck = () => blueCount;
+      defaultActionService.bluesToBeginTheDeck = () => bluesToBeginTheDeck;
+      defaultActionService.knownFascistToHitler = () => false;
+      defaultActionService.knownLibToHitler = () => false;
+      defaultActionService.deck1FinalGovBlueCountTooLow = () => false;
+      defaultActionService.confirmedLib = () => false;
+      defaultActionService.lib3RedOnThisDeck = () => false;
       defaultActionService.isAntiDD = () => false;
       defaultActionService.determine3Cards = () => presCards;
+    });
+
+    it('does not claim BBB if more 3 red libs on BBB', () => {
+      numberOf3RedFascs = 0;
+      numberOf3RedLibs = 1;
       presCards = PRES3.BBB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0);
     });
 
-    it('returns RRBoverclaimProb according to underclaims and lib3red on RBB', () => {
+    it('claim BBB .25 if same number of 3 red libs and fasc on BBB', () => {
+      numberOf3RedFascs = 0;
+      numberOf3RedLibs = 0;
+      presCards = PRES3.BBB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0.25);
+    });
+
+    it('claim BBB if more 3 red fasc on BBB', () => {
+      numberOf3RedFascs = 1;
+      numberOf3RedLibs = 0;
+      presCards = PRES3.BBB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(1);
+    });
+
+    it('does not overclaim RBB if more 3 red libs', () => {
+      numberOf3RedFascs = 0;
+      numberOf3RedLibs = 1;
       presCards = PRES3.RBB;
-      let [, RBBoverclaimProb] =
-        defaultActionService.getPresClaimWithFascProbs(game);
-      expect(RBBoverclaimProb).toEqual(0);
-      underclaimTotal = 2;
-      [, RBBoverclaimProb] =
-        defaultActionService.getPresClaimWithFascProbs(game);
-      expect(RBBoverclaimProb).toEqual(0.9);
-      underclaimTotal = 1;
-      [, RBBoverclaimProb] =
-        defaultActionService.getPresClaimWithFascProbs(game);
-      expect(RBBoverclaimProb).toEqual(0.9);
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      [, RBBoverclaimProb] =
-        defaultActionService.getPresClaimWithFascProbs(game);
-      expect(RBBoverclaimProb).toEqual(0);
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0);
     });
 
-    it('returns RRBoverclaimProb according to underclaims and lib3red on RRB', () => {
+    it('does overclaim RBB if 2 underclaims', () => {
+      presCards = PRES3.RBB;
+      underclaimTotal = 2;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(1);
+    });
+
+    it('overclaim RBB if deck1finalgovbluecounttoo low', () => {
+      defaultActionService.deck1FinalGovBlueCountTooLow = () => true;
+      presCards = PRES3.RBB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0.6);
+      numberOf3RedFascs = 1;
+      numberOf3RedLibs = 0;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0.8);
+    });
+
+    it('overclaim RBB .75 if 1 underclaim', () => {
+      presCards = PRES3.RBB;
+      underclaimTotal = 1;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0.75);
+    });
+
+    it('overclaim RBB .25 if no underclaims and early deck and <= 1 blue', () => {
+      presCards = PRES3.RBB;
+      game2.deck.drawPileLengthBeforeDraw3 = 12;
+      blueCount = 1;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0.25);
+    });
+
+    it('does not overclaim in all other scenarios', () => {
+      presCards = PRES3.RBB;
+      underclaimTotal = 0;
+      blueCount = 2;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0);
+    });
+
+    //
+
+    it('does not overclaim RRB if more 3 red libs', () => {
+      numberOf3RedFascs = 0;
+      numberOf3RedLibs = 1;
       presCards = PRES3.RRB;
-      let [, RBBoverclaimProb] =
-        defaultActionService.getPresClaimWithFascProbs(game);
-      expect(RBBoverclaimProb).toEqual(0);
-      underclaimTotal = 2;
-      [, RBBoverclaimProb] =
-        defaultActionService.getPresClaimWithFascProbs(game);
-      expect(RBBoverclaimProb).toEqual(0.9);
-      underclaimTotal = 1;
-      [, RBBoverclaimProb] =
-        defaultActionService.getPresClaimWithFascProbs(game);
-      expect(RBBoverclaimProb).toEqual(0);
-      underclaimTotal = 2;
-      defaultActionService.lib3RedOnThisDeck = () => true;
-      [, RBBoverclaimProb] =
-        defaultActionService.getPresClaimWithFascProbs(game);
-      expect(RBBoverclaimProb).toEqual(0);
-      underclaimTotal = 3;
-      [, RBBoverclaimProb] =
-        defaultActionService.getPresClaimWithFascProbs(game);
-      expect(RBBoverclaimProb).toEqual(0.9);
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0);
     });
 
-    // it('.9 fasc fasc conf if RBB and underclaim >= 1', () => {
-    //   underclaimTotal = 1;
-    //   presCards = PRES3.RBB;
-    //   let [fascFascConfProb] =
-    //     defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0.9);
-    // });
+    it('does overclaim RRB if 3 underclaims', () => {
+      presCards = PRES3.RRB;
+      underclaimTotal = 3;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(1);
+    });
 
-    // it('.9 fasc fasc conf if RRB and underclaim >= 2', () => {
-    //   underclaimTotal = 2;
-    //   presCards = PRES3.RRB;
-    //   let [fascFascConfProb] =
-    //     defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0.9);
-    // });
+    it('overclaim RRB if deck1finalgovbluecounttoo low', () => {
+      defaultActionService.deck1FinalGovBlueCountTooLow = () => true;
+      presCards = PRES3.RRB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0.6);
+      numberOf3RedFascs = 1;
+      numberOf3RedLibs = 0;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0.8);
+    });
 
-    // it('does not fasc fasc conf in anti DD', () => {
-    //   defaultActionService.isAntiDD = () => true;
-    //   let [fascFascConfProb] =
-    //     defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0);
-    // });
+    it('overclaim RBB .75 if 2 underclaim', () => {
+      presCards = PRES3.RRB;
+      underclaimTotal = 2;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0.75);
+    });
 
-    // it('confs .9 in cucu if chan is not hitler if underclaim is low enough', () => {
-    //   defaultActionService.isCucu = () => true;
-    //   expect(logicService.getCurrentChan(game).role).not.toBe(Role.HITLER);
-    //   underclaimTotal = 2;
-    //   presCards = PRES3.RRR;
-    //   let [fascFascConfProb] =
-    //     defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0.9);
-    //   underclaimTotal = 1;
-    //   presCards = PRES3.RRB;
-    //   [fascFascConfProb] = defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0.9);
-    //   underclaimTotal = 0;
-    //   presCards = PRES3.RBB;
-    //   [fascFascConfProb] = defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0.9);
-    // });
+    it('overclaim RRB .25 if 1 underclaim and early deck and <= 1 blue', () => {
+      presCards = PRES3.RRB;
+      game2.deck.drawPileLengthBeforeDraw3 = 12;
+      blueCount = 1;
+      underclaimTotal = 1;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0.25);
+    });
 
-    // it('confs .4 in cucu if chan is not hitler if underclaim is 1', () => {
-    //   defaultActionService.isCucu = () => true;
-    //   expect(logicService.getCurrentChan(game).role).not.toBe(Role.HITLER);
-    //   underclaimTotal = 1;
-    //   presCards = PRES3.RRR;
-    //   let [fascFascConfProb] =
-    //     defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0.4);
-    //   underclaimTotal = 0;
-    //   presCards = PRES3.RRB;
-    //   [fascFascConfProb] = defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0.4);
-    //   underclaimTotal = -1;
-    //   presCards = PRES3.RBB;
-    //   [fascFascConfProb] = defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0.4);
-    // });
+    it('does not overclaim in all other scenarios', () => {
+      presCards = PRES3.RRB;
+      underclaimTotal = 0;
+      game2.deck.drawPileLengthBeforeDraw3 = 12;
+      blueCount = 1;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0);
+    });
 
-    // it('does not conf hitler chan in cucu', () => {
-    //   defaultActionService.isCucu = () => true;
-    //   game.currentChan = 'player-3';
-    //   expect(logicService.getCurrentChan(game).role).toBe(Role.HITLER);
-    //   underclaimTotal = 2;
-    //   presCards = PRES3.RRR;
-    //   let [fascFascConfProb] =
-    //     defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0);
-    //   underclaimTotal = 1;
-    //   presCards = PRES3.RRB;
-    //   [fascFascConfProb] = defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0);
-    //   underclaimTotal = 0;
-    //   presCards = PRES3.RBB;
-    //   [fascFascConfProb] = defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0);
-    // });
+    it('never claims BBB on deck 2', () => {
+      game2.deck.deckNum = 2;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0);
+    });
 
-    // it('does not conf on gun', () => {
-    //   game.FascPoliciesEnacted = 4;
-    //   let [fascFascConfProb] =
-    //     defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0);
-    //   underclaimTotal = 3;
-    //   presCards = PRES3.RBB;
-    //   [fascFascConfProb] = defaultActionService.getPresClaimWithFascProbs(game);
-    //   expect(fascFascConfProb).toEqual(0);
-    // });
+    it('does not fasc fasc conf in standard scenario', () => {
+      presCards = PRES3.RRB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0);
+    });
+
+    it('confs .95 if claiming RRR would be 3 underclaims', () => {
+      underclaimTotal = 1;
+      presCards = PRES3.RBB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.95);
+      underclaimTotal = 2;
+      presCards = PRES3.RRB;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.95);
+    });
+
+    it('confs .35 if claiming RRR would be 2 underclaims', () => {
+      underclaimTotal = 1;
+      presCards = PRES3.RRB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.35);
+      underclaimTotal = 2;
+      presCards = PRES3.RRR;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.35);
+      underclaimTotal = 0;
+      presCards = PRES3.RBB;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.35);
+    });
+
+    it('does not conf hitler chan in cucu', () => {
+      defaultActionService.isCucu = () => true;
+      game2.currentChan = hitler.name;
+      underclaimTotal = 2;
+      presCards = PRES3.RBB;
+      let [fascFascConfProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0);
+    });
+
+    it('confs .95 in cucu RRR would be 2 underclaims', () => {
+      defaultActionService.isCucu = () => true;
+      underclaimTotal = 2;
+      presCards = PRES3.RRR;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.95);
+      underclaimTotal = 1;
+      presCards = PRES3.RRB;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.95);
+      underclaimTotal = 0;
+      presCards = PRES3.RBB;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.95);
+    });
+
+    it('confs .95 in cucu if deck1 finalbluecount too low', () => {
+      defaultActionService.isCucu = () => true;
+      defaultActionService.deck1FinalGovBlueCountTooLow = () => true;
+      underclaimTotal = 0;
+      presCards = PRES3.RRB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.95);
+    });
+
+    it('confs .4 in cucu if claiming RRR would be 1 underclaims', () => {
+      defaultActionService.isCucu = () => true;
+      underclaimTotal = 1;
+      presCards = PRES3.RRR;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.4);
+      underclaimTotal = 0;
+      presCards = PRES3.RRB;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0.4);
+    });
+
+    it('does not conf if antiDD', () => {
+      defaultActionService.isAntiDD = () => true;
+      underclaimTotal = 2;
+      presCards = PRES3.RBB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0);
+    });
+
+    it('does not conf if shoot', () => {
+      game2.FascPoliciesEnacted = 4;
+      underclaimTotal = 2;
+      presCards = PRES3.RBB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0);
+    });
+
+    it('does not conf if blues already claimed', () => {
+      blueCount = 6;
+      bluesToBeginTheDeck = 6;
+      underclaimTotal = 2;
+      presCards = PRES3.RBB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0);
+    });
+
+    it('calls hitler blind conf probs for hitler pres and not known fasc', () => {
+      game2.currentPres = hitler.name;
+      jest.spyOn(defaultActionService, 'getHitlerBlindConfProbs');
+      presCards = PRES3.RBB;
+      defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(defaultActionService.getHitlerBlindConfProbs).toBeCalledTimes(1);
+    });
+
+    it('does not conf a player you inved lib', () => {
+      game2.invClaims = [
+        {
+          investigator: fasc1.name,
+          investigatee: fasc2.name,
+          claim: Team.LIB,
+        },
+      ];
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getPresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0);
+    });
+  });
+
+  describe('getSimplePresClaimWithFascProbs', () => {
+    it('always changes the claim on BB chan claim', () => {
+      defaultActionService.determine3Cards = () => PRES3.RBB;
+      let [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getSimplePresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(1);
+      defaultActionService.determine3Cards = () => PRES3.BBB;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getSimplePresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0);
+      defaultActionService.determine3Cards = () => PRES3.RRB;
+      [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getSimplePresClaimWithFascProbs(game2);
+      expect(BBBfromBBclaimProb).toEqual(0);
+    });
+
+    it('never confs another fasc', () => {
+      defaultActionService.determine3Cards = () => PRES3.RBB;
+      game2.currentPres = fasc1.name;
+      const [fascFascConfProb, BBBfromBBclaimProb] =
+        defaultActionService.getSimplePresClaimWithFascProbs(game2);
+      expect(fascFascConfProb).toEqual(0);
+    });
+
+    it('calls getSipmleHitlerBlindConfProbs for hitler', () => {
+      defaultActionService.determine3Cards = () => PRES3.RBB;
+      game2.currentPres = hitler.name;
+      defaultActionService.knownFascistToHitler = () => false;
+      jest.spyOn(defaultActionService, 'getSimpleHitlerBlindConfProbs');
+      defaultActionService.getSimplePresClaimWithFascProbs(game2);
+      expect(
+        defaultActionService.getSimpleHitlerBlindConfProbs,
+      ).toBeCalledTimes(1);
+    });
   });
 });
-
-/**
-
-   */

@@ -21,7 +21,7 @@ import {
 import { Game } from '../models/game.model';
 import { Card } from 'src/models/card.model';
 import { Deck } from 'src/models/deck.model';
-import { getFormattedDate, isBlindSetting } from '../helperFunctions';
+import { gameOver, getFormattedDate, isBlindSetting } from '../helperFunctions';
 import { delay } from 'rxjs';
 import { Player } from 'src/models/player.model';
 
@@ -219,7 +219,7 @@ export class LogicService {
       setPrevLocks = false;
     }
     //topdecking may have led to gameover
-    if (!(this.gameOver(game) || game.status === Status.LIB_SPY_GUESS)) {
+    if (!(gameOver(game) || game.status === Status.LIB_SPY_GUESS)) {
       this.nextPres(game, setPrevLocks);
     }
   }

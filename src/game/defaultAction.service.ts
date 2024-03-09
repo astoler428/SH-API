@@ -907,9 +907,10 @@ export class DefaultActionService {
             ? 1
             : underclaimTotal === 1
             ? 0.75
-            : this.deck1FinalGovBlueCountTooLow(game, 3) ||
-              (game.deck.drawPileLengthBeforeDraw3 >= 12 && blueCount <= 1)
+            : this.deck1FinalGovBlueCountTooLow(game, 3)
             ? 0.6 + 0.2 * (numberOf3RedFascs - numberOf3RedLibs)
+            : game.deck.drawPileLengthBeforeDraw3 >= 12 && blueCount <= 1
+            ? 0.25
             : 0;
         break;
       case 2:
@@ -1012,19 +1013,30 @@ export class DefaultActionService {
 
     switch (game.deck.deckNum) {
       case 1:
-        BBBfromBBclaimProb =
-          numberOf3RedLibs > numberOf3RedFascs
-            ? 0
-            : underclaimTotal >= BBBOverclaimAmount + 1
-            ? 1
-            : underclaimTotal === BBBOverclaimAmount
-            ? 0.75
-            : this.deck1FinalGovBlueCountTooLow(game, 3) ||
-              (game.deck.drawPileLengthBeforeDraw3 >= 12 &&
-                blueCount <= 1 &&
-                BBBOverclaimAmount <= 1)
-            ? 0.6 + 0.2 * (numberOf3RedFascs - numberOf3RedLibs)
-            : 0;
+        if (pres3 === PRES3.BBB) {
+          //essentially deciding if claim correct or underclaim
+          BBBfromBBclaimProb =
+            numberOf3RedLibs > numberOf3RedFascs
+              ? 0
+              : numberOf3RedFascs === numberOf3RedLibs
+              ? 0.25
+              : 1;
+        } else {
+          BBBfromBBclaimProb =
+            numberOf3RedLibs > numberOf3RedFascs
+              ? 0
+              : underclaimTotal - BBBOverclaimAmount >= 1
+              ? 1
+              : this.deck1FinalGovBlueCountTooLow(game, 3)
+              ? 0.6 + 0.2 * (numberOf3RedFascs - numberOf3RedLibs)
+              : underclaimTotal - BBBOverclaimAmount === 0
+              ? 0.75
+              : underclaimTotal - BBBOverclaimAmount === -1 &&
+                game.deck.drawPileLengthBeforeDraw3 >= 12 &&
+                blueCount <= 1 //going to set the underclaimTotal to -1 (1 overclaim)
+              ? 0.25
+              : 0;
+        }
         break;
       case 2:
         BBBfromBBclaimProb = 0;
@@ -1045,6 +1057,8 @@ export class DefaultActionService {
         } else {
           //when to conf the cucu
           if (underclaimTotal + bluesDrawn >= 2) {
+            fascFascConfProb = 0.95;
+          } else if (this.deck1FinalGovBlueCountTooLow(game, 3)) {
             fascFascConfProb = 0.95;
           } else if (underclaimTotal + bluesDrawn === 1) {
             fascFascConfProb = 0.4;
@@ -1069,10 +1083,10 @@ export class DefaultActionService {
       currentPresPlayer.role === Role.HITLER &&
       !this.knownFascistToHitler(game, currentChanPlayer)
     ) {
-      const [fascRRBconfProb, fascRRRconfProb] =
+      const [hiterRRBConfProb, hitlerRRRConfProb] =
         this.getHitlerBlindConfProbs(game);
       fascFascConfProb =
-        pres3 === PRES3.RRR ? fascRRRconfProb : fascRRBconfProb;
+        pres3 === PRES3.RRR ? hitlerRRRConfProb : hiterRRBConfProb;
       //this will be returning based on RRR and RRB...
     }
 
@@ -1770,7 +1784,8 @@ export class DefaultActionService {
     const currentChanPlayer = this.logicService.getCurrentChan(game);
     const pres3 = this.determine3Cards(game.presCards);
 
-    const BBBfromBBclaimProb = pres3 === PRES3.BBB ? 0 : 1;
+    const BBBfromBBclaimProb =
+      pres3 === PRES3.BBB ? 0 : pres3 === PRES3.RBB ? 1 : 0;
     let fascFascConfProb = 0;
     if (
       currentPresPlayer.role === Role.HITLER &&

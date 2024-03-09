@@ -22,6 +22,7 @@ import { Card } from '../models/card.model';
 import { Deck } from '../models/deck.model';
 import { DeckMockFactory } from '../test/DeckMockFactory';
 import { Gov } from 'src/models/gov.model';
+import { gameOver } from 'src/helperFunctions';
 
 describe('Logic Service', () => {
   let logicService: LogicService;
