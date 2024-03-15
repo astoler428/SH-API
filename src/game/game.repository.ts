@@ -44,7 +44,13 @@ export class GameRepository {
     if (!value) {
       return null;
     }
-    return JSON.parse(value);
+    try {
+      const toReturn = JSON.parse(value);
+      return toReturn;
+    } catch (error) {
+      console.error(error, value);
+    }
+    // return JSON.parse(value);
   }
 
   async delete(key: string) {
