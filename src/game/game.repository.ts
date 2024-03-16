@@ -45,9 +45,12 @@ export class GameRepository {
       return null;
     }
     try {
-      let game;
+      let game: Game;
+      //for some reason in deployment the value was already an object sometimes?
       if (typeof value === 'string') {
         game = JSON.parse(value);
+      } else {
+        game = value;
       }
       return game;
     } catch (error) {
