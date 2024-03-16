@@ -15,8 +15,8 @@ import * as redisStore from 'cache-manager-redis-store';
     CacheModule.register({
       isGlobal: true,
       store: redisStore as any,
-      host: process.env.REDIS_HOST,
-      //host: 'localhost'
+      // host: process.env.REDIS_HOST,
+      host: 'localhost',
       port: 6379,
     }),
   ],

@@ -45,8 +45,11 @@ export class GameRepository {
       return null;
     }
     try {
-      const toReturn = JSON.parse(value);
-      return toReturn;
+      let game;
+      if (typeof value === 'string') {
+        game = JSON.parse(value);
+      }
+      return game;
     } catch (error) {
       console.error(error, value);
     }
