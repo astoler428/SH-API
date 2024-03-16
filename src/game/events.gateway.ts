@@ -37,6 +37,7 @@ class ChatMessageDTO {
 
 @WebSocketGateway({
   cors: true,
+  origin: 'http://localhost:3001',
   transports: ['websocket', 'polling'],
 })
 export class EventsGateway {
