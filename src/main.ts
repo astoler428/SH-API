@@ -6,7 +6,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   //, { cors: true }
   app.enableCors({
-    origin: 'https://blind-sh.netlify.app',
+    origin: [
+      'https://blind-sh.netlify.app',
+      'https://blind-sh-staging.netlify.app',
+    ],
     // origin: 'http://localhost:3001',
     methods: ['GET', 'POST'],
   });
