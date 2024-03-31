@@ -287,6 +287,12 @@ export class GameService {
         type: LogType.INDIVIDUAL_SEAT,
         date: getFormattedDate(),
       });
+      if (game.settings.type === GameType.COOPERATIVE_BLIND) {
+        game.log.push({
+          type: LogType.COOPERATIVE_BLIND,
+          date: getFormattedDate(),
+        });
+      }
       if (!isBlindSetting(game.settings.type)) {
         game.log.push({ type: LogType.HITLER_SEAT, date: getFormattedDate() });
         game.log.push({
