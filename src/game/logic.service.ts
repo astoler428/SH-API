@@ -54,7 +54,7 @@ export class LogicService {
     if (game.settings.type === GameType.MIXED_ROLES) {
       game.log.push({ type: LogType.INTRO_MIXED, date: getFormattedDate() });
     }
-    if (!isBlindSetting(game.settings.type) && game.settings.hitlerKnowsFasc) {
+    if (game.settings.hitlerKnowsFasc) {
       game.log.push({
         type: LogType.INTRO_HITLER_KNOWS_FASC,
         date: getFormattedDate(),
