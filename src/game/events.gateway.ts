@@ -37,11 +37,16 @@ class ChatMessageDTO {
 
 @WebSocketGateway({
   cors: true,
+<<<<<<< HEAD
   origin: [
     'https://blind-sh.netlify.app',
     'https://blind-sh-staging.netlify.app',
   ],
   // origin: 'http://localhost:3001',
+=======
+  // origin: 'https://blind-sh.netlify.app',
+  origin: 'http://localhost:3001',
+>>>>>>> ari/dev
   transports: ['websocket', 'polling'],
 })
 export class EventsGateway {

@@ -699,7 +699,7 @@ export class DefaultActionService {
       vanillaFascChanDropProbs[game.LibPoliciesEnacted][bluesPlayedByChan];
 
     if (game.players.length < 7 || game.players.length === 8) {
-      if (game.LibPoliciesEnacted <= 1) {
+      if (game.LibPoliciesEnacted <= 2) {
         hitlerChanDropProb = 0.1;
         vanillaFascChanDropProb = 0.2;
       }
