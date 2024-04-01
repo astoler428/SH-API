@@ -58,7 +58,11 @@ export class EventsGateway {
     this.socketMap.delete(socket.id);
     const id = this.socketGameIdMap.get(socket.id);
     if (id) {
-      await this.gameService.leaveGame(id, socket.id);
+      try {
+        await this.gameService.leaveGame(id, socket.id);
+      } catch (error) {
+        console.error(error);
+      }
     }
     return id;
   }
