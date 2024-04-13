@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { Game } from '../models/game.model';
 import { Deck } from '../models/deck.model';
 import {
@@ -14,19 +19,14 @@ import {
   Identity,
 } from '../consts';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
-  JOIN_GAME,
-  LEAVE_GAME,
-  START_GAME,
-  UPDATE,
-  UPDATE_GAME,
-  UPDATE_PLAYERS,
-} from '../consts/socketEventNames';
+import { JOIN_GAME, LEAVE_GAME, UPDATE_GAME } from '../consts/socketEventNames';
 import { LogicService } from './logic.service';
 import { GameRepository } from './game.repository';
 import { DefaultActionService } from './defaultAction.service';
 import { gameOver, getFormattedDate, isBlindSetting } from '../helperFunctions';
 import { UtilService } from './util.service';
+import { Player } from 'src/models/player.model';
+import { EventsGateway } from './events.gateway';
 
 @Injectable()
 export class GameService {
@@ -38,6 +38,8 @@ export class GameService {
     private gameRespository: GameRepository,
     private defaultActionService: DefaultActionService,
     private utilService: UtilService,
+    @Inject(forwardRef(() => EventsGateway))
+    private eventsGateway: EventsGateway,
   ) {}
 
   async createGame(name: string, socketId: string) {
@@ -111,6 +113,7 @@ export class GameService {
     const playerAlreadyInGame = game.players.find(
       (player) => player.name === name,
     );
+
     if (!playerAlreadyInGame && game.players.length === 10) {
       throw new BadRequestException(`Game is full`);
     }
@@ -120,10 +123,21 @@ export class GameService {
         // console.log('reassigning socketId')
         playerAlreadyInGame.socketId = socketId;
         clearTimeout(this.deleteGameTimeoutId);
-      } else if (playerAlreadyInGame.socketId !== socketId) {
-        throw new BadRequestException(
-          `A player with that name is already in the game`,
-        );
+      } else {
+        if (playerAlreadyInGame.socketId !== socketId) {
+          //in case of super fast refresh, can leave without removing socket id from map -> confirm by checking that the socketId associated with the player is in fact still connected
+          const confirmedInGame = this.eventsGateway.confirmInGame(
+            playerAlreadyInGame.socketId,
+          );
+          if (confirmedInGame) {
+            throw new BadRequestException(
+              `A player with that name is already in the game`,
+            );
+          } else {
+            playerAlreadyInGame.socketId = socketId;
+            clearTimeout(this.deleteGameTimeoutId);
+          }
+        }
       }
     } else {
       if (game.status !== Status.CREATED) {
@@ -152,6 +166,21 @@ export class GameService {
     await this.utilService.handleUpdate(id, game);
     this.eventEmitter.emit(JOIN_GAME, { socketId, id });
     return game;
+  }
+
+  async handleJoinWhenPlayerAlreadyInGame(
+    confirmedInGame: boolean,
+    playerAlreadyInGame: Player,
+    socketId: string,
+  ) {
+    if (confirmedInGame) {
+      throw new BadRequestException(
+        `A player with that name is already in the game`,
+      );
+    } else {
+      playerAlreadyInGame.socketId = socketId;
+      clearTimeout(this.deleteGameTimeoutId);
+    }
   }
 
   async remakeGame(id: string, name: string) {
