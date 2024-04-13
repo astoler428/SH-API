@@ -4,21 +4,20 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   OnGatewayConnection,
+  WebSocketServer,
 } from '@nestjs/websockets';
 import {
   JOIN_GAME,
   UPDATE_GAME,
   UPDATE,
-  UPDATE_PLAYERS,
-  START_GAME,
   LEAVE_GAME,
-  DISPLAY,
 } from '../consts/socketEventNames';
 import { Socket } from 'socket.io';
 import { Game } from 'src/models/game.model';
 import { OnEvent } from '@nestjs/event-emitter';
 import { GameService } from './game.service';
-import { DisplayType } from 'src/consts';
+import { Server } from 'socket.io';
+import { Inject, forwardRef } from '@nestjs/common';
 
 class JoinGameDTO {
   constructor(
@@ -45,10 +44,15 @@ class ChatMessageDTO {
   transports: ['websocket', 'polling'],
 })
 export class EventsGateway {
+  @WebSocketServer()
+  server: Server;
   public socketMap: Map<string, Socket> = new Map();
   public socketGameIdMap: Map<string, string> = new Map(); //socketid to id of game they are in
 
-  constructor(private gameService: GameService) {}
+  constructor(
+    @Inject(forwardRef(() => GameService))
+    private gameService: GameService,
+  ) {}
 
   handleConnection(socket: Socket) {
     this.socketMap.set(socket.id, socket);
@@ -81,17 +85,18 @@ export class EventsGateway {
   sendUpdate(game: Game) {
     for (const player of game.players) {
       const socket = this.socketMap.get(player.socketId);
-      socket?.emit(UPDATE, game, { test: '123' });
+      socket?.emit(UPDATE, game);
     }
   }
-
-  // @OnEvent(DISPLAY)
-  // sendDisplayUpdate(game: Game, displayType: DisplayType){
-  //   for (const player of game.players) {
-  //     const socket = this.socketMap.get(player.socketId)
-  //     socket?.emit(displayType, game);
-  //   }
-  // }
+  confirmInGame(socketId: string) {
+    for (const [socketID, socket] of this.server.sockets.sockets) {
+      // console.log(socketId, socketID);
+      if (socketId === socketID) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   @SubscribeMessage('chat')
   async chatMessage(@MessageBody() body: ChatMessageDTO) {
