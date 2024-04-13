@@ -26,6 +26,7 @@ import { LogicService } from './logic.service';
 import { GameRepository } from './game.repository';
 import { DefaultActionService } from './defaultAction.service';
 import { gameOver, getFormattedDate, isBlindSetting } from '../helperFunctions';
+import { UtilService } from './util.service';
 
 @Injectable()
 export class GameService {
@@ -36,6 +37,7 @@ export class GameService {
     private logicService: LogicService,
     private gameRespository: GameRepository,
     private defaultActionService: DefaultActionService,
+    private utilService: UtilService,
   ) {}
 
   async createGame(name: string, socketId: string) {
@@ -104,7 +106,7 @@ export class GameService {
     if (!name) {
       throw new BadRequestException(`You must have a name`);
     }
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
 
     const playerAlreadyInGame = game.players.find(
       (player) => player.name === name,
@@ -147,13 +149,13 @@ export class GameService {
         clearTimeout(this.deleteGameTimeoutId);
       }
     }
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
     this.eventEmitter.emit(JOIN_GAME, { socketId, id });
     return game;
   }
 
   async remakeGame(id: string, name: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
 
     let newId: string;
     let existingGame: Game;
@@ -211,13 +213,13 @@ export class GameService {
       defaultProbabilityLog: [],
     };
     await this.gameRespository.set(newId, newGame);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
     return newId;
   }
 
   async leaveGame(id: string, socketId: string) {
     // console.log(`player leaving has socketId ${socketId}`)
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     const playerLeaving = game.players.find(
       (player) => player.socketId === socketId,
     );
@@ -269,7 +271,7 @@ export class GameService {
   }
 
   async startGame(id: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     if (game.status !== Status.CREATED) {
       throw new BadRequestException(`Game ${id} has already started`);
     }
@@ -282,7 +284,7 @@ export class GameService {
 
     const logTimeout = isBlindSetting(game.settings.type) ? 2000 : 5000; //1500
     setTimeout(async () => {
-      const game = await this.findById(id);
+      const game = await this.utilService.findById(id);
       game.log.push({
         type: LogType.INDIVIDUAL_SEAT,
         date: getFormattedDate(),
@@ -300,21 +302,21 @@ export class GameService {
           date: getFormattedDate(),
         });
       }
-      await this.handleUpdate(id, game);
+      await this.utilService.handleUpdate(id, game);
     }, logTimeout);
 
     const changeStatusTimeout = isBlindSetting(game.settings.type)
       ? 4000
       : 9000;
     setTimeout(async () => {
-      const game = await this.findById(id);
+      const game = await this.utilService.findById(id);
       if (game.status === Status.STARTED) {
         //in blind, it's possible someone changed it to end_fasc for trying to confirm immediately
         game.status = Status.CHOOSE_CHAN;
       }
-      await this.handleUpdate(id, game);
+      await this.utilService.handleUpdate(id, game);
     }, changeStatusTimeout);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
     return;
   }
 
@@ -322,16 +324,8 @@ export class GameService {
     await this.gameRespository.delete(id);
   }
 
-  async findById(id: string): Promise<Game> {
-    const game = await this.gameRespository.get(id);
-    if (!game) {
-      throw new BadRequestException(`No game found with ID ${id}`);
-    }
-    return game;
-  }
-
   async setGameSettings(id: string, gameSettings: GameSettings) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     if (game.status !== Status.CREATED) {
       throw new BadRequestException(
         'Cannot change the game settings after the game has started',
@@ -352,148 +346,148 @@ export class GameService {
     // if(gameSettings.type !== GameType.LIB_SPY){
     //   game.settings.teamLibSpy = false
     // }
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async chooseChan(id: string, chanName: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     if (game.status !== Status.CHOOSE_CHAN) {
       throw new BadRequestException(`Can't choose a chancellor at this time`);
     }
     this.logicService.chooseChan(game, chanName);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async vote(id: string, name: string, vote: Vote) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     const voteSplit = this.logicService.vote(game, name, vote);
     if (game.status === Status.SHOW_VOTE_RESULT) {
       const timeout = voteSplit <= 1 ? 4000 : voteSplit <= 3 ? 5000 : 6000; //this syncs with frontend animation
       setTimeout(async () => {
-        const game = await this.findById(id);
+        const game = await this.utilService.findById(id);
         if (game.status === Status.SHOW_VOTE_RESULT) {
           //in blind, it's possible someone changed it to end_fasc for trying to confirm immediately
           this.logicService.determineResultofVote(game);
         }
-        await this.handleUpdate(id, game);
+        await this.utilService.handleUpdate(id, game);
       }, timeout);
     }
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async presDiscard(id: string, cardColor: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     this.logicService.presDiscard(game, cardColor);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async chanPlay(id: string, cardColor: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     this.logicService.chanPlay(game, cardColor);
     //if game didn't end (tell by status being chan claim), then
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async chanClaim(id: string, claim: CHAN2) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     this.logicService.chanClaim(game, claim);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async presClaim(id: string, claim: PRES3) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     this.logicService.presClaim(game, claim);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async chooseInv(id: string, invName: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     if (game.status !== Status.INV) {
       throw new BadRequestException(`Can't investigate at this time`);
     }
     this.logicService.chooseInv(game, invName);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
     //  setTimeout(async ()=> {
-    //   const game = await this.findById(id)
+    //   const game = await this.utilService.findById(id)
     //   this.logicService.setInv(game, invName)
-    //   await this.handleUpdate(id, game)
+    //   await this.utilService.handleUpdate(id, game)
     //   }, 3000)
   }
 
   async invClaim(id: string, claim: Team) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     if (game.status !== Status.INV_CLAIM) {
       throw new BadRequestException(`Can't claim inv at this time`);
     }
     this.logicService.invClaim(game, claim);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async chooseSE(id: string, seName: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     if (game.status !== Status.SE) {
       throw new BadRequestException(`Can't SE at this time`);
     }
     this.logicService.chooseSE(game, seName);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async chooseGun(id: string, shotName: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     if (game.status !== Status.GUN) {
       throw new BadRequestException(`Can't shoot at this time`);
     }
     this.logicService.shootPlayer(game, shotName);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async chooseLibSpy(id: string, spyName: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     if (game.status !== Status.LIB_SPY_GUESS) {
       throw new BadRequestException(`Can't guess Lib Spy at this time`);
     }
     this.logicService.guessLibSpy(game, spyName);
     setTimeout(async () => {
-      const game = await this.findById(id);
+      const game = await this.utilService.findById(id);
       this.logicService.determineResultOfLibSpyGuess(game, spyName);
-      await this.handleUpdate(id, game);
+      await this.utilService.handleUpdate(id, game);
     }, 3000); //3s animation on frontend to show the pick
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async inspect3Claim(id: string, claim: PRES3) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     this.logicService.inspect3Claim(game, claim);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async vetoRequest(id: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     this.logicService.vetoRequest(game);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async vetoReply(id: string, vetoAccepted: boolean) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     this.logicService.vetoReply(game, vetoAccepted);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async confirmFasc(id: string, name: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     this.logicService.confirmFasc(game, name);
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 
   async defaultPresDiscard(id: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     const cardColor = this.defaultActionService.defaultPresDiscard(game);
     await this.gameRespository.update(id, game); //defaultProbabilityLog needs to be updated so presDiscard can access it when it gets the game
     await this.presDiscard(id, cardColor);
   }
 
   async defaultChanPlay(id: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     const cardColor = this.defaultActionService.defaultChanPlay(game);
     await this.gameRespository.update(id, game);
     if (!cardColor) {
@@ -505,49 +499,44 @@ export class GameService {
   }
 
   async defaultChanClaim(id: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     const claim = this.defaultActionService.defaultChanClaim(game);
     await this.gameRespository.update(id, game);
     await this.chanClaim(id, claim);
   }
 
   async defaultPresClaim(id: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     const claim = this.defaultActionService.defaultPresClaim(game);
     await this.gameRespository.update(id, game);
     await this.presClaim(id, claim);
   }
 
   async defaultInvClaim(id: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     const claim = this.defaultActionService.defaultInvClaim(game);
     await this.gameRespository.update(id, game);
     await this.invClaim(id, claim);
   }
 
   async defaultInspect3Claim(id: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     const claim = this.defaultActionService.defaultInspect3Claim(game);
     await this.gameRespository.update(id, game);
     await this.inspect3Claim(id, claim);
   }
 
   async defaultVetoReply(id: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     const vetoReply = this.defaultActionService.defaultVetoReply(game);
     await this.gameRespository.update(id, game);
     await this.vetoReply(id, vetoReply);
   }
 
-  async handleUpdate(id: string, game: Game) {
-    await this.gameRespository.update(id, game);
-    this.eventEmitter.emit(UPDATE_GAME, game);
-  }
-
   async chatMessage(id: string, name: string, message: string) {
-    const game = await this.findById(id);
+    const game = await this.utilService.findById(id);
     game.chat.push({ name, date: getFormattedDate(), message });
     game.log.push({ name, date: getFormattedDate(), message });
-    await this.handleUpdate(id, game);
+    await this.utilService.handleUpdate(id, game);
   }
 }

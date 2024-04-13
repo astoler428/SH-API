@@ -17,6 +17,9 @@ import {
   gameRoles,
   gameTeams,
   gameIdentities,
+  ENACT_POLICY_DURATION,
+  TOP_DECK_DELAY,
+  GAMEOVER_NOT_FROM_POLICY_DELAY,
 } from '../consts';
 import { Game } from '../models/game.model';
 import { Card } from 'src/models/card.model';
@@ -24,10 +27,12 @@ import { Deck } from 'src/models/deck.model';
 import { gameOver, getFormattedDate, isBlindSetting } from '../helperFunctions';
 import { delay } from 'rxjs';
 import { Player } from 'src/models/player.model';
+import { UtilService } from './util.service';
 
 @Injectable()
 export class LogicService {
-  //initialize the deck here
+  constructor(private utilService: UtilService) {}
+
   startGame(game: Game) {
     game.status = Status.STARTED;
     // game.status = Status.CHOOSE_CHAN
@@ -188,12 +193,11 @@ export class LogicService {
     if (jas > this.numAlivePlayers(game) / 2) {
       // if (jas > 0) {
       if (this.checkHitler(game)) {
-        game.log.push({
-          type: LogType.HITLER_ELECTED,
-          date: getFormattedDate(),
-        });
+        this.utilService.addToLog(game.id, 1000, [
+          { type: LogType.HITLER_ELECTED },
+        ]);
         game.status = Status.END_FASC;
-        this.outroLogs(game);
+        this.outroLogs(game, false);
       } else {
         if (game.FascPoliciesEnacted >= 3) {
           this.getCurrentChan(game).confirmedNotHitler = true;
@@ -253,20 +257,21 @@ export class LogicService {
     const card = this.topDeckCard(game.deck);
 
     //enacting policy always resets tracker
+    game.topDecked = true;
     this.enactPolicy(game, card, true);
     this.removePrevLocks(game);
-    game.topDecked = true;
   }
 
   enactPolicy(game: Game, card: Card, topDeck: boolean) {
     if (topDeck) {
       game.log.push({ type: LogType.TOP_DECK, date: getFormattedDate() });
     }
-    game.log.push({
-      type: LogType.ENACT_POLICY,
-      date: getFormattedDate(),
-      payload: { policy: card.policy },
-    });
+
+    const logMessageTimeout = 0.5 * 6000 + (game.topDecked ? 1500 : 0); //40% of 6 second animation until the policy is flipped
+
+    this.utilService.addToLog(game.id, logMessageTimeout, [
+      { type: LogType.ENACT_POLICY, payload: { policy: card.policy } },
+    ]);
 
     if (card.policy === Policy.LIB) {
       game.LibPoliciesEnacted++;
@@ -277,24 +282,23 @@ export class LogicService {
       if (game.LibPoliciesEnacted === 5) {
         if (game.settings.type === GameType.LIB_SPY) {
           if (!this.libSpyCondition(game)) {
-            game.log.push({
-              type: LogType.LIB_SPY_FAIL,
-              date: getFormattedDate(),
-            });
+            //can't be same timeout or one gets lost, need spacing between timeouts
+            this.utilService.addToLog(game.id, logMessageTimeout + 1000, [
+              { type: LogType.LIB_SPY_FAIL },
+            ]);
             game.status = Status.END_FASC;
-            this.outroLogs(game);
+            this.outroLogs(game, true);
             return;
           } else {
             game.status = Status.LIB_SPY_GUESS;
-            game.log.push({
-              type: LogType.HITLER_TO_GUESS_LIB_SPY,
-              date: getFormattedDate(),
-            });
+            this.utilService.addToLog(game.id, logMessageTimeout + 1000, [
+              { type: LogType.HITLER_TO_GUESS_LIB_SPY },
+            ]);
             return;
           }
         } else {
           game.status = Status.END_LIB;
-          this.outroLogs(game);
+          this.outroLogs(game, true);
           return;
         }
       }
@@ -302,7 +306,7 @@ export class LogicService {
       game.FascPoliciesEnacted++;
       if (game.FascPoliciesEnacted === 6) {
         game.status = Status.END_FASC;
-        this.outroLogs(game);
+        this.outroLogs(game, true);
         return;
       }
     }
@@ -512,8 +516,8 @@ export class LogicService {
     }
     if (shotPlayer.role === Role.HITLER) {
       game.status = Status.END_LIB;
-      game.log.push({ type: LogType.HITLER_SHOT, date: getFormattedDate() });
-      this.outroLogs(game);
+      this.utilService.addToLog(game.id, 1000, [{ type: LogType.HITLER_SHOT }]);
+      this.outroLogs(game, false);
     } else {
       this.nextPres(game, true);
     }
@@ -537,7 +541,7 @@ export class LogicService {
       date: getFormattedDate(),
       payload: { spyName },
     });
-    this.outroLogs(game);
+    this.outroLogs(game, false);
   }
 
   vetoRequest(game: Game) {
@@ -704,7 +708,7 @@ export class LogicService {
         payload: { name },
       });
       game.status = Status.END_FASC;
-      this.outroLogs(game);
+      this.outroLogs(game, false);
     }
   }
 
@@ -763,16 +767,22 @@ export class LogicService {
   }
 
   //call this end messages - state winners and do this with deck
-  outroLogs(game: Game) {
-    game.log.push({
-      type:
-        game.status === Status.END_FASC ? LogType.FASC_WIN : LogType.LIB_WIN,
-      date: getFormattedDate(),
-    });
+  outroLogs(game: Game, gameEndedWithPolicyEnactment: boolean) {
+    const timeout = gameEndedWithPolicyEnactment
+      ? game.topDecked
+        ? ENACT_POLICY_DURATION + TOP_DECK_DELAY
+        : ENACT_POLICY_DURATION
+      : GAMEOVER_NOT_FROM_POLICY_DELAY;
+
+    const messages: { type: LogType; payload?: object }[] = [
+      {
+        type:
+          game.status === Status.END_FASC ? LogType.FASC_WIN : LogType.LIB_WIN,
+      },
+    ];
     if (game.deck.drawPile.length > 0) {
-      game.log.push({
+      messages.push({
         type: LogType.DECK,
-        date: getFormattedDate(),
         payload: {
           remainingPolicies: game.deck.drawPile
             .map((card) => card.color)
@@ -781,5 +791,6 @@ export class LogicService {
         },
       });
     }
+    this.utilService.addToLog(game.id, timeout, messages);
   }
 }

@@ -20,6 +20,7 @@ import { GameRepository } from './game.repository';
 import { DefaultActionService } from './defaultAction.service';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
+import { UtilService } from './util.service';
 
 describe('EventsGateway', () => {
   let eventEmitter: EventEmitter2;
@@ -47,6 +48,7 @@ describe('EventsGateway', () => {
         LogicService,
         GameRepository,
         DefaultActionService,
+        UtilService,
       ],
     }).compile();
 

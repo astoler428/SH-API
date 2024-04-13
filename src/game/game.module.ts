@@ -8,6 +8,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { GameRepository } from './game.repository';
 import { DefaultActionService } from './defaultAction.service';
 import * as redisStore from 'cache-manager-redis-store';
+import { UtilService } from './util.service';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import * as redisStore from 'cache-manager-redis-store';
     LogicService,
     GameRepository,
     DefaultActionService,
+    UtilService,
   ],
 })
 export class GameModule {}

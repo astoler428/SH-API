@@ -21,6 +21,9 @@ import {
 } from '../consts';
 import { Card } from 'src/models/card.model';
 import { GameRepository } from './game.repository';
+import { UtilService } from './util.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { GameRepositoryMock } from '../test/GameRepositoryMock';
 
 describe('DefaultActionService', () => {
   let defaultActionService: DefaultActionService;
@@ -40,10 +43,20 @@ describe('DefaultActionService', () => {
     lib4: Player,
     lib5: Player,
     lib6: Player;
+  let gameRepositoryMock: GameRepositoryMock = new GameRepositoryMock();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [DefaultActionService, LogicService],
+      providers: [
+        DefaultActionService,
+        LogicService,
+        UtilService,
+        EventEmitter2,
+        {
+          provide: GameRepository,
+          useValue: gameRepositoryMock,
+        },
+      ],
     }).compile();
 
     defaultActionService =

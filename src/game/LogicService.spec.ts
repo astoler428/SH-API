@@ -23,6 +23,10 @@ import { Deck } from '../models/deck.model';
 import { DeckMockFactory } from '../test/DeckMockFactory';
 import { Gov } from 'src/models/gov.model';
 import { gameOver } from 'src/helperFunctions';
+import { UtilService } from './util.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { GameRepositoryMock } from '../test/GameRepositoryMock';
+import { GameRepository } from './game.repository';
 
 describe('Logic Service', () => {
   let logicService: LogicService;
@@ -30,10 +34,19 @@ describe('Logic Service', () => {
   let game: Game;
   let gameSettings: GameSettings;
   let mockInitDeck: jest.SpyInstance;
+  let gameRepositoryMock: GameRepositoryMock = new GameRepositoryMock();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [LogicService],
+      providers: [
+        LogicService,
+        UtilService,
+        EventEmitter2,
+        {
+          provide: GameRepository,
+          useValue: gameRepositoryMock,
+        },
+      ],
     }).compile();
 
     logicService = module.get<LogicService>(LogicService);

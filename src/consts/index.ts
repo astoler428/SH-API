@@ -9,6 +9,10 @@ export const RR = 'RR';
 // export const CHAN2 = [RR, RB, BB]
 // export const PRES3 = [RRR, RRB, RBB, BBB]
 
+export const ENACT_POLICY_DURATION = 6000;
+export const TOP_DECK_DELAY = 1500;
+export const GAMEOVER_NOT_FROM_POLICY_DELAY = 3000;
+
 export enum CHAN2 {
   RR = 'RR',
   RB = 'RB',

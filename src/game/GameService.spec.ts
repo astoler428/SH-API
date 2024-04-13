@@ -19,11 +19,13 @@ import { DefaultActionService } from './defaultAction.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
+import { UtilService } from './util.service';
 
 jest.useFakeTimers();
 
 describe('GameService', () => {
   let gameService: GameService;
+  let utilService: UtilService;
   let eventEmitter: EventEmitter2;
   let logicService: LogicService;
   let defaultActionService: DefaultActionService;
@@ -42,10 +44,12 @@ describe('GameService', () => {
         EventEmitter2,
         LogicService,
         DefaultActionService,
+        UtilService,
       ],
     }).compile();
 
     gameService = module.get<GameService>(GameService);
+    utilService = module.get<UtilService>(UtilService);
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);
     logicService = module.get<LogicService>(LogicService);
     defaultActionService =
@@ -146,10 +150,10 @@ describe('GameService', () => {
 
     it('emits the proper messages', async () => {
       jest.spyOn(eventEmitter, 'emit');
-      jest.spyOn(gameService, 'handleUpdate');
+      jest.spyOn(utilService, 'handleUpdate');
       await gameService.joinGame(id, 'player-3', 'socket id');
-      expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game);
-      expect(gameService.handleUpdate).toHaveBeenCalledTimes(1);
+      expect(utilService.handleUpdate).toHaveBeenCalledWith(id, game);
+      expect(utilService.handleUpdate).toHaveBeenCalledTimes(1);
       expect(eventEmitter.emit).toHaveBeenCalledWith(JOIN_GAME, {
         socketId: 'socket id',
         id,
@@ -238,7 +242,7 @@ describe('GameService', () => {
 
   describe('startGame', () => {
     beforeEach(() => {
-      jest.spyOn(gameService, 'findById').mockImplementation(async () => game);
+      jest.spyOn(utilService, 'findById').mockImplementation(async () => game);
     });
 
     it('throws if not enough players', async () => {
@@ -249,13 +253,13 @@ describe('GameService', () => {
     });
 
     it('starts a game', async () => {
-      jest.spyOn(gameService, 'handleUpdate');
+      jest.spyOn(utilService, 'handleUpdate');
       jest.spyOn(logicService, 'startGame');
       await gameService.startGame(id);
       expect(logicService.startGame).toHaveBeenCalledTimes(1);
       expect(game.status).toBe(Status.STARTED);
-      expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game);
-      expect(gameService.handleUpdate).toHaveBeenCalledTimes(1);
+      expect(utilService.handleUpdate).toHaveBeenCalledWith(id, game);
+      expect(utilService.handleUpdate).toHaveBeenCalledTimes(1);
 
       await expect(gameService.startGame(id)).rejects.toThrow(
         `Game ${id} has already started`,
@@ -282,8 +286,8 @@ describe('GameService', () => {
         hitlerKnowsFasc: true,
       };
       jest.clearAllMocks();
-      jest.spyOn(gameService, 'findById').mockImplementation(async () => game);
-      jest.spyOn(gameService, 'handleUpdate');
+      jest.spyOn(utilService, 'findById').mockImplementation(async () => game);
+      jest.spyOn(utilService, 'handleUpdate');
     });
     it('changes the game settings', async () => {
       await gameService.setGameSettings(id, gameSettings);
@@ -291,8 +295,8 @@ describe('GameService', () => {
       expect(game.settings.redDown).toEqual(true);
       expect(game.settings.simpleBlind).toEqual(false);
       expect(game.settings.hitlerKnowsFasc).toEqual(true);
-      expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game);
-      expect(gameService.handleUpdate).toHaveBeenCalledTimes(1);
+      expect(utilService.handleUpdate).toHaveBeenCalledWith(id, game);
+      expect(utilService.handleUpdate).toHaveBeenCalledTimes(1);
     });
 
     it.skip('resets the hitler knows fasc if game setting set to BlIND', async () => {
@@ -301,8 +305,8 @@ describe('GameService', () => {
       expect(game.settings.type).toEqual(GameType.BLIND);
       expect(game.settings.redDown).toEqual(true);
       expect(game.settings.hitlerKnowsFasc).toEqual(false);
-      expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game);
-      expect(gameService.handleUpdate).toHaveBeenCalledTimes(1);
+      expect(utilService.handleUpdate).toHaveBeenCalledWith(id, game);
+      expect(utilService.handleUpdate).toHaveBeenCalledTimes(1);
     });
 
     it('resets the simple blind if game setting set to NOT BlIND', async () => {
@@ -311,8 +315,8 @@ describe('GameService', () => {
       await gameService.setGameSettings(id, gameSettings);
       expect(game.settings.type).toEqual(GameType.NORMAL);
       expect(game.settings.simpleBlind).toEqual(false);
-      expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game);
-      expect(gameService.handleUpdate).toHaveBeenCalledTimes(1);
+      expect(utilService.handleUpdate).toHaveBeenCalledWith(id, game);
+      expect(utilService.handleUpdate).toHaveBeenCalledTimes(1);
     });
 
     // it('resets the teamLibSpy condition if game setting set to NOT LIB_SPY', async () => {
@@ -321,8 +325,8 @@ describe('GameService', () => {
     //   await gameService.setGameSettings(id, gameSettings)
     //   // expect(game.settings.type).toEqual(GameType.NORMAL)
     //   expect(game.settings.teamLibSpy).toEqual(false)
-    //   expect(gameService.handleUpdate).toHaveBeenCalledWith(id, game)
-    //   expect(gameService.handleUpdate).toHaveBeenCalledTimes(1)
+    //   expect(utilService.handleUpdate).toHaveBeenCalledWith(id, game)
+    //   expect(utilService.handleUpdate).toHaveBeenCalledTimes(1)
     // })
 
     it('throws if game settings are changed after game has started', async () => {
@@ -337,14 +341,14 @@ describe('GameService', () => {
 
   describe('findById', () => {
     it('catches error if game not found', async () => {
-      await expect(gameService.findById('DNE_ID')).rejects.toThrow(
+      await expect(utilService.findById('DNE_ID')).rejects.toThrow(
         `No game found with ID DNE_ID`,
       );
     });
 
     it('returns the game if it exists', async () => {
       gameRepositoryMock.set(id, game);
-      const theGame = await gameService.findById(id);
+      const theGame = await utilService.findById(id);
       expect(theGame.id).toBe(id);
     });
   });
@@ -352,8 +356,8 @@ describe('GameService', () => {
   describe('Vote', () => {
     beforeEach(() => {
       jest.clearAllMocks();
-      jest.spyOn(gameService, 'findById').mockImplementation(async () => game);
-      jest.spyOn(gameService, 'handleUpdate');
+      jest.spyOn(utilService, 'findById').mockImplementation(async () => game);
+      jest.spyOn(utilService, 'handleUpdate');
       jest.spyOn(logicService, 'vote').mockImplementation(() => null);
       jest
         .spyOn(logicService, 'determineResultofVote')
@@ -362,20 +366,20 @@ describe('GameService', () => {
     it.skip('handles async calls', async () => {
       game.status = Status.SHOW_VOTE_RESULT;
       await gameService.vote(id, 'player-1', Vote.JA);
-      expect(gameService.handleUpdate).toBeCalledTimes(1);
+      expect(utilService.handleUpdate).toBeCalledTimes(1);
       expect(logicService.determineResultofVote).toBeCalledTimes(0);
       jest.advanceTimersByTime(3000);
-      expect(gameService.handleUpdate).toBeCalledTimes(2);
+      expect(utilService.handleUpdate).toBeCalledTimes(2);
       expect(logicService.determineResultofVote).toBeCalledTimes(1);
     });
 
     it('does not do async calls if not vote result status', async () => {
       game.status = Status.CHOOSE_CHAN;
       await gameService.vote(id, 'player-1', Vote.JA);
-      expect(gameService.handleUpdate).toBeCalledTimes(1);
+      expect(utilService.handleUpdate).toBeCalledTimes(1);
       expect(logicService.determineResultofVote).toBeCalledTimes(0);
       jest.advanceTimersByTime(2000);
-      expect(gameService.handleUpdate).toBeCalledTimes(1);
+      expect(utilService.handleUpdate).toBeCalledTimes(1);
       expect(logicService.determineResultofVote).toBeCalledTimes(0);
     });
   });
