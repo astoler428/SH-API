@@ -11,6 +11,7 @@ export const RR = 'RR';
 
 export const ENACT_POLICY_DURATION = 6000;
 export const TOP_DECK_DELAY = 1500;
+export const RESHUFFLE_DELAY = 4000;
 export const GAMEOVER_NOT_FROM_POLICY_DELAY = 3000;
 
 export enum CHAN2 {

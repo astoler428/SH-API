@@ -20,6 +20,7 @@ import {
   ENACT_POLICY_DURATION,
   TOP_DECK_DELAY,
   GAMEOVER_NOT_FROM_POLICY_DELAY,
+  RESHUFFLE_DELAY,
 } from '../consts';
 import { Game } from '../models/game.model';
 import { Card } from 'src/models/card.model';
@@ -320,14 +321,16 @@ export class LogicService {
     this.resetTracker(game);
     if (game.deck.drawPile.length < 3) {
       this.reshuffle(game.deck);
-      game.log.push({
-        type: LogType.SHUFFLE_DECK,
-        date: getFormattedDate(),
-        payload: {
-          libCount: 6 - game.LibPoliciesEnacted,
-          fascCount: 11 - game.FascPoliciesEnacted,
+      const delay = RESHUFFLE_DELAY + (game.topDecked ? TOP_DECK_DELAY : 0);
+      this.utilService.addToLog(game.id, delay, [
+        {
+          type: LogType.SHUFFLE_DECK,
+          payload: {
+            libCount: 6 - game.LibPoliciesEnacted,
+            fascCount: 11 - game.FascPoliciesEnacted,
+          },
         },
-      });
+      ]);
     }
   }
 
