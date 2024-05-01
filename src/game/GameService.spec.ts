@@ -302,12 +302,13 @@ describe('GameService', () => {
       expect(utilService.handleUpdate).toHaveBeenCalledTimes(1);
     });
 
-    it.skip('resets the hitler knows fasc if game setting set to BlIND', async () => {
+    //change this to allow hitler knows fasc in blind
+    it('resets the hitler knows fasc if game setting set to BlIND', async () => {
       gameSettings.type = GameType.BLIND;
       await gameService.setGameSettings(id, gameSettings);
       expect(game.settings.type).toEqual(GameType.BLIND);
       expect(game.settings.redDown).toEqual(true);
-      expect(game.settings.hitlerKnowsFasc).toEqual(false);
+      // expect(game.settings.hitlerKnowsFasc).toEqual(true);
       expect(utilService.handleUpdate).toHaveBeenCalledWith(id, game);
       expect(utilService.handleUpdate).toHaveBeenCalledTimes(1);
     });
