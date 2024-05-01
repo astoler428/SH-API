@@ -363,7 +363,7 @@ export class GameService {
     if (isBlindSetting(gameSettings.type)) {
       game.settings = {
         ...gameSettings,
-        hitlerKnowsFasc: false,
+        // hitlerKnowsFasc: false,
       };
     } else {
       game.settings = {

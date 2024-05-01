@@ -2,7 +2,7 @@
 
 In blind Secret Hitler, players do not know their own role to start the game. Every action besides choosing players and voting has the option to make a default decision. Liberal roles default to always telling the truth, playing B and discarding R when possible. Hitler and fascists decisions are strategically determined considering a variety of factors intended to mimic real play.
 
-A player may attempt to confirm themself as a fascist. If they are wrong and liberal, the game ends immediately and fascists win. Therefore, guessing is not encouraged. When a vanilla fascist confirms themself, they learn who Hitler is and any other fascists who have also confirmed themselves. When Hitler confirms themself, normal rules apply for whether Hitler learns the other facists. Vanilla fascists are not notified whether Hitler has confirmed themself or not.
+A player may attempt to confirm themself as a fascist. If they are wrong and liberal, the game ends immediately and fascists win. Therefore, guessing is not encouraged. When a vanilla fascist confirms themself, they learn who Hitler is and any other fascists who have also confirmed themselves. When Hitler confirms themself, they also learn any other fascists who have also confirmed themselves, assuming Hitler gets to know the other fascists (in a 5 or 6 player game or the Hitler knows fascists in 7+ setting is turned on). Seeing other fascists implies they have confirmed themselves. However, since fascists can automatically see Hitler, they are informed whether Hitler has confirmed themself or not.
 
 There is no option to confirm yourself as liberal, as it would not make sense to ever risk it because you do not gain any additional information from it. If you are wrong, you lose immediately. Therefore, if you believe strongly that you are liberal enough to want to confirm yourself, then just play as a liberal and if you are wrong and fascist, you still have a chance to win, or even find out your true identity later and and change course.
 
@@ -18,7 +18,7 @@ It's not clear if this variant favors the liberals or the facists. If normal str
 
 ### Considerations
 
-As we know, an important liberal responsibility is voting for the right liberal liberal governments, especially towards the end of the game. In a normal game, a liberal that hasn't been in government to play B is still plays an important part in a win by determining who they think is liberal and voting properly. If that player does not know, or worse, does not believe they are liberal, their vote cannot be counted on. Therefore, importance may be placed on getting more players into government to learn about their role, which also helps fascists.
+As we know, an important liberal responsibility is voting for the right liberal liberal governments, especially towards the end of the game. In a normal game, a liberal that hasn't been in government to play B still plays an important part in a win by determining who they think is liberal and voting properly. If that player does not know, or worse, does not believe they are liberal, their vote cannot be counted on. Therefore, importance may be placed on getting more players into government to learn about their role, which also helps fascists.
 
 **Scenario:** The first two governments play B and the players in government are limited. It's unlikely that these are the actual four liberals. Other liberal players will assume by probability that they are likely fascist and it will be difficult to coordinate among liberals.
 
@@ -90,13 +90,13 @@ An interesting aspect of this setting is that while everyone has the same end go
 
 It might be weighted in the liberal, since decisions on player selection, such as who to shoot, are still made with liberal intention, even if a fascist took the power. Nevertheless, it seems like a fun and interesting exercise to see how evaluate the same situation differently.
 
-# Possible alternate rules and variants
+# Possible alternate rules and variants ideas
 
 - Hide player votes
-- Fascists can know when Hitler has confirmed themself
 - Players can investigate themselves
 - In a 7+ player game, one of the non-Hitler fascists can be an all knowing fascist who learns all the other fascist upon confirming themself. This would increase the possibility of signally to other facists and ensuring a top deck when there is no liberal majority.
 - Going into Hitler zone, someone (possibly the current chancellor) can pick one non-toucher (if there is one) and allow them to learn their own role.
+- If you have ideas, let me know!
 
 <!-- # Totally Blind
 This is intended to be a twist on cooperative. It's essentially the same cooperative game except some players have an agenda for the fascists to win and know where the fascists are. They ahve to steer the game.
