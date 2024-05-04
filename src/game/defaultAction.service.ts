@@ -1716,6 +1716,7 @@ export class DefaultActionService {
     const vanillaFascPresRBBDropProb = 1;
     const vanillaFascPresRRBDropProb = 1;
     const hitlerPresRBBDropProb = 1;
+    //perhaps make this .5 ? otherwise forcing is confirmed lib...
 
     const additionalProbForPower = this.isPower(game) ? 0.3 : 0;
 
@@ -1757,7 +1758,7 @@ export class DefaultActionService {
     const currentChanPlayer = this.logicService.getCurrentChan(game);
 
     const fascBBBunderclaimProb = 1;
-    const fascRRBoverclaimProb = 1;
+    const fascRRBoverclaimProb = 0;
     const fascRBBoverclaimProb = 1;
     let fascRRRconfProb = 1;
     let fascRRBconfProb = 1;
