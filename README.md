@@ -80,7 +80,16 @@ Keep in mind, if a fascist player shoots a liberal, a 3v3 top deck is not always
 
 ### Simple Decisions
 
-Vanilla fascists will always take an action that confirms themself as fascist, even if it is idiotic. They will always conflict a liberal chancellor on policy, always change the blue claim, etc. regardless of whether it makes them look good or bad. Liberals of course never do this. Hitler decisions are more balanced around sometimes playing blues and avoiding conflicts.
+Vanilla fascists will always take an action that confirms themself as fascist, even if it is suboptimal. They will always conflict a liberal chancellor on policy, always change the blue claim, etc. regardless of whether it makes them look good or bad. One exception is fascists will not conflict other fascists, so if you draw RRR, normally you will conflict, but if you don't, it does not mean you are not vanilla fascist since the chancellor could have been fascist. Liberals of course always tell the truth. Hitler decisions are more balanced around sometimes playing blues and avoiding conflicts.
+
+If the fascist action does not occur, there is still the possibility of being Hitler, except in the following circumstances:
+
+- Hitler will never force on RBB
+- Hitler will always take the gun on RRB
+- On the second deck, Hitler will always blind conf
+- Hitler inspecting the top 3 policies will always underclaim BBB (rare situation)
+
+A not obvious fascist action that occurs is when inspecting the top 3 policies, fascists will claim RRR as RBB and BBB as RBB, but tell the truth on RRB and RBB.
 
 ## Cooperative Blind
 
