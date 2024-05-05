@@ -12,6 +12,7 @@ export type Player = {
   investigations: string[];
   bluesPlayed: number;
   confirmedFasc: boolean;
+  libWhoTriedToConfirmFasc: boolean;
   omniFasc: boolean;
   guessedToBeLibSpy: boolean;
   confirmedNotHitler: boolean;

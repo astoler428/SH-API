@@ -530,6 +530,11 @@ export class LogicService {
     const spyGuessPlayer = this.findPlayerIngame(game, spyName);
     spyGuessPlayer.guessedToBeLibSpy = true;
     game.status = Status.SHOW_LIB_SPY_GUESS;
+    game.log.push({
+      type: LogType.LIB_SPY_GUESS,
+      date: getFormattedDate(),
+      payload: { spyName },
+    });
   }
 
   determineResultOfLibSpyGuess(game: Game, spyName: string) {
@@ -539,11 +544,6 @@ export class LogicService {
     } else {
       game.status = Status.END_LIB;
     }
-    game.log.push({
-      type: LogType.LIB_SPY_GUESS,
-      date: getFormattedDate(),
-      payload: { spyName },
-    });
     this.outroLogs(game, false);
   }
 
@@ -705,6 +705,7 @@ export class LogicService {
     if (playerTryingToConfirmFasc.team === Team.FASC) {
       playerTryingToConfirmFasc.confirmedFasc = true;
     } else {
+      playerTryingToConfirmFasc.libWhoTriedToConfirmFasc = true;
       game.log.push({
         type: LogType.CONFIRM_FASC,
         date: getFormattedDate(),
