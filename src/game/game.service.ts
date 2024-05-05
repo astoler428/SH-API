@@ -155,6 +155,7 @@ export class GameService {
           investigations: [],
           bluesPlayed: 0,
           confirmedFasc: false,
+          libWhoTriedToConfirmFasc: false,
           omniFasc: false,
           guessedToBeLibSpy: false,
           confirmedNotHitler: false,
