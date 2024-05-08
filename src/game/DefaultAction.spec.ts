@@ -3787,7 +3787,7 @@ describe('DefaultActionService', () => {
       expect(fascRRBconfProb).toEqual(1);
       expect(fascBBBunderclaimProb).toEqual(1);
       expect(fascRRRconfProb).toEqual(1);
-      expect(fascRRBoverclaimProb).toEqual(1);
+      expect(fascRRBoverclaimProb).toEqual(0);
       expect(fascRBBoverclaimProb).toEqual(1);
     });
 
