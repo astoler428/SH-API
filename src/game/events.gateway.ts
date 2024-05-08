@@ -42,6 +42,7 @@ class ChatMessageDTO {
   // ],
   origin: 'http://localhost:3001',
   transports: ['websocket', 'polling'],
+  pingInterval: 60000,
 })
 export class EventsGateway {
   @WebSocketServer()
