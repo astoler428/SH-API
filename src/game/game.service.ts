@@ -70,6 +70,7 @@ export class GameService {
         discardPile: [],
         deckNum: 1,
         justReshuffled: false,
+        reshuffleIsBeforeATopDeck: false,
         drawPileLengthBeforeDraw3: 0,
         inspectTop3: [],
       },
@@ -95,7 +96,9 @@ export class GameService {
       confs: [],
       remakeId: '',
       topDecked: false,
+      vetoAccepted: false,
       defaultProbabilityLog: [],
+      alreadyEnded: false,
     };
 
     await this.gameRespository.set(id, game);
@@ -215,6 +218,7 @@ export class GameService {
         discardPile: [],
         deckNum: 1,
         justReshuffled: false,
+        reshuffleIsBeforeATopDeck: false,
         drawPileLengthBeforeDraw3: 0,
         inspectTop3: [],
       },
@@ -240,7 +244,9 @@ export class GameService {
       confs: [],
       remakeId: '',
       topDecked: false,
+      vetoAccepted: false,
       defaultProbabilityLog: [],
+      alreadyEnded: false,
     };
     await this.gameRespository.set(newId, newGame);
     await this.utilService.handleUpdate(id, game);
