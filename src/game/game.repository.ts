@@ -75,6 +75,7 @@ export class GameRepository {
     if (!value) {
       return null;
     }
+    console.log(`in repository: ${value}`);
     try {
       let game: Game;
       //for some reason in deployment the value was already an object sometimes?
