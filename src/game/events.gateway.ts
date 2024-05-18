@@ -36,11 +36,11 @@ class ChatMessageDTO {
 
 @WebSocketGateway({
   cors: true,
-  origin: [
-    'https://blind-sh.netlify.app',
-    'https://blind-sh-staging.netlify.app',
-  ],
-  // origin: 'http://localhost:3001',
+  // origin: [
+  //   'https://blind-sh.netlify.app',
+  //   'https://blind-sh-staging.netlify.app',
+  // ],
+  origin: 'http://localhost:3001',
   transports: ['websocket', 'polling'],
   pingInterval: 60000,
 })
