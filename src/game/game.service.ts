@@ -45,7 +45,7 @@ export class GameService {
   async createGame(name: string, socketId: string) {
     let id: string;
     let existingGame: Game;
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const letters = 'BCDFGHJKLMNPQRSTVWXYZ';
     do {
       id = [1, 2, 3, 4]
         .map(() => letters.charAt(Math.floor(Math.random() * 26)))
