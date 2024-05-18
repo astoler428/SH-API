@@ -99,6 +99,17 @@ export class GameController {
     return this.gameService.vote(id, body.name, body.vote);
   }
 
+  @Post('/voteResult/:id')
+  async voteResult(@Param('id') id: string) {
+    if (!this.acceptingRequests) {
+      return;
+    }
+    this.acceptingRequests = false;
+    const res = await this.gameService.determineResultOfVote(id);
+    this.allowRequests();
+    return res;
+  }
+
   @Post('/presDiscard/:id')
   async presDiscard(
     @Param('id') id: string,
@@ -200,6 +211,23 @@ export class GameController {
     }
     this.acceptingRequests = false;
     const res = this.gameService.chooseLibSpy(id, body.spyName);
+    this.allowRequests();
+    return res;
+  }
+
+  @Post('/libSpyResult/:id')
+  async libSpyResult(
+    @Param('id') id: string,
+    @Body() body: { spyName: string },
+  ) {
+    if (!this.acceptingRequests) {
+      return;
+    }
+    this.acceptingRequests = false;
+    const res = await this.gameService.determineResultOfLibSpyGuess(
+      id,
+      body.spyName,
+    );
     this.allowRequests();
     return res;
   }

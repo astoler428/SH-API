@@ -70,6 +70,7 @@ export class GameService {
         discardPile: [],
         deckNum: 1,
         justReshuffled: false,
+        reshuffleIsBeforeATopDeck: false,
         drawPileLengthBeforeDraw3: 0,
         inspectTop3: [],
       },
@@ -95,7 +96,9 @@ export class GameService {
       confs: [],
       remakeId: '',
       topDecked: false,
+      vetoAccepted: false,
       defaultProbabilityLog: [],
+      alreadyEnded: false,
     };
 
     await this.gameRespository.set(id, game);
@@ -215,6 +218,7 @@ export class GameService {
         discardPile: [],
         deckNum: 1,
         justReshuffled: false,
+        reshuffleIsBeforeATopDeck: false,
         drawPileLengthBeforeDraw3: 0,
         inspectTop3: [],
       },
@@ -240,7 +244,9 @@ export class GameService {
       confs: [],
       remakeId: '',
       topDecked: false,
+      vetoAccepted: false,
       defaultProbabilityLog: [],
+      alreadyEnded: false,
     };
     await this.gameRespository.set(newId, newGame);
     await this.utilService.handleUpdate(id, game);
@@ -394,13 +400,17 @@ export class GameService {
     if (game.status === Status.SHOW_VOTE_RESULT) {
       const timeout = voteSplit <= 1 ? 4000 : voteSplit <= 3 ? 5000 : 6000; //this syncs with frontend animation
       setTimeout(async () => {
-        const game = await this.utilService.findById(id);
-        if (game.status === Status.SHOW_VOTE_RESULT) {
-          //in blind, it's possible someone changed it to end_fasc for trying to confirm immediately
-          this.logicService.determineResultofVote(game);
-        }
-        await this.utilService.handleUpdate(id, game);
+        this.determineResultOfVote(id);
       }, timeout);
+    }
+    await this.utilService.handleUpdate(id, game);
+  }
+
+  async determineResultOfVote(id: string) {
+    const game = await this.utilService.findById(id);
+    if (game.status === Status.SHOW_VOTE_RESULT) {
+      //in blind, it's possible someone changed it to end_fasc for trying to confirm immediately
+      this.logicService.determineResultofVote(game);
     }
     await this.utilService.handleUpdate(id, game);
   }
@@ -478,10 +488,17 @@ export class GameService {
     }
     this.logicService.guessLibSpy(game, spyName);
     setTimeout(async () => {
-      const game = await this.utilService.findById(id);
-      this.logicService.determineResultOfLibSpyGuess(game, spyName);
-      await this.utilService.handleUpdate(id, game);
+      this.determineResultOfLibSpyGuess(id, spyName);
+      // const game = await this.utilService.findById(id);
+      // this.logicService.determineResultOfLibSpyGuess(game, spyName);
+      // await this.utilService.handleUpdate(id, game);
     }, 3000); //3s animation on frontend to show the pick
+    await this.utilService.handleUpdate(id, game);
+  }
+
+  async determineResultOfLibSpyGuess(id: string, spyName: string) {
+    const game = await this.utilService.findById(id);
+    this.logicService.determineResultOfLibSpyGuess(game, spyName);
     await this.utilService.handleUpdate(id, game);
   }
 

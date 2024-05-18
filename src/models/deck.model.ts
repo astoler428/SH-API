@@ -7,4 +7,5 @@ export type Deck = {
   drawPileLengthBeforeDraw3: number;
   inspectTop3: Card[];
   justReshuffled: boolean;
+  reshuffleIsBeforeATopDeck: boolean;
 };

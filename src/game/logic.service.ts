@@ -18,16 +18,16 @@ import {
   gameTeams,
   gameIdentities,
   ENACT_POLICY_DURATION,
-  TOP_DECK_DELAY,
   GAMEOVER_NOT_FROM_POLICY_DELAY,
-  RESHUFFLE_DELAY,
 } from '../consts';
 import { Game } from '../models/game.model';
 import { Card } from 'src/models/card.model';
 import { Deck } from 'src/models/deck.model';
-import { gameOver, getFormattedDate, isBlindSetting } from '../helperFunctions';
-import { delay } from 'rxjs';
-import { Player } from 'src/models/player.model';
+import {
+  gameOver,
+  getFormattedDate,
+  policyEnactDelay,
+} from '../helperFunctions';
 import { UtilService } from './util.service';
 
 @Injectable()
@@ -36,7 +36,6 @@ export class LogicService {
 
   startGame(game: Game) {
     game.status = Status.STARTED;
-    // game.status = Status.CHOOSE_CHAN
     this.initPlayers(game);
     game.currentPres = game.players[game.presIdx].name;
     this.initDeck(game);
@@ -132,6 +131,14 @@ export class LogicService {
     });
     game.status = Status.VOTE;
     game.topDecked = false;
+    game.vetoAccepted = false;
+    game.presCards = null;
+    game.chanCards = null;
+    game.presClaim = null;
+    game.chanClaim = null;
+    game.presDiscard = null;
+    game.chanPlay = null;
+    game.deck.reshuffleIsBeforeATopDeck = false;
     if (game.deck.justReshuffled) {
       game.deck.deckNum++;
       game.deck.justReshuffled = false;
@@ -207,7 +214,11 @@ export class LogicService {
       }
     } else {
       //vote didn't pass
-      game.log.push({ type: LogType.ELECTION_FAIL, date: getFormattedDate() });
+      game.log.push({
+        type: LogType.ELECTION_FAIL,
+        date: getFormattedDate(),
+        payload: { fail: game.tracker + 1 },
+      });
       this.advanceTracker(game, false);
     }
   }
@@ -268,7 +279,11 @@ export class LogicService {
       game.log.push({ type: LogType.TOP_DECK, date: getFormattedDate() });
     }
 
-    const logMessageTimeout = 0.5 * 6000 + (game.topDecked ? 1500 : 0); //40% of 6 second animation until the policy is flipped
+    const logMessageTimeout =
+      0.5 * ENACT_POLICY_DURATION + policyEnactDelay(game);
+
+    const policyAndReshuffleLogMessages: { type: LogType; payload?: object }[] =
+      [{ type: LogType.ENACT_POLICY, payload: { policy: card.policy } }];
 
     this.utilService.addToLog(game.id, logMessageTimeout, [
       { type: LogType.ENACT_POLICY, payload: { policy: card.policy } },
@@ -289,18 +304,18 @@ export class LogicService {
             ]);
             game.status = Status.END_FASC;
             this.outroLogs(game, true);
-            return;
+            // return;
           } else {
             game.status = Status.LIB_SPY_GUESS;
             this.utilService.addToLog(game.id, logMessageTimeout + 1000, [
               { type: LogType.HITLER_TO_GUESS_LIB_SPY },
             ]);
-            return;
+            // return;
           }
         } else {
           game.status = Status.END_LIB;
           this.outroLogs(game, true);
-          return;
+          // return;
         }
       }
     } else {
@@ -308,8 +323,18 @@ export class LogicService {
       if (game.FascPoliciesEnacted === 6) {
         game.status = Status.END_FASC;
         this.outroLogs(game, true);
-        return;
+        // return;
       }
+    }
+
+    if (game.LibPoliciesEnacted === 5 || game.FascPoliciesEnacted === 6) {
+      this.addGov(game);
+      this.utilService.addToLog(
+        game.id,
+        logMessageTimeout,
+        policyAndReshuffleLogMessages,
+      );
+      return;
     }
 
     //!this.gameOver(game) &&
@@ -321,17 +346,19 @@ export class LogicService {
     this.resetTracker(game);
     if (game.deck.drawPile.length < 3) {
       this.reshuffle(game.deck);
-      const delay = RESHUFFLE_DELAY + (game.topDecked ? TOP_DECK_DELAY : 0);
-      this.utilService.addToLog(game.id, delay, [
-        {
-          type: LogType.SHUFFLE_DECK,
-          payload: {
-            libCount: 6 - game.LibPoliciesEnacted,
-            fascCount: 11 - game.FascPoliciesEnacted,
-          },
+      policyAndReshuffleLogMessages.push({
+        type: LogType.SHUFFLE_DECK,
+        payload: {
+          libCount: 6 - game.LibPoliciesEnacted,
+          fascCount: 11 - game.FascPoliciesEnacted,
         },
-      ]);
+      });
     }
+    this.utilService.addToLog(
+      game.id,
+      logMessageTimeout,
+      policyAndReshuffleLogMessages,
+    );
   }
 
   /**
@@ -560,13 +587,15 @@ export class LogicService {
     game.log.push({
       type: LogType.VETO_REPLY,
       date: getFormattedDate(),
-      payload: { pres: game.currentPres, vetoAccepted },
+      payload: { pres: game.currentPres, vetoAccepted, fail: game.tracker + 1 },
     });
     if (vetoAccepted) {
+      game.vetoAccepted = true;
       game.chanCards.forEach((card) => this.discard(card, game.deck));
       // this.setPrevLocks(game)
       if (game.deck.drawPile.length < 3) {
         this.reshuffle(game.deck);
+        game.deck.reshuffleIsBeforeATopDeck = true;
         game.log.push({
           type: LogType.SHUFFLE_DECK,
           date: getFormattedDate(),
@@ -608,7 +637,6 @@ export class LogicService {
   }
 
   libSpyCondition(game: Game) {
-    //return boolean
     const libSpy = game.players.find((player) => player.role === Role.LIB_SPY);
     return game.govs.some(
       (gov) =>
@@ -726,8 +754,12 @@ export class LogicService {
   }
 
   shuffleDeck(deck: Deck) {
-    deck.drawPile.sort(() => Math.random() - 0.5);
-    deck.drawPile.sort(() => Math.random() - 0.5);
+    for (let i = deck.drawPile.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = deck.drawPile[i];
+      deck.drawPile[i] = deck.drawPile[j];
+      deck.drawPile[j] = temp;
+    }
   }
 
   reshuffle(deck: Deck) {
@@ -773,9 +805,7 @@ export class LogicService {
   //call this end messages - state winners and do this with deck
   outroLogs(game: Game, gameEndedWithPolicyEnactment: boolean) {
     const timeout = gameEndedWithPolicyEnactment
-      ? game.topDecked
-        ? ENACT_POLICY_DURATION + TOP_DECK_DELAY
-        : ENACT_POLICY_DURATION
+      ? ENACT_POLICY_DURATION + policyEnactDelay(game)
       : GAMEOVER_NOT_FROM_POLICY_DELAY;
 
     const messages: { type: LogType; payload?: object }[] = [
@@ -796,5 +826,10 @@ export class LogicService {
       });
     }
     this.utilService.addToLog(game.id, timeout, messages);
+    setTimeout(async () => {
+      const updatedGame = await this.utilService.findById(game.id);
+      updatedGame.alreadyEnded = true;
+      await this.utilService.handleUpdate(updatedGame.id, updatedGame);
+    }, timeout + 3000);
   }
 }

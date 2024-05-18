@@ -38,7 +38,9 @@ export class GameMockFactory {
       confs: [],
       remakeId: '',
       topDecked: false,
+      vetoAccepted: false,
       defaultProbabilityLog: [],
+      alreadyEnded: false,
       ...params,
     };
   }

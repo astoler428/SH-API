@@ -7,14 +7,24 @@ import { Cache } from 'cache-manager';
 @Injectable()
 export class GameRepository {
   private redisClient: RedisClientType;
+  public redisClientUpToDate: boolean = true;
 
   constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {
     this.redisClient = createClient({
       url: process.env.REDIS_URL,
     });
-    this.redisClient.on('error', (err: Error) =>
-      console.log('Redis client Error', err),
-    );
+    this.redisClient.on('error', (err: Error) => {
+      console.log('Redis client Error', err);
+    });
+    this.redisClient.on('connect', () => {
+      console.log('Redis client Connected');
+    });
+    this.redisClient.on('ready', () => {
+      console.log('Redis client Ready');
+    });
+    this.redisClient.on('end', () => {
+      console.log('Redis client End');
+    });
   }
 
   async connect() {
@@ -26,9 +36,19 @@ export class GameRepository {
   }
 
   async set(key: string, value: Game) {
-    await this.cacheManager.set(key, JSON.stringify(value));
-    //don't await since just for backup
-    this.redisClient.set(key, JSON.stringify(value));
+    try {
+      await this.redisClient.set(key, JSON.stringify(value));
+      this.redisClientUpToDate = true;
+    } catch (error) {
+      console.error('Failed to set value in Redis', error);
+      this.redisClientUpToDate = false;
+    }
+
+    try {
+      await this.cacheManager.set(key, JSON.stringify(value));
+    } catch (error) {
+      console.error('Fialed to set value in Cache Manager');
+    }
   }
 
   async update(key: string, value: Game) {
@@ -36,10 +56,21 @@ export class GameRepository {
   }
 
   async get(key: string): Promise<Game> {
-    let value: string = await this.cacheManager.get(key);
+    let value: string;
+    if (this.redisClientUpToDate) {
+      try {
+        value = await this.redisClient.get(key);
+      } catch (error) {
+        console.error('Error getting value from Redis', error);
+      }
+    }
 
     if (!value) {
-      value = await this.redisClient.get(key);
+      try {
+        value = await this.cacheManager.get(key);
+      } catch (error) {
+        console.error('Error getting value from Cache Manager', error);
+      }
     }
     if (!value) {
       return null;
@@ -54,13 +85,21 @@ export class GameRepository {
       }
       return game;
     } catch (error) {
-      console.error(error, value);
+      console.error('Error parsing game data', error, value);
     }
     // return JSON.parse(value);
   }
 
   async delete(key: string) {
-    this.cacheManager.del(key);
-    this.redisClient.del(key);
+    try {
+      await this.redisClient.del(key);
+    } catch (error) {
+      console.error('Error deleting from Redis', error);
+    }
+    try {
+      await this.cacheManager.del(key);
+    } catch (error) {
+      console.error('Error deleting from Cache Manager', error);
+    }
   }
 }

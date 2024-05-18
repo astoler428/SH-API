@@ -47,6 +47,8 @@ export type Game = {
   confs: { confer: string; confee: string; type: Conf }[];
   remakeId: string;
   topDecked: boolean;
+  vetoAccepted: boolean;
   defaultProbabilityLog: DefaultProbabilityLogItem[];
+  alreadyEnded: boolean;
 };
 //Figure out how they work with game logic: veto, topdecked
