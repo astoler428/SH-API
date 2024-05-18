@@ -282,6 +282,9 @@ export class LogicService {
     const logMessageTimeout =
       0.5 * ENACT_POLICY_DURATION + policyEnactDelay(game);
 
+    const policyAndReshuffleLogMessages: { type: LogType; payload?: object }[] =
+      [{ type: LogType.ENACT_POLICY, payload: { policy: card.policy } }];
+
     this.utilService.addToLog(game.id, logMessageTimeout, [
       { type: LogType.ENACT_POLICY, payload: { policy: card.policy } },
     ]);
@@ -301,18 +304,18 @@ export class LogicService {
             ]);
             game.status = Status.END_FASC;
             this.outroLogs(game, true);
-            return;
+            // return;
           } else {
             game.status = Status.LIB_SPY_GUESS;
             this.utilService.addToLog(game.id, logMessageTimeout + 1000, [
               { type: LogType.HITLER_TO_GUESS_LIB_SPY },
             ]);
-            return;
+            // return;
           }
         } else {
           game.status = Status.END_LIB;
           this.outroLogs(game, true);
-          return;
+          // return;
         }
       }
     } else {
@@ -320,8 +323,18 @@ export class LogicService {
       if (game.FascPoliciesEnacted === 6) {
         game.status = Status.END_FASC;
         this.outroLogs(game, true);
-        return;
+        // return;
       }
+    }
+
+    if (game.LibPoliciesEnacted === 5 || game.FascPoliciesEnacted === 6) {
+      this.addGov(game);
+      this.utilService.addToLog(
+        game.id,
+        logMessageTimeout,
+        policyAndReshuffleLogMessages,
+      );
+      return;
     }
 
     //!this.gameOver(game) &&
@@ -333,17 +346,19 @@ export class LogicService {
     this.resetTracker(game);
     if (game.deck.drawPile.length < 3) {
       this.reshuffle(game.deck);
-      const delay = 3000;
-      this.utilService.addToLog(game.id, delay, [
-        {
-          type: LogType.SHUFFLE_DECK,
-          payload: {
-            libCount: 6 - game.LibPoliciesEnacted,
-            fascCount: 11 - game.FascPoliciesEnacted,
-          },
+      policyAndReshuffleLogMessages.push({
+        type: LogType.SHUFFLE_DECK,
+        payload: {
+          libCount: 6 - game.LibPoliciesEnacted,
+          fascCount: 11 - game.FascPoliciesEnacted,
         },
-      ]);
+      });
     }
+    this.utilService.addToLog(
+      game.id,
+      logMessageTimeout,
+      policyAndReshuffleLogMessages,
+    );
   }
 
   /**
@@ -739,8 +754,12 @@ export class LogicService {
   }
 
   shuffleDeck(deck: Deck) {
-    deck.drawPile.sort(() => Math.random() - 0.5);
-    deck.drawPile.sort(() => Math.random() - 0.5);
+    for (let i = deck.drawPile.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = deck.drawPile[i];
+      deck.drawPile[i] = deck.drawPile[j];
+      deck.drawPile[j] = temp;
+    }
   }
 
   reshuffle(deck: Deck) {
