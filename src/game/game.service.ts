@@ -48,7 +48,7 @@ export class GameService {
     const letters = 'BCDFGHJKLMNPQRSTVWXYZ';
     do {
       id = [1, 2, 3, 4]
-        .map(() => letters.charAt(Math.floor(Math.random() * 26)))
+        .map(() => letters.charAt(Math.floor(Math.random() * 21)))
         .join('');
       // id = Math.random().toString(36).slice(2).substring(0, 4).toUpperCase();
       existingGame = await this.gameRespository.get(id);

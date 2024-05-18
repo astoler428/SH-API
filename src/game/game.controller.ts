@@ -48,8 +48,13 @@ export class GameController {
   constructor(private gameService: GameService) {}
 
   @Post('/')
-  create(@Body() body: CreateGameDTO) {
-    const id = this.gameService.createGame(body.name, body.socketId);
+  async create(@Body() body: CreateGameDTO) {
+    if (!this.acceptingRequests) {
+      return;
+    }
+    this.acceptingRequests = false;
+    const id = await this.gameService.createGame(body.name, body.socketId);
+    this.allowRequests();
     return id;
   }
 

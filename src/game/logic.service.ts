@@ -146,6 +146,10 @@ export class LogicService {
   }
 
   vote(game: Game, name: string, vote: Vote): number {
+    //due to quick back to back vote attemps, it's possible status became SHOW_VOTE_RESULT and a late vote got it
+    if (game.status !== Status.VOTE) {
+      return null;
+    }
     const player = this.findPlayerIngame(game, name);
     if (player.vote !== vote) {
       player.vote = vote;
