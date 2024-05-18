@@ -80,7 +80,9 @@ export class GameRepository {
       let game: Game;
       //for some reason in deployment the value was already an object sometimes?
       if (typeof value === 'string') {
+        console.log('is string');
         game = JSON.parse(value);
+        console.log(`parsed game: ${game}`);
       } else {
         game = value;
       }

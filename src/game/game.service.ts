@@ -112,6 +112,7 @@ export class GameService {
       throw new BadRequestException(`You must have a name`);
     }
     const game = await this.utilService.findById(id);
+    console.log(typeof game);
     console.log(game);
     const playerAlreadyInGame = game.players.find(
       (player) => player.name === name,
