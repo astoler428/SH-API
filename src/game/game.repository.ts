@@ -75,14 +75,15 @@ export class GameRepository {
     if (!value) {
       return null;
     }
-    console.log(`in repository: ${value}`);
     try {
       let game: Game;
       //for some reason in deployment the value was already an object sometimes?
+      //now in deployment it is stringified multiple times
       if (typeof value === 'string') {
-        console.log('is string');
         game = JSON.parse(value);
-        console.log(`parsed game: ${game}`);
+        if (typeof game === 'string') {
+          game = JSON.parse(game);
+        }
       } else {
         game = value;
       }
