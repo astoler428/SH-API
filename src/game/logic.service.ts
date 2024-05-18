@@ -328,7 +328,9 @@ export class LogicService {
     }
 
     if (game.LibPoliciesEnacted === 5 || game.FascPoliciesEnacted === 6) {
-      this.addGov(game);
+      if (!topDeck) {
+        this.addGov(game);
+      }
       this.utilService.addToLog(
         game.id,
         logMessageTimeout,
