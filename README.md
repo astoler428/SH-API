@@ -65,18 +65,16 @@ In this setting, fascist decisions are not strategic or optimal. The emphasis is
 
 - Players in government can learn if they are vanilla fascist or not with high confidence.
 - Hitler still plays with some nuance to keep liberal cover, so it's not guaranteed liberal if the fascist action is not taken, as you could still be Hitler.
-- Also, fascists will not conflict each other, so lack of conflict could be due to fasc fasc.
+- Fascists will not conflict each other, so lack of conflict could be due to fasc fasc.
 
 ### Strategy
 
 If you believe the optimal fascist play in a given situation is to play like a liberal, then do so without taking the default action.
 You can even lie and say that you chose the default action, trying to build liberal credibility. You may be a liberal lying about why you are liberal, but telling the truth that you are liberal, so it's fine!
 
-However, playing optimally in this way comes at the cost of missing the opportunity to learn your role.
-
-Keep in mind, if a fascist player shoots a liberal, a 3v3 top deck is not always possible, since not all fascists necessarily know who they are to nein.
-
 **Example:** You are the chancellor under the gun with three B's down. You realize that the optimal fascist play is to play the fourth B and not get shot. You do so. Then, you claim you chose the default action, "confirming" you are liberal.
+
+However, playing optimally in this way comes at the cost of missing the opportunity to learn your role. Keep in mind, if a fascist player shoots a liberal, a 3v3 top deck is not always possible, since not all fascists necessarily know who they are to nein.
 
 ### Simple Decisions
 
@@ -97,7 +95,7 @@ In this setting, the roles are blind as in the normal blind setting. However, mo
 
 An interesting aspect of this setting is that while everyone has the same end goal, players may have different opinions on how to read the position. Therefore, players may disagree on who to trust and put into government. Each player still gets to make their independent decisions through voting and the power when they are president.
 
-It might be weighted in the liberal, since decisions on player selection, such as who to shoot, are still made with liberal intention, even if a fascist took the power. Nevertheless, it seems like a fun and interesting exercise to see how evaluate the same situation differently.
+It might be weighted in favor of the liberals, since decisions on player selection, such as who to shoot, are still made with liberal intention, even if a fascist took the power. Nevertheless, it seems like a fun and interesting exercise to see how players evaluate the same situation differently.
 
 # Possible alternate rules and variants ideas
 
