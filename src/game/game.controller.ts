@@ -44,6 +44,7 @@ class VoteDTO {
 @Controller('game')
 export class GameController {
   public acceptingRequests: boolean = true;
+  public acceptingVoteMap: Map<string, Map<string, boolean>> = new Map();
 
   constructor(private gameService: GameService) {}
 
@@ -100,8 +101,23 @@ export class GameController {
 
   @Post('/vote/:id')
   async vote(@Param('id') id: string, @Body() body: VoteDTO) {
-    //multiple people at the same time and allowed to change, don't lock
-    return this.gameService.vote(id, body.name, body.vote);
+    //multiple people at the same time and allowed to change, can't do generic lock, but am locking on individual basis
+    let gameIdAcceptingVoteMap = this.acceptingVoteMap.get(id);
+    if (!gameIdAcceptingVoteMap) {
+      gameIdAcceptingVoteMap = new Map();
+      this.acceptingVoteMap.set(id, gameIdAcceptingVoteMap);
+    }
+
+    if (gameIdAcceptingVoteMap.get(body.name) === undefined) {
+      gameIdAcceptingVoteMap.set(body.name, true);
+    }
+    if (gameIdAcceptingVoteMap.get(body.name)) {
+      gameIdAcceptingVoteMap.set(body.name, false);
+      setTimeout(() => {
+        gameIdAcceptingVoteMap.set(body.name, true);
+      }, 500);
+      return this.gameService.vote(id, body.name, body.vote);
+    }
   }
 
   @Post('/voteResult/:id')
