@@ -11,6 +11,7 @@ import {
   UPDATE_GAME,
   UPDATE,
   LEAVE_GAME,
+  EXISTING_GAMES,
 } from '../consts/socketEventNames';
 import { Socket } from 'socket.io';
 import { Game } from 'src/models/game.model';
@@ -18,6 +19,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { GameService } from './game.service';
 import { Server } from 'socket.io';
 import { Inject, forwardRef } from '@nestjs/common';
+import { GameRepository } from './game.repository';
 
 class JoinGameDTO {
   constructor(
@@ -53,6 +55,7 @@ export class EventsGateway {
   constructor(
     @Inject(forwardRef(() => GameService))
     private gameService: GameService,
+    private gameRepository: GameRepository,
   ) {}
 
   handleConnection(socket: Socket) {
@@ -88,6 +91,12 @@ export class EventsGateway {
       const socket = this.socketMap.get(player.socketId);
       socket?.emit(UPDATE, game);
     }
+  }
+
+  @OnEvent(EXISTING_GAMES)
+  async updateExistingGames() {
+    const allGameIds = await this.gameRepository.getAllGameIds();
+    this.server.emit(EXISTING_GAMES, allGameIds);
   }
   confirmInGame(socketId: string) {
     for (const [socketID, socket] of this.server.sockets.sockets) {

@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Game } from '../models/game.model';
 import { GameRepository } from './game.repository';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { UPDATE_GAME } from '../consts/socketEventNames';
+import { EXISTING_GAMES, UPDATE_GAME } from '../consts/socketEventNames';
 import { getFormattedDate } from '../helperFunctions';
 import { LogChatMessage } from 'src/models/logChatMessage.model';
 import { LogType } from 'src/consts';
@@ -25,6 +25,10 @@ export class UtilService {
   async handleUpdate(id: string, game: Game) {
     await this.gameRespository.update(id, game);
     this.eventEmitter.emit(UPDATE_GAME, game);
+  }
+
+  async updateExistingGames() {
+    this.eventEmitter.emit(EXISTING_GAMES);
   }
 
   async addToLog(

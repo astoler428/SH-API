@@ -740,6 +740,17 @@ export class LogicService {
       playerTryingToConfirmFasc.confirmedFasc = true;
     } else {
       playerTryingToConfirmFasc.libWhoTriedToConfirmFasc = true;
+      if (
+        [
+          Status.CHAN_PLAY,
+          Status.CHAN_CLAIM,
+          Status.PRES_CLAIM,
+          Status.VETO_REPLY,
+          Status.VETO_DECLINED,
+        ].includes(game.status)
+      ) {
+        this.addGov(game);
+      }
       game.log.push({
         type: LogType.CONFIRM_FASC,
         date: getFormattedDate(),
