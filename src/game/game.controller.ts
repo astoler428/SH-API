@@ -59,6 +59,11 @@ export class GameController {
     return id;
   }
 
+  @Post('/existingGames')
+  async getExistingGames() {
+    return this.gameService.getExistingGames();
+  }
+
   @Post('/join/:id')
   async join(@Param('id') id: string, @Body() body: JoinGameDTO) {
     return this.gameService.joinGame(id, body.name, body.socketId);

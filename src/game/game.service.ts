@@ -19,7 +19,12 @@ import {
   Identity,
 } from '../consts';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { JOIN_GAME, LEAVE_GAME, UPDATE_GAME } from '../consts/socketEventNames';
+import {
+  EXISTING_GAMES,
+  JOIN_GAME,
+  LEAVE_GAME,
+  UPDATE_GAME,
+} from '../consts/socketEventNames';
 import { LogicService } from './logic.service';
 import { GameRepository } from './game.repository';
 import { DefaultActionService } from './defaultAction.service';
@@ -47,10 +52,14 @@ export class GameService {
     let existingGame: Game;
     const letters = 'BCDFGHJKLMNPQRSTVWXYZ';
     do {
-      id = [1, 2, 3, 4]
-        .map(() => letters.charAt(Math.floor(Math.random() * 21)))
-        .join('');
-      // id = Math.random().toString(36).slice(2).substring(0, 4).toUpperCase();
+      const chosenIdxs = [];
+      while (chosenIdxs.length < 4) {
+        const idx = Math.floor(Math.random() * 21);
+        if (!chosenIdxs.includes(idx)) {
+          chosenIdxs.push(idx);
+        }
+      }
+      id = chosenIdxs.map((idx) => letters.charAt(idx)).join('');
       existingGame = await this.gameRespository.get(id);
     } while (existingGame);
 
@@ -103,7 +112,12 @@ export class GameService {
 
     await this.gameRespository.set(id, game);
     this.joinGame(id, name, socketId);
+    this.eventEmitter.emit(EXISTING_GAMES);
     return id;
+  }
+
+  getExistingGames() {
+    this.eventEmitter.emit(EXISTING_GAMES);
   }
 
   async joinGame(id: string, name: string, socketId: string) {
@@ -358,6 +372,7 @@ export class GameService {
 
   async deleteGame(id: string) {
     await this.gameRespository.delete(id);
+    this.eventEmitter.emit(EXISTING_GAMES);
   }
 
   async setGameSettings(id: string, gameSettings: GameSettings) {

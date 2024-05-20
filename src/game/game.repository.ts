@@ -55,6 +55,10 @@ export class GameRepository {
     await this.set(key, value);
   }
 
+  async getAllGameIds() {
+    return await this.redisClient.keys('*');
+  }
+
   async get(key: string): Promise<Game> {
     let value: string;
     if (this.redisClientUpToDate) {
