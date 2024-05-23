@@ -44,18 +44,13 @@ class VoteDTO {
 @Controller('game')
 export class GameController {
   public acceptingRequests: boolean = true;
-  public acceptingVoteMap: Map<string, Map<string, boolean>> = new Map();
+  public canChangeMap: Map<string, boolean> = new Map();
 
   constructor(private gameService: GameService) {}
 
   @Post('/')
   async create(@Body() body: CreateGameDTO) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const id = await this.gameService.createGame(body.name, body.socketId);
-    this.allowRequests();
     return id;
   }
 
@@ -82,7 +77,6 @@ export class GameController {
     @Param('id') id: string,
     @Body() body: { gameSettings: GameSettings },
   ) {
-    console.log(body.gameSettings);
     return this.gameService.setGameSettings(id, body.gameSettings);
   }
 
@@ -96,34 +90,13 @@ export class GameController {
     @Param('id') id: string,
     @Body() body: { chanName: string },
   ) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.chooseChan(id, body.chanName);
-    this.allowRequests();
     return res;
   }
 
   @Post('/vote/:id')
   async vote(@Param('id') id: string, @Body() body: VoteDTO) {
-    //multiple people at the same time and allowed to change, can't do generic lock, but am locking on individual basis
-    let gameIdAcceptingVoteMap = this.acceptingVoteMap.get(id);
-    if (!gameIdAcceptingVoteMap) {
-      gameIdAcceptingVoteMap = new Map();
-      this.acceptingVoteMap.set(id, gameIdAcceptingVoteMap);
-    }
-
-    if (gameIdAcceptingVoteMap.get(body.name) === undefined) {
-      gameIdAcceptingVoteMap.set(body.name, true);
-    }
-    if (gameIdAcceptingVoteMap.get(body.name)) {
-      gameIdAcceptingVoteMap.set(body.name, false);
-      setTimeout(() => {
-        gameIdAcceptingVoteMap.set(body.name, true);
-      }, 500);
-      return this.gameService.vote(id, body.name, body.vote);
-    }
+    return this.gameService.vote(id, body.name, body.vote);
   }
 
   @Post('/voteResult/:id')
@@ -164,7 +137,6 @@ export class GameController {
     return res;
   }
 
-  //still needs throttle
   @Post('/chooseInv/:id')
   async chooseInv(@Param('id') id: string, @Body() body: { invName: string }) {
     const res = await this.gameService.chooseInv(id, body.invName);
@@ -179,23 +151,13 @@ export class GameController {
 
   @Post('/chooseSE/:id')
   async chooseSE(@Param('id') id: string, @Body() body: { seName: string }) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.chooseSE(id, body.seName);
-    this.allowRequests();
     return res;
   }
 
   @Post('/chooseGun/:id')
   async chooseGun(@Param('id') id: string, @Body() body: { shotName: string }) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.chooseGun(id, body.shotName);
-    this.allowRequests();
     return res;
   }
 
@@ -204,12 +166,7 @@ export class GameController {
     @Param('id') id: string,
     @Body() body: { spyName: string },
   ) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = this.gameService.chooseLibSpy(id, body.spyName);
-    this.allowRequests();
     return res;
   }
 
@@ -255,12 +212,14 @@ export class GameController {
 
   @Post(`/confirmFasc/:id`)
   async confirmFasc(@Param('id') id: string, @Body() body: { name: string }) {
-    if (!this.acceptingRequests) {
+    if (this.canChangeMap.get(id) === false) {
       return;
     }
-    this.acceptingRequests = false;
+    this.canChangeMap.set(id, false);
     const res = await this.gameService.confirmFasc(id, body.name);
-    this.allowRequests();
+    setTimeout(() => {
+      this.canChangeMap.set(id, true);
+    }, 500);
     return res;
   }
 
