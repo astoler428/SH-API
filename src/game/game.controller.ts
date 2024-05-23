@@ -82,7 +82,6 @@ export class GameController {
     @Param('id') id: string,
     @Body() body: { gameSettings: GameSettings },
   ) {
-    console.log(body.gameSettings);
     return this.gameService.setGameSettings(id, body.gameSettings);
   }
 
@@ -107,6 +106,7 @@ export class GameController {
 
   @Post('/vote/:id')
   async vote(@Param('id') id: string, @Body() body: VoteDTO) {
+    console.log(body);
     //multiple people at the same time and allowed to change, can't do generic lock, but am locking on individual basis
     let gameIdAcceptingVoteMap = this.acceptingVoteMap.get(id);
     if (!gameIdAcceptingVoteMap) {
