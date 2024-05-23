@@ -151,7 +151,6 @@ export class LogicService {
       return null;
     }
     const player = this.findPlayerIngame(game, name);
-    console.log(vote, player.vote);
     if (player.vote !== vote) {
       player.vote = vote;
     } else {
