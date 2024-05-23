@@ -82,6 +82,7 @@ export class GameController {
     @Param('id') id: string,
     @Body() body: { gameSettings: GameSettings },
   ) {
+    console.log(body.gameSettings);
     return this.gameService.setGameSettings(id, body.gameSettings);
   }
 
@@ -141,67 +142,38 @@ export class GameController {
     @Param('id') id: string,
     @Body() body: { cardColor: string },
   ) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.presDiscard(id, body.cardColor);
-    this.allowRequests();
     return res;
   }
 
   @Post('/chanPlay/:id')
   async chanPlay(@Param('id') id: string, @Body() body: { cardColor: string }) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.chanPlay(id, body.cardColor);
-    this.allowRequests();
     return res;
   }
 
   @Post('/chanClaim/:id')
   async chanClaim(@Param('id') id: string, @Body() body: { claim: CHAN2 }) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.chanClaim(id, body.claim);
-    this.allowRequests();
     return res;
   }
 
   @Post('/presClaim/:id')
   async presClaim(@Param('id') id: string, @Body() body: { claim: PRES3 }) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.presClaim(id, body.claim);
-    this.allowRequests();
     return res;
   }
 
+  //still needs throttle
   @Post('/chooseInv/:id')
   async chooseInv(@Param('id') id: string, @Body() body: { invName: string }) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.chooseInv(id, body.invName);
-    this.allowRequests();
     return res;
   }
 
   @Post('/invClaim/:id')
   async invClaim(@Param('id') id: string, @Body() body: { claim: Team }) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.invClaim(id, body.claim);
-    this.allowRequests();
     return res;
   }
 
@@ -260,23 +232,13 @@ export class GameController {
 
   @Post('/inspect3Claim/:id')
   async inspect3Claim(@Param('id') id: string, @Body() body: { claim: PRES3 }) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.inspect3Claim(id, body.claim);
-    this.allowRequests();
     return res;
   }
 
   @Post('/vetoRequest/:id')
   async vetoRequest(@Param('id') id: string) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.vetoRequest(id);
-    this.allowRequests();
     return res;
   }
 
@@ -285,12 +247,7 @@ export class GameController {
     @Param('id') id: string,
     @Body() body: { vetoAccepted: boolean },
   ) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.vetoReply(id, body.vetoAccepted);
-    this.allowRequests();
     return res;
   }
 
@@ -298,84 +255,55 @@ export class GameController {
 
   @Post(`/confirmFasc/:id`)
   async confirmFasc(@Param('id') id: string, @Body() body: { name: string }) {
-    return await this.gameService.confirmFasc(id, body.name);
-  }
-
-  @Post(`/default/${Status.PRES_DISCARD}/:id`)
-  async defaultPresDiscard(@Param('id') id: string) {
     if (!this.acceptingRequests) {
       return;
     }
     this.acceptingRequests = false;
-    const res = await this.gameService.defaultPresDiscard(id);
+    const res = await this.gameService.confirmFasc(id, body.name);
     this.allowRequests();
+    return res;
+  }
+
+  @Post(`/default/${Status.PRES_DISCARD}/:id`)
+  async defaultPresDiscard(@Param('id') id: string) {
+    const res = await this.gameService.defaultPresDiscard(id);
     return res;
   }
 
   @Post(`/default/${Status.CHAN_PLAY}/:id`)
   async defaultChanPlay(@Param('id') id: string) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.defaultChanPlay(id);
-    this.allowRequests();
     return res;
   }
 
   @Post(`/default/${Status.CHAN_CLAIM}/:id`)
   async defaultChanClaim(@Param('id') id: string) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.defaultChanClaim(id);
-    this.allowRequests();
     return res;
   }
 
   @Post(`/default/${Status.PRES_CLAIM}/:id`)
   async defaultPresClaim(@Param('id') id: string) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.defaultPresClaim(id);
-    this.allowRequests();
     return res;
   }
 
   @Post(`/default/${Status.INV_CLAIM}/:id`)
   async defaultInvClaim(@Param('id') id: string) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.defaultInvClaim(id);
-    this.allowRequests();
     return res;
   }
 
   @Post(`/default/${Status.INSPECT_TOP3}/:id`)
   async defaultInspect3Claim(@Param('id') id: string) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = this.gameService.defaultInspect3Claim(id);
-    this.allowRequests();
     return res;
   }
 
   //confusing but this is actually for the reply, the veto request comes in through chan_play
   @Post(`/default/${Status.VETO_REPLY}/:id`)
   async defaultVetoReply(@Param('id') id: string) {
-    if (!this.acceptingRequests) {
-      return;
-    }
-    this.acceptingRequests = false;
     const res = await this.gameService.defaultVetoReply(id);
-    this.allowRequests();
     return res;
   }
 
@@ -385,7 +313,7 @@ export class GameController {
     return newId;
   }
 
-  allowRequests() {
-    setTimeout(() => (this.acceptingRequests = true), 500);
+  allowRequests(delay = 500) {
+    setTimeout(() => (this.acceptingRequests = true), delay);
   }
 }

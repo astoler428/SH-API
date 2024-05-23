@@ -735,6 +735,10 @@ export class LogicService {
   //blind functions
 
   confirmFasc(game: Game, name: string) {
+    if (game.status === Status.END_FASC) {
+      //somehow a second attempt to confirm occured almost at the same time as the first
+      return;
+    }
     const playerTryingToConfirmFasc = this.findPlayerIngame(game, name);
     if (playerTryingToConfirmFasc.team === Team.FASC) {
       playerTryingToConfirmFasc.confirmedFasc = true;
