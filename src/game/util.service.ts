@@ -17,9 +17,14 @@ export class UtilService {
   async findById(id: string): Promise<Game> {
     const game = await this.gameRespository.get(id);
     if (!game) {
-      throw new BadRequestException(`No game found with ID ${id}`);
+      this.handleError(`No game found with ID ${id}`);
     }
     return game;
+  }
+
+  handleError(msg: string) {
+    console.error(msg);
+    throw new BadRequestException(msg);
   }
 
   async handleUpdate(id: string, game: Game) {
