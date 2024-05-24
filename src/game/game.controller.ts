@@ -103,13 +103,13 @@ export class GameController {
 
   @Post('/vote/:id')
   async vote(@Param('id') id: string, @Body() body: VoteDTO) {
-    if (!this.acceptingRequests) {
-      throw new BadRequestException(`Voting locked`);
-    }
-    this.acceptingRequests = false;
-    const res = this.gameService.vote(id, body.name, body.vote);
-    this.allowRequests();
-    return res;
+    return this.gameService.vote(id, body.name, body.vote);
+    // if (!this.acceptingRequests) {
+    //   throw new BadRequestException(`Voting locked`);
+    // }
+    // this.acceptingRequests = false;
+    // this.allowRequests();
+    // return res;
   }
 
   @Post('/voteResult/:id')

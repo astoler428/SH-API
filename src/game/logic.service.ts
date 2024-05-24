@@ -148,7 +148,8 @@ export class LogicService {
   vote(game: Game, name: string, vote: Vote): number {
     //due to quick back to back vote attemps, it's possible status became SHOW_VOTE_RESULT and a late vote got it
     if (game.status !== Status.VOTE) {
-      return null;
+      this.utilService.handleError('Voting Locked');
+      return;
     }
     const player = this.findPlayerIngame(game, name);
     if (player.vote !== vote) {
@@ -166,7 +167,7 @@ export class LogicService {
     );
 
     if (this.numAlivePlayers(game) === numVotes) {
-      game.status = Status.SHOW_VOTE_RESULT;
+      game.status = Status.VOTE_LOCK;
       const jas = game.players.reduce(
         (acc, player) => (player.vote === Vote.JA ? acc + 1 : acc),
         0,

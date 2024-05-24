@@ -418,11 +418,22 @@ export class GameService {
      * set timeout for 300ms, get game, if player votes match...
      * then status to show_vote_result - handle update and set timeout below...
      */
-    if (game.status === Status.SHOW_VOTE_RESULT) {
-      const timeout = voteSplit <= 1 ? 4000 : voteSplit <= 3 ? 5000 : 6000; //this syncs with frontend animation
+    if (game.status === Status.VOTE_LOCK) {
+      const playerVotes = game.players.map((player) => player.vote);
       setTimeout(async () => {
-        this.determineResultOfVote(id);
-      }, timeout);
+        const game = await this.utilService.findById(id);
+
+        if (game.players.every((player, i) => player.vote === playerVotes[i])) {
+          game.status = Status.SHOW_VOTE_RESULT;
+          const timeout = voteSplit <= 1 ? 4000 : voteSplit <= 3 ? 5000 : 6000; //this syncs with frontend animation
+          setTimeout(async () => {
+            this.determineResultOfVote(id);
+          }, timeout);
+        } else {
+          game.status = Status.VOTE;
+        }
+        await this.utilService.handleUpdate(id, game);
+      }, 1000); //lower this
     }
     await this.utilService.handleUpdate(id, game);
   }
