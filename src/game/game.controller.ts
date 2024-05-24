@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { GameService } from './game.service';
 import { Socket } from 'socket.io';
 import {
@@ -97,7 +104,7 @@ export class GameController {
   @Post('/vote/:id')
   async vote(@Param('id') id: string, @Body() body: VoteDTO) {
     if (!this.acceptingRequests) {
-      return;
+      throw new BadRequestException(`Voting locked`);
     }
     this.acceptingRequests = false;
     const res = this.gameService.vote(id, body.name, body.vote);
