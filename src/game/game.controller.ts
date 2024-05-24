@@ -96,7 +96,13 @@ export class GameController {
 
   @Post('/vote/:id')
   async vote(@Param('id') id: string, @Body() body: VoteDTO) {
-    return this.gameService.vote(id, body.name, body.vote);
+    if (!this.acceptingRequests) {
+      return;
+    }
+    this.acceptingRequests = false;
+    const res = this.gameService.vote(id, body.name, body.vote);
+    this.allowRequests();
+    return res;
   }
 
   @Post('/voteResult/:id')
