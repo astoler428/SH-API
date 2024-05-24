@@ -16,8 +16,8 @@ import { UtilService } from './util.service';
     CacheModule.register({
       isGlobal: true,
       store: redisStore as any,
-      // host: process.env.REDIS_HOST,
-      host: 'localhost',
+      host: process.env.REDIS_HOST,
+      // host: 'localhost',
       port: 6379,
     }),
   ],
