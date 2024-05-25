@@ -149,7 +149,6 @@ export class LogicService {
     //due to quick back to back vote attemps, it's possible status became SHOW_VOTE_RESULT and a late vote got it
     if (game.status !== Status.VOTE) {
       this.utilService.handleError('Voting Locked');
-      return;
     }
     const player = this.findPlayerIngame(game, name);
     if (player.vote !== vote) {
@@ -713,7 +712,7 @@ export class LogicService {
   findPlayerIngame(game: Game, name: string) {
     const player = game.players.find((player) => player.name === name);
     if (!player) {
-      throw new BadRequestException(`${name} is not a player in this game`);
+      this.utilService.handleError(`${name} is not a player in this game`);
     }
     return player;
   }

@@ -123,7 +123,7 @@ export class GameService {
   async joinGame(id: string, name: string, socketId: string) {
     //in case they bypass the home page and go straight to url - frontend should catch this first anyway
     if (!name) {
-      throw new BadRequestException(`You must have a name`);
+      this.utilService.handleError(`You must have a name`);
     }
     const game = await this.utilService.findById(id);
 
@@ -132,7 +132,7 @@ export class GameService {
     );
 
     if (!playerAlreadyInGame && game.players.length === 10) {
-      throw new BadRequestException(`Game is full`);
+      this.utilService.handleError(`Game is full`);
     }
 
     if (playerAlreadyInGame) {
@@ -147,7 +147,7 @@ export class GameService {
             playerAlreadyInGame.socketId,
           );
           if (confirmedInGame) {
-            throw new BadRequestException(
+            this.utilService.handleError(
               `A player with that name is already in the game`,
             );
           } else {
@@ -158,7 +158,7 @@ export class GameService {
       }
     } else {
       if (game.status !== Status.CREATED) {
-        throw new BadRequestException('Game already started');
+        this.utilService.handleError(`Game already started`);
       } else {
         game.players.push({
           name,
@@ -192,7 +192,7 @@ export class GameService {
     socketId: string,
   ) {
     if (confirmedInGame) {
-      throw new BadRequestException(
+      this.utilService.handleError(
         `A player with that name is already in the game`,
       );
     } else {
@@ -268,7 +268,6 @@ export class GameService {
   }
 
   async leaveGame(id: string, socketId: string) {
-    // console.log(`player leaving has socketId ${socketId}`)
     const game = await this.utilService.findById(id);
     const playerLeaving = game.players.find(
       (player) => player.socketId === socketId,
@@ -276,16 +275,13 @@ export class GameService {
 
     if (!playerLeaving) {
       return;
-      // throw new BadRequestException(`This player not found in game ${id}`)
     }
 
     let gameDeleted = false;
     //completely leave the game if in lobby
     if (game.status === Status.CREATED) {
-      // console.log('deleting player')
       game.players = game.players.filter((player) => player !== playerLeaving);
       if (game.players.length === 0) {
-        // console.log('deleting game')
         gameDeleted = true;
         this.deleteGame(id);
       } else if (playerLeaving.name === game.host) {
@@ -323,10 +319,10 @@ export class GameService {
   async startGame(id: string) {
     const game = await this.utilService.findById(id);
     if (game.status !== Status.CREATED) {
-      throw new BadRequestException(`Game ${id} has already started`);
+      this.utilService.handleError(`Game ${id} has already started`);
     }
     if (game.players.length < 5) {
-      throw new BadRequestException(
+      this.utilService.handleError(
         `Can't start a game with fewer than 5 players`,
       );
     }
@@ -378,8 +374,8 @@ export class GameService {
   async setGameSettings(id: string, gameSettings: GameSettings) {
     const game = await this.utilService.findById(id);
     if (game.status !== Status.CREATED) {
-      throw new BadRequestException(
-        'Cannot change the game settings after the game has started',
+      this.utilService.handleError(
+        `Cannot change the game settings after the game has started`,
       );
     }
     if (isBlindSetting(gameSettings.type)) {
@@ -403,7 +399,7 @@ export class GameService {
   async chooseChan(id: string, chanName: string) {
     const game = await this.utilService.findById(id);
     if (game.status !== Status.CHOOSE_CHAN) {
-      throw new BadRequestException(`Can't choose a chancellor at this time`);
+      this.utilService.handleError(`Can't choose a chancellor at this time`);
     }
     this.logicService.chooseChan(game, chanName);
     await this.utilService.handleUpdate(id, game);
@@ -475,7 +471,7 @@ export class GameService {
   async chooseInv(id: string, invName: string) {
     const game = await this.utilService.findById(id);
     if (game.status !== Status.INV) {
-      throw new BadRequestException(`Can't investigate at this time`);
+      this.utilService.handleError(`Can't investigate at this time`);
     }
     this.logicService.chooseInv(game, invName);
     await this.utilService.handleUpdate(id, game);
@@ -489,7 +485,7 @@ export class GameService {
   async invClaim(id: string, claim: Team) {
     const game = await this.utilService.findById(id);
     if (game.status !== Status.INV_CLAIM) {
-      throw new BadRequestException(`Can't claim inv at this time`);
+      this.utilService.handleError(`Can't claim inv at this time`);
     }
     this.logicService.invClaim(game, claim);
     await this.utilService.handleUpdate(id, game);
@@ -498,7 +494,7 @@ export class GameService {
   async chooseSE(id: string, seName: string) {
     const game = await this.utilService.findById(id);
     if (game.status !== Status.SE) {
-      throw new BadRequestException(`Can't SE at this time`);
+      this.utilService.handleError(`Can't SE at this time`);
     }
     this.logicService.chooseSE(game, seName);
     await this.utilService.handleUpdate(id, game);
@@ -507,7 +503,7 @@ export class GameService {
   async chooseGun(id: string, shotName: string) {
     const game = await this.utilService.findById(id);
     if (game.status !== Status.GUN) {
-      throw new BadRequestException(`Can't shoot at this time`);
+      this.utilService.handleError(`Can't shoot at this time`);
     }
     this.logicService.shootPlayer(game, shotName);
     await this.utilService.handleUpdate(id, game);
@@ -516,7 +512,7 @@ export class GameService {
   async chooseLibSpy(id: string, spyName: string) {
     const game = await this.utilService.findById(id);
     if (game.status !== Status.LIB_SPY_GUESS) {
-      throw new BadRequestException(`Can't guess Lib Spy at this time`);
+      this.utilService.handleError(`Can't guess Lib Spy at this time`);
     }
     this.logicService.guessLibSpy(game, spyName);
     setTimeout(async () => {
