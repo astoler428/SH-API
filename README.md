@@ -33,7 +33,7 @@ Factors that are considered in decision making:
 - Whether a government is fascist fascist or not
 - Hitler vs vanilla fascist
 - The player count
-- How many B's are played along with how many you and the chancellor have each played
+- How many B's are played along with how many the president and chancellor have each played
 - How many R's are played
 - What the power is (investigation vs gun)
 - The deck count

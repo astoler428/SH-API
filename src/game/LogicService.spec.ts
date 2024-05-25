@@ -468,6 +468,7 @@ describe('Logic Service', () => {
 
     beforeEach(() => {
       jest.spyOn(logicService, 'countVotes');
+      game.status = Status.VOTE;
       logicService.vote(game, 'player-1', Vote.JA);
       logicService.vote(game, 'player-2', Vote.NEIN);
       player1 = game.players.find((player) => player.name === 'player-1');
@@ -572,6 +573,7 @@ describe('Logic Service', () => {
 
   describe('determineResultsOfVote', () => {
     beforeEach(() => {
+      game.status = Status.VOTE;
       logicService.vote(game, 'player-1', Vote.JA);
       logicService.vote(game, 'player-2', Vote.JA);
       logicService.vote(game, 'player-3', Vote.NEIN);

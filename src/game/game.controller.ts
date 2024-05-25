@@ -19,6 +19,7 @@ import {
   Vote,
 } from '../consts';
 import { Card } from 'src/models/card.model';
+import { UtilService } from './util.service';
 
 class CreateGameDTO {
   constructor(
@@ -53,7 +54,10 @@ export class GameController {
   public acceptingRequests: boolean = true;
   public canChangeMap: Map<string, boolean> = new Map();
 
-  constructor(private gameService: GameService) {}
+  constructor(
+    private gameService: GameService,
+    private utilService: UtilService,
+  ) {}
 
   @Post('/')
   async create(@Body() body: CreateGameDTO) {
@@ -104,22 +108,18 @@ export class GameController {
   @Post('/vote/:id')
   async vote(@Param('id') id: string, @Body() body: VoteDTO) {
     return this.gameService.vote(id, body.name, body.vote);
-    // if (!this.acceptingRequests) {
-    //   throw new BadRequestException(`Voting locked`);
-    // }
-    // this.acceptingRequests = false;
-    // this.allowRequests();
-    // return res;
   }
 
   @Post('/voteResult/:id')
   async voteResult(@Param('id') id: string) {
-    if (!this.acceptingRequests) {
-      return;
+    if (this.canChangeMap.get(id) === false) {
+      this.utilService.handleError('vote result locked');
     }
-    this.acceptingRequests = false;
+    this.canChangeMap.set(id, false);
     const res = await this.gameService.determineResultOfVote(id);
-    this.allowRequests();
+    setTimeout(() => {
+      this.canChangeMap.set(id, true);
+    }, 500);
     return res;
   }
 
@@ -188,15 +188,17 @@ export class GameController {
     @Param('id') id: string,
     @Body() body: { spyName: string },
   ) {
-    if (!this.acceptingRequests) {
-      return;
+    if (this.canChangeMap.get(id) === false) {
+      this.utilService.handleError('vote result locked');
     }
-    this.acceptingRequests = false;
+    this.canChangeMap.set(id, false);
     const res = await this.gameService.determineResultOfLibSpyGuess(
       id,
       body.spyName,
     );
-    this.allowRequests();
+    setTimeout(() => {
+      this.canChangeMap.set(id, true);
+    }, 500);
     return res;
   }
 
@@ -226,7 +228,7 @@ export class GameController {
   @Post(`/confirmFasc/:id`)
   async confirmFasc(@Param('id') id: string, @Body() body: { name: string }) {
     if (this.canChangeMap.get(id) === false) {
-      return;
+      this.utilService.handleError('Confirm Fasc locked');
     }
     this.canChangeMap.set(id, false);
     const res = await this.gameService.confirmFasc(id, body.name);
