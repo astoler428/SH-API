@@ -410,6 +410,7 @@ export class GameService {
     const voteSplit = this.logicService.vote(game, name, vote);
 
     if (game.status === Status.VOTE_LOCK) {
+      console.log('status is now vote lock');
       const playerVotes = game.players.map((player) => player.vote);
       setTimeout(async () => {
         const game = await this.utilService.findById(id);
@@ -421,6 +422,7 @@ export class GameService {
             this.determineResultOfVote(id);
           }, timeout);
         } else {
+          console.log('status back to vote');
           game.status = Status.VOTE;
         }
         await this.utilService.handleUpdate(id, game);
