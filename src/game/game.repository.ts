@@ -47,7 +47,7 @@ export class GameRepository {
     try {
       await this.cacheManager.set(key, JSON.stringify(value));
     } catch (error) {
-      console.error('Fialed to set value in Cache Manager');
+      console.error('Failed to set value in Cache Manager');
     }
   }
 
@@ -56,7 +56,11 @@ export class GameRepository {
   }
 
   async getAllGameIds() {
-    return await this.redisClient.keys('*');
+    try {
+      return await this.redisClient.keys('*');
+    } catch (error) {
+      console.error('Failed to get all keys');
+    }
   }
 
   async get(key: string): Promise<Game> {
