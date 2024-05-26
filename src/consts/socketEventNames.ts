@@ -7,3 +7,4 @@ export const UPDATE_GAME = 'UPDATE_GAME';
 export const UPDATE = 'UPDATE';
 export const DISPLAY = 'DISPLAY';
 export const EXISTING_GAMES = 'EXISTING_GAMES';
+export const CHECK_IN_GAME = 'CHECK_IN_GAME';

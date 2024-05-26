@@ -51,8 +51,7 @@ class VoteDTO {
 
 @Controller('game')
 export class GameController {
-  public acceptingRequests: boolean = true;
-  public canChangeMap: Map<string, boolean> = new Map();
+  public acceptingRequestsMap: Map<string, boolean> = new Map();
 
   constructor(
     private gameService: GameService,
@@ -112,14 +111,23 @@ export class GameController {
 
   @Post('/voteResult/:id')
   async voteResult(@Param('id') id: string) {
-    if (this.canChangeMap.get(id) === false) {
+    if (this.acceptingRequestsMap.get(id) === false) {
       this.utilService.handleError('vote result locked');
     }
-    this.canChangeMap.set(id, false);
+    this.acceptingRequestsMap.set(id, false);
     const res = await this.gameService.determineResultOfVote(id);
-    setTimeout(() => {
-      this.canChangeMap.set(id, true);
-    }, 500);
+    this.acceptRequests(id);
+    return res;
+  }
+
+  @Post('/voteLockResult/:id')
+  async voteLockResult(@Param('id') id: string) {
+    if (this.acceptingRequestsMap.get(id) === false) {
+      this.utilService.handleError('vote lock result locked');
+    }
+    this.acceptingRequestsMap.set(id, false);
+    const res = await this.gameService.showVotesInCaseOfCrash(id);
+    this.acceptRequests(id);
     return res;
   }
 
@@ -188,17 +196,15 @@ export class GameController {
     @Param('id') id: string,
     @Body() body: { spyName: string },
   ) {
-    if (this.canChangeMap.get(id) === false) {
+    if (this.acceptingRequestsMap.get(id) === false) {
       this.utilService.handleError('vote result locked');
     }
-    this.canChangeMap.set(id, false);
+    this.acceptingRequestsMap.set(id, false);
     const res = await this.gameService.determineResultOfLibSpyGuess(
       id,
       body.spyName,
     );
-    setTimeout(() => {
-      this.canChangeMap.set(id, true);
-    }, 500);
+    this.acceptRequests(id);
     return res;
   }
 
@@ -227,14 +233,12 @@ export class GameController {
 
   @Post(`/confirmFasc/:id`)
   async confirmFasc(@Param('id') id: string, @Body() body: { name: string }) {
-    if (this.canChangeMap.get(id) === false) {
+    if (this.acceptingRequestsMap.get(id) === false) {
       this.utilService.handleError('Confirm Fasc locked');
     }
-    this.canChangeMap.set(id, false);
+    this.acceptingRequestsMap.set(id, false);
     const res = await this.gameService.confirmFasc(id, body.name);
-    setTimeout(() => {
-      this.canChangeMap.set(id, true);
-    }, 500);
+    this.acceptRequests(id);
     return res;
   }
 
@@ -287,7 +291,9 @@ export class GameController {
     return newId;
   }
 
-  allowRequests(delay = 500) {
-    setTimeout(() => (this.acceptingRequests = true), delay);
+  acceptRequests(id: string, delay = 500) {
+    setTimeout(() => {
+      this.acceptingRequestsMap.set(id, true);
+    }, delay);
   }
 }
