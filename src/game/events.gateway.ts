@@ -133,16 +133,16 @@ export class EventsGateway {
     this.socketIsInGameMap.set(socketId, inGame);
   }
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
-  async askInGame() {
-    for (const [socketId, socket] of this.server.sockets.sockets) {
-      socket?.emit(CHECK_IN_GAME);
-    }
+  // @Cron(CronExpression.EVERY_10_SECONDS)
+  // async askInGame() {
+  //   for (const [socketId, socket] of this.server.sockets.sockets) {
+  //     socket?.emit(CHECK_IN_GAME);
+  //   }
 
-    setTimeout(() => {
-      this.updateInGame();
-    }, 2000);
-  }
+  //   setTimeout(() => {
+  //     this.updateInGame();
+  //   }, 2000);
+  // }
 
   async updateInGame() {
     const allExistingSocketIds = [];
