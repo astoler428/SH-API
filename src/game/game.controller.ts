@@ -95,6 +95,11 @@ export class GameController {
     return this.gameService.startGame(id);
   }
 
+  @Post('/startedResult/:id')
+  async startedResult(@Param('id') id: string) {
+    return this.gameService.setStatusToChooseChan(id);
+  }
+
   @Post('/chooseChan/:id')
   async chooseChan(
     @Param('id') id: string,
@@ -197,7 +202,7 @@ export class GameController {
     @Body() body: { spyName: string },
   ) {
     if (this.acceptingRequestsMap.get(id) === false) {
-      this.utilService.handleError('vote result locked');
+      this.utilService.handleError('libspy result locked');
     }
     this.acceptingRequestsMap.set(id, false);
     const res = await this.gameService.determineResultOfLibSpyGuess(

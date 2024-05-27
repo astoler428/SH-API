@@ -61,7 +61,7 @@ export class EventsGateway {
   server: Server;
   public socketMap: Map<string, Socket> = new Map();
   public socketGameIdMap: Map<string, string> = new Map(); //socketid to id of game they are in
-  public socketIsInGameMap: Map<string, boolean> = new Map();
+  // public socketIsInGameMap: Map<string, boolean> = new Map();
 
   constructor(
     @Inject(forwardRef(() => GameService))
@@ -75,6 +75,7 @@ export class EventsGateway {
   }
 
   async handleDisconnect(socket: Socket) {
+    this.socketMap.delete(socket.id);
     const id = this.socketGameIdMap.get(socket.id);
     if (id) {
       try {
@@ -83,20 +84,19 @@ export class EventsGateway {
         console.error(error);
       }
     }
-    this.socketMap.delete(socket.id);
     return id;
   }
 
   @OnEvent(JOIN_GAME)
   joinGame(body: JoinGameDTO) {
     this.socketGameIdMap.set(body.socketId, body.id);
-    this.socketIsInGameMap.set(body.socketId, true);
+    // this.socketIsInGameMap.set(body.socketId, true);
   }
 
   @OnEvent(LEAVE_GAME)
   leaveGame(socketId: string) {
     this.socketGameIdMap.delete(socketId);
-    this.socketIsInGameMap.set(socketId, false);
+    // this.socketIsInGameMap.set(socketId, false);
   }
 
   @OnEvent(UPDATE_GAME)
@@ -127,47 +127,47 @@ export class EventsGateway {
     await this.gameService.chatMessage(body.id, body.name, body.message);
   }
 
-  @SubscribeMessage('inGameUpdate')
-  async inGameUpdate(@MessageBody() body: CheckInGameDTO) {
-    const { socketId, inGame } = body;
-    this.socketIsInGameMap.set(socketId, inGame);
-  }
+  // @SubscribeMessage('inGameUpdate')
+  // async inGameUpdate(@MessageBody() body: CheckInGameDTO) {
+  //   const { socketId, inGame } = body;
+  //   this.socketIsInGameMap.set(socketId, inGame);
+  // }
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
-  async askInGame() {
-    for (const [socketId, socket] of this.server.sockets.sockets) {
-      socket?.emit(CHECK_IN_GAME);
-    }
+  // @Cron(CronExpression.EVERY_10_SECONDS)
+  // async askInGame() {
+  //   for (const [socketId, socket] of this.server.sockets.sockets) {
+  //     socket?.emit(CHECK_IN_GAME);
+  //   }
 
-    setTimeout(() => {
-      this.updateInGame();
-    }, 2000);
-  }
+  //   setTimeout(() => {
+  //     this.updateInGame();
+  //   }, 2000);
+  // }
 
-  async updateInGame() {
-    const allExistingSocketIds = [];
-    for (const [socketID, socket] of this.server.sockets.sockets) {
-      allExistingSocketIds.push(socketID);
-    }
-    const allGameIds = await this.gameRepository.getAllGameIds();
-    allGameIds?.forEach(async (id) => {
-      const game = await this.utilService.findById(id);
-      let needsUpdate = false;
-      game.players.forEach(async (player) => {
-        if (
-          player.socketId &&
-          (!allExistingSocketIds.includes(player.socketId) ||
-            !this.socketIsInGameMap.get(player.socketId))
-        ) {
-          this.leaveGame(player.socketId);
-          this.socketMap.delete(player.socketId);
-          player.socketId = null;
-          needsUpdate = true;
-        }
-      });
-      if (needsUpdate) {
-        await this.utilService.handleUpdate(id, game);
-      }
-    });
-  }
+  // async updateInGame() {
+  //   const allExistingSocketIds = [];
+  //   for (const [socketID, socket] of this.server.sockets.sockets) {
+  //     allExistingSocketIds.push(socketID);
+  //   }
+  //   const allGameIds = await this.gameRepository.getAllGameIds();
+  //   allGameIds?.forEach(async (id) => {
+  //     const game = await this.utilService.findById(id);
+  //     let needsUpdate = false;
+  //     game.players.forEach(async (player) => {
+  //       if (
+  //         player.socketId &&
+  //         (!allExistingSocketIds.includes(player.socketId) ||
+  //           !this.socketIsInGameMap.get(player.socketId))
+  //       ) {
+  //         this.leaveGame(player.socketId);
+  //         this.socketMap.delete(player.socketId);
+  //         player.socketId = null;
+  //         needsUpdate = true;
+  //       }
+  //     });
+  //     if (needsUpdate) {
+  //       await this.utilService.handleUpdate(id, game);
+  //     }
+  //   });
+  // }
 }
