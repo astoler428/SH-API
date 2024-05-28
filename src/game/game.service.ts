@@ -355,15 +355,19 @@ export class GameService {
       ? 4000
       : 9000;
     setTimeout(async () => {
-      const game = await this.utilService.findById(id);
-      if (game.status === Status.STARTED) {
-        //in blind, it's possible someone changed it to end_fasc for trying to confirm immediately
-        game.status = Status.CHOOSE_CHAN;
-      }
-      await this.utilService.handleUpdate(id, game);
+      this.setStatusToChooseChan(id);
     }, changeStatusTimeout);
     await this.utilService.handleUpdate(id, game);
     return;
+  }
+
+  async setStatusToChooseChan(id: string) {
+    const game = await this.utilService.findById(id);
+    if (game.status === Status.STARTED) {
+      //in blind, it's possible someone changed it to end_fasc for trying to confirm immediately
+      game.status = Status.CHOOSE_CHAN;
+    }
+    await this.utilService.handleUpdate(id, game);
   }
 
   async deleteGame(id: string) {
